@@ -1,7 +1,7 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
-import { ZodValidationPipe } from "../commons/pipes/zod-validation.pipe";
-import { CreateUser, CreateUserSchema } from "./dto/create-user.schema";
-import { UsersService } from "./users.service";
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
+import { CreateUser, CreateUserSchema } from './dto/create-user.schema';
+import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {

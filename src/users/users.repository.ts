@@ -15,7 +15,11 @@ export class UsersRepository {
     return this.txHost.tx.user.create({ data });
   }
 
+  findByName(name: string): Promise<User | null> {
+    return this.txHost.tx.user.findUnique({ where: { name } });
+  }
+
   async userExist(name: string): Promise<boolean> {
-    return (await this.txHost.tx.user.findUnique({ where: { name } })) !== null;
+    return (await this.findByName(name)) !== null;
   }
 }

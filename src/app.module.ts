@@ -6,6 +6,7 @@ import { ClsModule } from 'nestjs-cls';
 import { PrismaClient } from '../generated/prisma/client';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 import { PrismaModule, PrismaService } from './prisma';
 import { UsersModule } from './users/users.module';
 
@@ -26,6 +27,7 @@ import { UsersModule } from './users/users.module';
       ],
     }),
     UsersModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
