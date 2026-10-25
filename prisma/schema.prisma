@@ -154,3 +154,11 @@ model PlayerRating {
 
   @@index([playerId, capturedAt])
 }
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  name String @unique
+  pinHash String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
