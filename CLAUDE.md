@@ -1,4 +1,4 @@
-# andreuskruisen-backend
+# andreaskruisen-backend
 
 Back-end de um sistema para gerenciar o campeonato semanal de FIFA/EA FC entre amigos: transferências de jogadores, torneios, escalações, economia de moedas e auditoria de saldo.
 

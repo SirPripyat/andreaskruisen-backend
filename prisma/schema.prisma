@@ -1,0 +1,156 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PreferredFoot {
+  LEFT
+  RIGHT
+}
+
+enum PositionCode {
+  GOL
+  ZAG
+  LD
+  LE
+  VOL
+  MC
+  MD
+  ME
+  MEI
+  PD
+  PE
+  ATA
+}
+
+model Nationality {
+  id      String @id @default(uuid()) @db.Uuid
+  name    String @unique
+  flagUrl String
+
+  players Player[]
+}
+
+model League {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+
+  teams Team[]
+}
+
+model Team {
+  id       String @id @default(uuid()) @db.Uuid
+  name     String
+  // Chave natural real do time: dois times diferentes podem ter o mesmo
+  // nome (ex.: "Nacional" do Uruguai e de Portugal), mas o crestUrl da EA
+  // nunca colide entre times distintos.
+  crestUrl String @unique
+
+  leagueId String @db.Uuid
+  league   League @relation(fields: [leagueId], references: [id])
+
+  players Player[]
+
+  @@index([name])
+}
+
+model Player {
+  id            String        @id @default(uuid()) @db.Uuid
+  // id do jogador no scraper (SoFIFA/EA), usado como chave de upsert na importação.
+  eaId          Int           @unique
+  name          String
+  photoUrl      String
+  birthdate     DateTime
+  preferredFoot PreferredFoot
+
+  nationalityId String      @db.Uuid
+  nationality   Nationality @relation(fields: [nationalityId], references: [id])
+
+  teamId String @db.Uuid
+  team   Team   @relation(fields: [teamId], references: [id])
+
+  positions PlayerPosition[]
+  ratings   PlayerRating[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PlayerPosition {
+  id        String       @id @default(uuid()) @db.Uuid
+  playerId  String       @db.Uuid
+  player    Player       @relation(fields: [playerId], references: [id])
+  position  PositionCode
+  isPrimary Boolean      @default(false)
+
+  @@unique([playerId, position])
+}
+
+// Série histórica dos atributos do jogador: só ganha uma linha nova quando
+// o scraper traz algum valor diferente da última captura (ver import).
+model PlayerRating {
+  id       String @id @default(uuid()) @db.Uuid
+  playerId String @db.Uuid
+  player   Player @relation(fields: [playerId], references: [id])
+
+  // Momento em que o scraper coletou esta versão dos dados (não a data do import).
+  capturedAt      DateTime
+  overallRating   Int
+  skillMoves      Int
+  weakFootAbility Int
+
+  // Categorias agregadas (PAC/SHO/PAS/DRI/DEF/PHY)
+  pac Int
+  sho Int
+  pas Int
+  dri Int
+  def Int
+  phy Int
+
+  // Atributos detalhados
+  acceleration       Int
+  agility            Int
+  jumping            Int
+  stamina            Int
+  strength           Int
+  aggression         Int
+  balance            Int
+  ballControl        Int
+  composure          Int
+  crossing           Int
+  curve              Int
+  defensiveAwareness Int
+  dribbling          Int
+  finishing          Int
+  freeKickAccuracy   Int
+  headingAccuracy    Int
+  interceptions      Int
+  longPassing        Int
+  longShots          Int
+  penalties          Int
+  positioning        Int
+  reactions          Int
+  shortPassing       Int
+  shotPower          Int
+  slidingTackle      Int
+  sprintSpeed        Int
+  standingTackle     Int
+  vision             Int
+  volleys            Int
+
+  // Atributos de goleiro (presentes em todo jogador, baixos para linha de campo)
+  gkDiving      Int
+  gkHandling    Int
+  gkKicking     Int
+  gkPositioning Int
+  gkReflexes    Int
+
+  @@index([playerId, capturedAt])
+}
