@@ -2,9 +2,11 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -17,6 +19,7 @@ import {
   ImportPlayersDto,
   ImportPlayersSchema,
 } from './dto/import-players.schema';
+import { ListPlayersQuery, ListPlayersSchema } from './dto/list-players.schema';
 import { PlayersService } from './players.service';
 
 interface UploadedJsonFile {
@@ -31,6 +34,13 @@ const MAX_IMPORT_FILE_SIZE = 50 * 1024 * 1024;
 @UseGuards(SessionAuthGuard, AdminGuard)
 export class PlayersController {
   constructor(private readonly playersService: PlayersService) {}
+
+  @Get()
+  async list(
+    @Query(new ZodValidationPipe(ListPlayersSchema)) query: ListPlayersQuery,
+  ) {
+    return this.playersService.list(query);
+  }
 
   @Post('import')
   @HttpCode(HttpStatus.OK)
