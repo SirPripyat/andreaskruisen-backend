@@ -57,6 +57,8 @@ model Team {
   league   League @relation(fields: [leagueId], references: [id])
 
   players Player[]
+  squads  Squad[]
+  seasonAssignments PlayerTeamAssignment[]
 
   @@index([name])
 }
@@ -78,6 +80,7 @@ model Player {
 
   positions PlayerPosition[]
   ratings   PlayerRating[]
+  seasonAssignments PlayerTeamAssignment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -163,6 +166,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   sessions Session[]
+  squads   Squad[]
 }
 
 model Session {
@@ -174,4 +178,50 @@ model Session {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+// Uma temporada funciona como o "tenant" da liga: todo estado de elenco e
+// transferência pertence a uma temporada. Uma nova temporada começa com os
+// jogadores nos times reais (vindos do scraper) — ver PlayerTeamAssignment.
+model Season {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  startedAt DateTime @default(now())
+
+  squads      Squad[]
+  assignments PlayerTeamAssignment[]
+}
+
+// O elenco de um participante numa temporada: o time real que ele escolheu
+// representar. Os jogadores do elenco são derivados via PlayerTeamAssignment
+// (quem está "no time X" dentro dessa temporada), não guardados aqui.
+model Squad {
+  id       String @id @default(uuid()) @db.Uuid
+  seasonId String @db.Uuid
+  season   Season @relation(fields: [seasonId], references: [id])
+  userId   String @db.Uuid
+  user     User   @relation(fields: [userId], references: [id])
+  teamId   String @db.Uuid
+  team     Team   @relation(fields: [teamId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([seasonId, userId])
+  @@unique([seasonId, teamId])
+}
+
+// "Foto", dentro de uma temporada, de qual time cada jogador defende na liga.
+// Criada a partir do Player.teamId real quando a temporada começa; trocas
+// (Transferência, etapa futura) alteram só essa foto, nunca o Player.teamId.
+model PlayerTeamAssignment {
+  id       String @id @default(uuid()) @db.Uuid
+  seasonId String @db.Uuid
+  season   Season @relation(fields: [seasonId], references: [id])
+  playerId String @db.Uuid
+  player   Player @relation(fields: [playerId], references: [id])
+  teamId   String @db.Uuid
+  team     Team   @relation(fields: [teamId], references: [id])
+
+  @@unique([seasonId, playerId])
+  @@index([seasonId, teamId])
 }
