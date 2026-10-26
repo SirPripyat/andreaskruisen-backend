@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { z } from 'zod';
+import { PaginatedResult } from '../commons/pagination';
 import { importPlayers, PlayerImportSummary } from '../import/player-import';
 import { ScraperPlayerSchema } from '../import/scraper-player.schema';
 import { PrismaService } from '../prisma';
@@ -19,14 +20,6 @@ export interface PlayerListItem {
   latestRating: { overallRating: number; capturedAt: Date } | null;
 }
 
-export interface PaginatedPlayers {
-  data: PlayerListItem[];
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
-}
-
 @Injectable()
 export class PlayersService {
   constructor(
@@ -34,16 +27,17 @@ export class PlayersService {
     private readonly playersRepository: PlayersRepository,
   ) {}
 
-  async list(query: ListPlayersQuery): Promise<PaginatedPlayers> {
-    const skip = (query.page - 1) * query.pageSize;
-    const { total, players } = await this.playersRepository.findPaginated({
-      name: query.name,
-      skip,
-      take: query.pageSize,
-    });
+  async list(
+    query: ListPlayersQuery,
+  ): Promise<PaginatedResult<PlayerListItem>> {
+    const result = await this.playersRepository.findPaginated(
+      { name: query.name },
+      query,
+    );
 
     return {
-      data: players.map((player) => ({
+      ...result,
+      data: result.data.map((player) => ({
         id: player.id,
         eaId: player.eaId,
         name: player.name,
@@ -71,10 +65,6 @@ export class PlayersService {
             }
           : null,
       })),
-      page: query.page,
-      pageSize: query.pageSize,
-      total,
-      totalPages: Math.ceil(total / query.pageSize),
     };
   }
 

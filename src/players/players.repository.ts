@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { PrismaClient } from '../../generated/prisma/client';
+import { PaginationQuery, paginate } from '../commons/pagination';
 
 @Injectable()
 export class PlayersRepository {
@@ -11,27 +12,27 @@ export class PlayersRepository {
     >,
   ) {}
 
-  async findPaginated(params: { name?: string; skip: number; take: number }) {
-    const where = params.name
-      ? { name: { contains: params.name, mode: 'insensitive' as const } }
+  findPaginated(filter: { name?: string }, pagination: PaginationQuery) {
+    const where = filter.name
+      ? { name: { contains: filter.name, mode: 'insensitive' as const } }
       : {};
 
-    const [total, players] = await Promise.all([
-      this.txHost.tx.player.count({ where }),
-      this.txHost.tx.player.findMany({
-        where,
-        skip: params.skip,
-        take: params.take,
-        orderBy: { name: 'asc' },
-        include: {
-          team: true,
-          nationality: true,
-          positions: true,
-          ratings: { orderBy: { capturedAt: 'desc' }, take: 1 },
-        },
-      }),
-    ]);
-
-    return { total, players };
+    return paginate(
+      () => this.txHost.tx.player.count({ where }),
+      ({ skip, take }) =>
+        this.txHost.tx.player.findMany({
+          where,
+          skip,
+          take,
+          orderBy: { name: 'asc' },
+          include: {
+            team: true,
+            nationality: true,
+            positions: true,
+            ratings: { orderBy: { capturedAt: 'desc' }, take: 1 },
+          },
+        }),
+      pagination,
+    );
   }
 }
