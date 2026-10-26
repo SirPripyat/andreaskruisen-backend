@@ -201,6 +201,10 @@ model Season {
   id        String   @id @default(uuid()) @db.Uuid
   name      String   @unique
   startedAt DateTime @default(now())
+  // Temporada em que o app está operando agora. No máximo uma por vez — o
+  // service sempre desmarca as outras antes de marcar uma nova (ver
+  // SeasonsService.selectActive), dentro de uma transação.
+  isActive  Boolean  @default(false)
 
   squads      Squad[]
   assignments PlayerTeamAssignment[]

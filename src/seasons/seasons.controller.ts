@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import { CreateSeason, CreateSeasonSchema } from './dto/create-season.schema';
@@ -12,5 +12,20 @@ export class SeasonsController {
   @Post()
   start(@Body(new ZodValidationPipe(CreateSeasonSchema)) dto: CreateSeason) {
     return this.seasonsService.start(dto);
+  }
+
+  @Get()
+  findAll() {
+    return this.seasonsService.findAll();
+  }
+
+  @Get('active')
+  getActive() {
+    return this.seasonsService.getActive();
+  }
+
+  @Post(':id/select')
+  select(@Param('id') id: string) {
+    return this.seasonsService.selectActive(id);
   }
 }

@@ -20,8 +20,28 @@ export class SeasonsRepository {
     return this.txHost.tx.season.create({ data });
   }
 
+  findAll(): Promise<Season[]> {
+    return this.txHost.tx.season.findMany({ orderBy: { startedAt: 'desc' } });
+  }
+
   findById(id: string): Promise<Season | null> {
     return this.txHost.tx.season.findUnique({ where: { id } });
+  }
+
+  findActive(): Promise<Season | null> {
+    return this.txHost.tx.season.findFirst({ where: { isActive: true } });
+  }
+
+  async setActive(id: string): Promise<Season> {
+    await this.txHost.tx.season.updateMany({
+      where: { isActive: true },
+      data: { isActive: false },
+    });
+
+    return this.txHost.tx.season.update({
+      where: { id },
+      data: { isActive: true },
+    });
   }
 
   async seedPlayerAssignmentsFromRealTeams(seasonId: string): Promise<number> {
