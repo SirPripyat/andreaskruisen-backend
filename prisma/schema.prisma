@@ -158,10 +158,16 @@ model PlayerRating {
   @@index([playerId, capturedAt])
 }
 
+enum UserRole {
+  PARTICIPANT
+  ADMIN
+}
+
 model User {
   id String @id @default(uuid()) @db.Uuid
   name String @unique
   pinHash String
+  role UserRole @default(PARTICIPANT)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

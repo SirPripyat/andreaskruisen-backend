@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { compare } from 'bcrypt';
+import { UserRole } from '../../generated/prisma/client';
 import { UsersRepository } from '../users/users.repository';
 import { Login } from './dto/login.schema';
 import { SessionsRepository } from './sessions.repository';
@@ -10,6 +11,7 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
 export interface AuthenticatedUser {
   id: string;
   name: string;
+  role: UserRole;
 }
 
 @Injectable()
@@ -35,7 +37,11 @@ export class AuthService {
 
     await this.sessionsRepository.create({ token, userId: user.id, expiresAt });
 
-    return { user: { id: user.id, name: user.name }, token, expiresAt };
+    return {
+      user: { id: user.id, name: user.name, role: user.role },
+      token,
+      expiresAt,
+    };
   }
 
   async logout(token: string): Promise<void> {

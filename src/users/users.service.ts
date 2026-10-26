@@ -1,22 +1,26 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { hash } from 'bcrypt';
-import { CreateUser } from './dto/create-user.schema';
+import { CreateUser, CreateUserSchema } from './dto/create-user.schema';
 import { UsersRepository } from './users.repository';
 
 @Injectable()
-export class UsersService {
+export class UsersService implements OnModuleInit {
   constructor(
     private readonly repository: UsersRepository,
     private readonly configService: ConfigService,
   ) {}
 
-  async create(dto: CreateUser) {
-    const pinHash = await hash(
-      dto.pin,
-      Number(this.configService.getOrThrow('SALT_ROUND')),
-    );
+  async onModuleInit() {
+    const defaultUser = CreateUserSchema.parse({
+      name: this.configService.getOrThrow('DEFAULT_USER_NAME'),
+      pin: this.configService.getOrThrow('DEFAULT_USER_PIN'),
+    });
 
+    await this.ensureDefaultAdmin(defaultUser);
+  }
+
+  async create(dto: CreateUser) {
     const userExist = await this.repository.userExist(dto.name);
 
     if (userExist) {
@@ -25,7 +29,28 @@ export class UsersService {
 
     await this.repository.create({
       name: dto.name,
-      pinHash,
+      pinHash: await this.hashPin(dto.pin),
     });
+  }
+
+  async ensureDefaultAdmin(dto: CreateUser) {
+    const user = await this.repository.findByName(dto.name);
+
+    if (!user) {
+      await this.repository.create({
+        name: dto.name,
+        pinHash: await this.hashPin(dto.pin),
+        role: 'ADMIN',
+      });
+      return;
+    }
+
+    if (user.role !== 'ADMIN') {
+      await this.repository.updateRole(user.id, 'ADMIN');
+    }
+  }
+
+  private hashPin(pin: string): Promise<string> {
+    return hash(pin, Number(this.configService.getOrThrow('SALT_ROUND')));
   }
 }

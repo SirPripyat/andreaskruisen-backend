@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { PrismaClient, Session } from '../../generated/prisma/client';
+import { PrismaClient, Session, UserRole } from '../../generated/prisma/client';
 
 @Injectable()
 export class SessionsRepository {
@@ -21,10 +21,12 @@ export class SessionsRepository {
 
   findValidByToken(
     token: string,
-  ): Promise<(Session & { user: { id: string; name: string } }) | null> {
+  ): Promise<
+    (Session & { user: { id: string; name: string; role: UserRole } }) | null
+  > {
     return this.txHost.tx.session.findFirst({
       where: { token, expiresAt: { gt: new Date() } },
-      include: { user: { select: { id: true, name: true } } },
+      include: { user: { select: { id: true, name: true, role: true } } },
     });
   }
 

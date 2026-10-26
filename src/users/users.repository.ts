@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { PrismaClient, User } from '../../generated/prisma/client';
+import { PrismaClient, User, UserRole } from '../../generated/prisma/client';
 
 @Injectable()
 export class UsersRepository {
@@ -11,8 +11,16 @@ export class UsersRepository {
     >,
   ) {}
 
-  create(data: { name: string; pinHash: string }): Promise<User> {
+  create(data: {
+    name: string;
+    pinHash: string;
+    role?: UserRole;
+  }): Promise<User> {
     return this.txHost.tx.user.create({ data });
+  }
+
+  updateRole(id: string, role: UserRole): Promise<User> {
+    return this.txHost.tx.user.update({ where: { id }, data: { role } });
   }
 
   findByName(name: string): Promise<User | null> {
