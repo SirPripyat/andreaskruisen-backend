@@ -32,6 +32,7 @@ export class PlayersService {
   ): Promise<PaginatedResult<PlayerListItem>> {
     const result = await this.playersRepository.findPaginated(
       { name: query.name },
+      { sortBy: query.sortBy, sortOrder: query.sortOrder },
       query,
     );
 

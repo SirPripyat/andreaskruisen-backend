@@ -78,12 +78,20 @@ model Player {
   teamId String @db.Uuid
   team   Team   @relation(fields: [teamId], references: [id])
 
+  // Cópia do overall mais recente (igual ao último PlayerRating), mantida
+  // pela importação só pra permitir ordenar a listagem por overall sem
+  // precisar de uma query correlacionada em PlayerRating (histórico 1:N).
+  latestOverallRating Int
+
   positions PlayerPosition[]
   ratings   PlayerRating[]
   seasonAssignments PlayerTeamAssignment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([latestOverallRating])
 }
 
 model PlayerPosition {

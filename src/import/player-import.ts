@@ -94,6 +94,7 @@ export async function importPlayer(
       preferredFoot: mapPreferredFoot(player.preferredFoot),
       nationalityId,
       teamId,
+      latestOverallRating: player.overallRating,
     },
     update: {
       name: player.name,
@@ -102,6 +103,7 @@ export async function importPlayer(
       preferredFoot: mapPreferredFoot(player.preferredFoot),
       nationalityId,
       teamId,
+      latestOverallRating: player.overallRating,
     },
   });
 
