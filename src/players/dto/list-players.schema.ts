@@ -5,6 +5,6 @@ const PLAYER_SORT_FIELDS = ['name', 'overallRating'] as const;
 
 export const ListPlayersSchema = PaginationSchema.extend({
   name: z.string().trim().min(1).optional(),
-}).merge(createSortSchema(PLAYER_SORT_FIELDS, 'name'));
+}).merge(createSortSchema(PLAYER_SORT_FIELDS, 'overallRating', 'desc'));
 
 export type ListPlayersQuery = z.infer<typeof ListPlayersSchema>;

@@ -8,6 +8,7 @@ export type SortOrder = z.infer<typeof SortOrderSchema>;
 export function createSortSchema<T extends readonly [string, ...string[]]>(
   fields: T,
   defaultField: T[number],
+  defaultOrder: SortOrder = 'asc',
 ) {
   const sortBySchema = z.enum(fields);
 
@@ -17,6 +18,6 @@ export function createSortSchema<T extends readonly [string, ...string[]]>(
   return z.object({
     // biome-ignore lint/suspicious/noExplicitAny: see comment above
     sortBy: sortBySchema.default(defaultField as any),
-    sortOrder: SortOrderSchema.default('asc'),
+    sortOrder: SortOrderSchema.default(defaultOrder),
   });
 }
