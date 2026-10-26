@@ -13,10 +13,10 @@ import {
 // string), então é seguro passar pra Prisma.raw().
 const TEAM_SORT_COLUMN = {
   name: 't.name',
-  overallRating: '"averageOverallRating"',
-  defenseRating: '"averageDefenseRating"',
-  midfieldRating: '"averageMidfieldRating"',
-  attackRating: '"averageAttackRating"',
+  averageOverallRating: '"averageOverallRating"',
+  averageDefenseRating: '"averageDefenseRating"',
+  averageMidfieldRating: '"averageMidfieldRating"',
+  averageAttackRating: '"averageAttackRating"',
 } as const;
 
 export type TeamSortField = keyof typeof TEAM_SORT_COLUMN;
