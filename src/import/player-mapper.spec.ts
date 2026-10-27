@@ -106,8 +106,13 @@ describe('mapPositions', () => {
   });
 
   it('returns only the primary position when there are no alternates', () => {
-    const player = buildPlayer({ positionShort: PositionCode.GOL, alternatePositions: [] });
-    expect(mapPositions(player)).toEqual([{ position: 'GOL', isPrimary: true }]);
+    const player = buildPlayer({
+      positionShort: PositionCode.GOL,
+      alternatePositions: [],
+    });
+    expect(mapPositions(player)).toEqual([
+      { position: 'GOL', isPrimary: true },
+    ]);
   });
 });
 

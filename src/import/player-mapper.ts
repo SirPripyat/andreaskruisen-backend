@@ -1,7 +1,9 @@
 import { PositionCode, PreferredFoot } from '../../generated/prisma/client';
 import type { ScraperPlayer } from './scraper-player.schema';
 
-export function mapPreferredFoot(raw: ScraperPlayer['preferredFoot']): PreferredFoot {
+export function mapPreferredFoot(
+  raw: ScraperPlayer['preferredFoot'],
+): PreferredFoot {
   return raw === 'Destro' ? PreferredFoot.RIGHT : PreferredFoot.LEFT;
 }
 
@@ -22,7 +24,10 @@ export interface PlayerPositionInput {
 export function mapPositions(player: ScraperPlayer): PlayerPositionInput[] {
   return [
     { position: player.positionShort, isPrimary: true },
-    ...player.alternatePositions.map((position) => ({ position, isPrimary: false })),
+    ...player.alternatePositions.map((position) => ({
+      position,
+      isPrimary: false,
+    })),
   ];
 }
 
@@ -74,7 +79,10 @@ export const RATING_FIELD_NAMES = [
   'gkReflexes',
 ] as const;
 
-export type NormalizedRating = Record<(typeof RATING_FIELD_NAMES)[number], number>;
+export type NormalizedRating = Record<
+  (typeof RATING_FIELD_NAMES)[number],
+  number
+>;
 
 export function mapRating(player: ScraperPlayer): NormalizedRating {
   return {
@@ -85,6 +93,9 @@ export function mapRating(player: ScraperPlayer): NormalizedRating {
   };
 }
 
-export function ratingsEqual(a: NormalizedRating, b: NormalizedRating): boolean {
+export function ratingsEqual(
+  a: NormalizedRating,
+  b: NormalizedRating,
+): boolean {
   return RATING_FIELD_NAMES.every((field) => a[field] === b[field]);
 }
