@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "TournamentFormat" ADD VALUE 'GROUP_STAGE_KNOCKOUT';

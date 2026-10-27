@@ -12,6 +12,7 @@ import { PrismaModule, PrismaService } from './prisma';
 import { SeasonsModule } from './seasons/seasons.module';
 import { SquadsModule } from './squads/squads.module';
 import { TeamsModule } from './teams/teams.module';
+import { TournamentsModule } from './tournaments/tournaments.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -36,6 +37,7 @@ import { UsersModule } from './users/users.module';
     SquadsModule,
     PlayersModule,
     TeamsModule,
+    TournamentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

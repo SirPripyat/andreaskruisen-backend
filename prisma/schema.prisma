@@ -59,6 +59,9 @@ model Team {
   players Player[]
   squads  Squad[]
   seasonAssignments PlayerTeamAssignment[]
+  tournamentEntries TournamentTeam[]
+  matchesHome       Match[]                @relation("MatchHomeTeam")
+  matchesAway       Match[]                @relation("MatchAwayTeam")
 
   @@index([name])
 }
@@ -86,6 +89,8 @@ model Player {
   positions PlayerPosition[]
   ratings   PlayerRating[]
   seasonAssignments PlayerTeamAssignment[]
+  goalsScored   Goal[] @relation("GoalScorer")
+  goalsAssisted Goal[] @relation("GoalAssist")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -208,6 +213,7 @@ model Season {
 
   squads      Squad[]
   assignments PlayerTeamAssignment[]
+  tournaments Tournament[]
 }
 
 // O elenco de um participante numa temporada: o time real que ele escolheu
@@ -226,6 +232,113 @@ model Squad {
 
   @@unique([seasonId, userId])
   @@unique([seasonId, teamId])
+}
+
+enum TournamentFormat {
+  GROUP_STAGE
+  KNOCKOUT
+  GROUP_STAGE_KNOCKOUT
+}
+
+// Um torneio dentro de uma temporada, com um conjunto fixo de times (ver
+// TournamentTeam). Nem todo time do torneio tem dono: times sem Squad
+// correspondente na mesma temporada são "máquinas" (CPU).
+model Tournament {
+  id        String           @id @default(uuid()) @db.Uuid
+  seasonId  String           @db.Uuid
+  season    Season           @relation(fields: [seasonId], references: [id])
+  name      String
+  format    TournamentFormat
+  // Limite de times no torneio, validado contra as faixas do formato
+  // (ver TEAM_COUNT_RULES em tournament-format-rules.ts).
+  maxTeams  Int
+  createdAt DateTime         @default(now())
+
+  teams  TournamentTeam[]
+  phases Phase[]
+
+  @@index([seasonId])
+}
+
+// Os times que participam de um torneio. Quem controla cada time (ou se é
+// CPU) não fica aqui: é derivado olhando o Squad dessa temporada pro mesmo
+// teamId (existe Squad = tem dono; não existe = time de máquina).
+model TournamentTeam {
+  id           String     @id @default(uuid()) @db.Uuid
+  tournamentId String     @db.Uuid
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  teamId       String     @db.Uuid
+  team         Team       @relation(fields: [teamId], references: [id])
+
+  @@unique([tournamentId, teamId])
+}
+
+enum PhaseType {
+  GROUP
+  KNOCKOUT
+}
+
+// Uma etapa do torneio (ex.: fase de grupos, semifinal). As partidas de uma
+// fase são todas geradas de uma vez, quando a fase começa; a fase seguinte só
+// é gerada depois que esta termina (os confrontos dependem de quem avançou),
+// então por ora só existe a Phase 1 — gerada já na criação do torneio.
+model Phase {
+  id           String     @id @default(uuid()) @db.Uuid
+  tournamentId String     @db.Uuid
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  type         PhaseType
+  // Posição da fase dentro do torneio (1 = primeira).
+  order        Int
+  name         String
+
+  matches Match[]
+
+  @@unique([tournamentId, order])
+}
+
+// Um confronto entre dois times dentro de uma fase. O placar não é um campo
+// aqui: é sempre derivado da contagem de Goal por time (ver tournaments.service
+// `computeMatchScore`). `playedAt` é o que diferencia "ainda não jogado" de
+// "terminou 0 a 0" — sem ele, as duas situações teriam zero Goal e seriam
+// indistinguíveis.
+model Match {
+  id         String    @id @default(uuid()) @db.Uuid
+  phaseId    String    @db.Uuid
+  phase      Phase     @relation(fields: [phaseId], references: [id])
+  homeTeamId String    @db.Uuid
+  homeTeam   Team      @relation("MatchHomeTeam", fields: [homeTeamId], references: [id])
+  awayTeamId String    @db.Uuid
+  awayTeam   Team      @relation("MatchAwayTeam", fields: [awayTeamId], references: [id])
+  // Preenchido só em fases do tipo GROUP (ex.: "A", "B").
+  groupLabel String?
+  // Rodada (turno) dentro do grupo — todo time joga uma vez por rodada.
+  // Preenchido só em fases do tipo GROUP, igual groupLabel.
+  round      Int?
+  // Quando o resultado foi registrado (null = ainda não jogado).
+  playedAt   DateTime?
+
+  goals Goal[]
+
+  createdAt DateTime @default(now())
+
+  @@index([phaseId])
+}
+
+// Um gol de uma partida. O time que marcou não é guardado diretamente: é
+// sempre o time do `scorer` (não há suporte a gol contra por ora).
+model Goal {
+  id        String  @id @default(uuid()) @db.Uuid
+  matchId   String  @db.Uuid
+  match     Match   @relation(fields: [matchId], references: [id])
+  scorerId  String  @db.Uuid
+  scorer    Player  @relation("GoalScorer", fields: [scorerId], references: [id])
+  // Opcional: nem todo gol tem assistência.
+  assistId  String? @db.Uuid
+  assist    Player? @relation("GoalAssist", fields: [assistId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([matchId])
 }
 
 // "Foto", dentro de uma temporada, de qual time cada jogador defende na liga.
