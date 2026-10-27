@@ -27,6 +27,13 @@ export class UsersRepository {
     return this.txHost.tx.user.findUnique({ where: { name } });
   }
 
+  findMany(): Promise<Array<Pick<User, 'id' | 'name' | 'role'>>> {
+    return this.txHost.tx.user.findMany({
+      select: { id: true, name: true, role: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async userExist(name: string): Promise<boolean> {
     return (await this.findByName(name)) !== null;
   }

@@ -20,6 +20,10 @@ export class UsersService implements OnModuleInit {
     await this.ensureDefaultAdmin(defaultUser);
   }
 
+  findAll() {
+    return this.repository.findMany();
+  }
+
   async create(dto: CreateUser) {
     const userExist = await this.repository.userExist(dto.name);
 
