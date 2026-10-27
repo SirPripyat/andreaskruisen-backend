@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { PrismaClient, Season } from '../../generated/prisma/client';
+import { Prisma, PrismaClient, Season } from '../../generated/prisma/client';
 
 // Postgres recusa queries com mais de 65535 parâmetros bindados; cada linha
 // de PlayerTeamAssignment usa 3 (seasonId, playerId, teamId), então esse
@@ -41,6 +41,38 @@ export class SeasonsRepository {
     return this.txHost.tx.season.update({
       where: { id },
       data: { isActive: true },
+    });
+  }
+
+  update(id: string, data: { name?: string }): Promise<Season> {
+    return this.txHost.tx.season.update({ where: { id }, data });
+  }
+
+  // Exclusão em cascata: nada na season tem referência válida fora dela, então
+  // apagar a season sem limpar os dependentes quebraria a FK constraint.
+  async delete(id: string): Promise<Season> {
+    await this.txHost.tx.tournamentTeam.deleteMany({
+      where: { tournament: { seasonId: id } },
+    });
+    await this.txHost.tx.tournament.deleteMany({ where: { seasonId: id } });
+    await this.txHost.tx.squad.deleteMany({ where: { seasonId: id } });
+    await this.txHost.tx.playerTeamAssignment.deleteMany({
+      where: { seasonId: id },
+    });
+
+    return this.txHost.tx.season.delete({ where: { id } });
+  }
+
+  createSquads(
+    seasonId: string,
+    squads: { userId: string; teamId: string }[],
+  ): Promise<Prisma.BatchPayload> {
+    return this.txHost.tx.squad.createMany({
+      data: squads.map((squad) => ({
+        seasonId,
+        userId: squad.userId,
+        teamId: squad.teamId,
+      })),
     });
   }
 
