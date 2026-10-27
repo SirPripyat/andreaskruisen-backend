@@ -387,6 +387,12 @@ export class TournamentsRepository {
     return this.txHost.tx.match.count({ where: { phaseId, playedAt: null } });
   }
 
+  // Pra saber se uma fase KNOCKOUT é a final (1 só partida) sem carregar as
+  // partidas inteiras — ver TournamentsService.hasActiveTournament.
+  countMatches(phaseId: string): Promise<number> {
+    return this.txHost.tx.match.count({ where: { phaseId } });
+  }
+
   findPhaseById(phaseId: string): Promise<PhaseSummary | null> {
     return this.txHost.tx.phase.findUnique({
       where: { id: phaseId },

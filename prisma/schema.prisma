@@ -56,12 +56,14 @@ model Team {
   leagueId String @db.Uuid
   league   League @relation(fields: [leagueId], references: [id])
 
-  players Player[]
-  squads  Squad[]
-  seasonAssignments PlayerTeamAssignment[]
-  tournamentEntries TournamentTeam[]
-  matchesHome       Match[]                @relation("MatchHomeTeam")
-  matchesAway       Match[]                @relation("MatchAwayTeam")
+  players                 Player[]
+  squads                  Squad[]
+  seasonAssignments       PlayerTeamAssignment[]
+  tournamentEntries       TournamentTeam[]
+  matchesHome             Match[]                @relation("MatchHomeTeam")
+  matchesAway             Match[]                @relation("MatchAwayTeam")
+  transfersAsOutgoingTeam Transfer[]             @relation("TransferOutgoingTeam")
+  transfersAsIncomingTeam Transfer[]             @relation("TransferIncomingTeam")
 
   @@index([name])
 }
@@ -86,11 +88,13 @@ model Player {
   // precisar de uma query correlacionada em PlayerRating (histórico 1:N).
   latestOverallRating Int
 
-  positions PlayerPosition[]
-  ratings   PlayerRating[]
+  positions         PlayerPosition[]
+  ratings           PlayerRating[]
   seasonAssignments PlayerTeamAssignment[]
-  goalsScored   Goal[] @relation("GoalScorer")
-  goalsAssisted Goal[] @relation("GoalAssist")
+  goalsScored       Goal[]                 @relation("GoalScorer")
+  goalsAssisted     Goal[]                 @relation("GoalAssist")
+  transfersOut      Transfer[]             @relation("TransferOutgoingPlayer")
+  transfersIn       Transfer[]             @relation("TransferIncomingPlayer")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -177,15 +181,16 @@ enum UserRole {
 }
 
 model User {
-  id String @id @default(uuid()) @db.Uuid
-  name String @unique
-  pinHash String
-  role UserRole @default(PARTICIPANT)
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  pinHash   String
+  role      UserRole @default(PARTICIPANT)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sessions Session[]
-  squads   Squad[]
+  sessions           Session[]
+  squads             Squad[]
+  transfersRequested Transfer[]
 }
 
 model Session {
@@ -214,6 +219,7 @@ model Season {
   squads      Squad[]
   assignments PlayerTeamAssignment[]
   tournaments Tournament[]
+  transfers   Transfer[]
 }
 
 // O elenco de um participante numa temporada: o time real que ele escolheu
@@ -327,14 +333,14 @@ model Match {
 // Um gol de uma partida. O time que marcou não é guardado diretamente: é
 // sempre o time do `scorer` (não há suporte a gol contra por ora).
 model Goal {
-  id        String  @id @default(uuid()) @db.Uuid
-  matchId   String  @db.Uuid
-  match     Match   @relation(fields: [matchId], references: [id])
-  scorerId  String  @db.Uuid
-  scorer    Player  @relation("GoalScorer", fields: [scorerId], references: [id])
+  id       String  @id @default(uuid()) @db.Uuid
+  matchId  String  @db.Uuid
+  match    Match   @relation(fields: [matchId], references: [id])
+  scorerId String  @db.Uuid
+  scorer   Player  @relation("GoalScorer", fields: [scorerId], references: [id])
   // Opcional: nem todo gol tem assistência.
-  assistId  String? @db.Uuid
-  assist    Player? @relation("GoalAssist", fields: [assistId], references: [id])
+  assistId String? @db.Uuid
+  assist   Player? @relation("GoalAssist", fields: [assistId], references: [id])
 
   createdAt DateTime @default(now())
 
@@ -355,4 +361,32 @@ model PlayerTeamAssignment {
 
   @@unique([seasonId, playerId])
   @@index([seasonId, teamId])
+}
+
+// Log de uma troca de jogadores já concluída. Sem custo por ora (ver
+// PlayerTeamAssignment): a troca só atualiza a "foto" de quem joga em qual
+// time; este registro existe só para dar rastro de auditoria de quem trocou
+// o quê e quando. outgoing/incomingTeamId guardam o time de cada jogador
+// antes da troca, já que PlayerTeamAssignment só guarda o estado atual.
+model Transfer {
+  id       String @id @default(uuid()) @db.Uuid
+  seasonId String @db.Uuid
+  season   Season @relation(fields: [seasonId], references: [id])
+
+  requestedByUserId String @db.Uuid
+  requestedBy       User   @relation(fields: [requestedByUserId], references: [id])
+
+  outgoingPlayerId String @db.Uuid
+  outgoingPlayer   Player @relation("TransferOutgoingPlayer", fields: [outgoingPlayerId], references: [id])
+  outgoingTeamId   String @db.Uuid
+  outgoingTeam     Team   @relation("TransferOutgoingTeam", fields: [outgoingTeamId], references: [id])
+
+  incomingPlayerId String @db.Uuid
+  incomingPlayer   Player @relation("TransferIncomingPlayer", fields: [incomingPlayerId], references: [id])
+  incomingTeamId   String @db.Uuid
+  incomingTeam     Team   @relation("TransferIncomingTeam", fields: [incomingTeamId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([seasonId])
 }

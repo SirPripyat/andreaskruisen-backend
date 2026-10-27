@@ -9,5 +9,6 @@ import { SquadsService } from './squads.service';
   imports: [AuthModule, SeasonsModule],
   controllers: [SquadsController],
   providers: [SquadsService, SquadsRepository],
+  exports: [SquadsRepository],
 })
 export class SquadsModule {}

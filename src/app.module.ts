@@ -13,6 +13,7 @@ import { SeasonsModule } from './seasons/seasons.module';
 import { SquadsModule } from './squads/squads.module';
 import { TeamsModule } from './teams/teams.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
+import { TransfersModule } from './transfers/transfers.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -38,6 +39,7 @@ import { UsersModule } from './users/users.module';
     PlayersModule,
     TeamsModule,
     TournamentsModule,
+    TransfersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -64,6 +64,7 @@ export class SeasonsRepository {
       where: { tournament: { seasonId: id } },
     });
     await this.txHost.tx.tournament.deleteMany({ where: { seasonId: id } });
+    await this.txHost.tx.transfer.deleteMany({ where: { seasonId: id } });
     await this.txHost.tx.squad.deleteMany({ where: { seasonId: id } });
     await this.txHost.tx.playerTeamAssignment.deleteMany({
       where: { seasonId: id },

@@ -241,6 +241,46 @@ export class TournamentsService {
     return this.tournamentsRepository.findBySeason(seasonId);
   }
 
+  // Usado pra travar transferências (ver TransfersService): um torneio está
+  // "ativo" até sua última fase possível terminar. Espelha a mesma condição
+  // de parada de advancePhase/advanceFromGroupStage/advanceKnockoutRound,
+  // sem tocar nos dados (nenhuma fase nova é gerada aqui).
+  async hasActiveTournament(seasonId: string): Promise<boolean> {
+    const tournaments = await this.tournamentsRepository.findBySeason(seasonId);
+
+    for (const tournament of tournaments) {
+      const latestPhase = await this.tournamentsRepository.findLatestPhase(
+        tournament.id,
+      );
+      if (!latestPhase) {
+        return true;
+      }
+
+      const unplayedCount =
+        await this.tournamentsRepository.countUnplayedMatches(latestPhase.id);
+      if (unplayedCount > 0) {
+        return true;
+      }
+
+      if (tournament.format === 'GROUP_STAGE') {
+        continue;
+      }
+
+      if (latestPhase.type === 'GROUP') {
+        return true;
+      }
+
+      const matchCount = await this.tournamentsRepository.countMatches(
+        latestPhase.id,
+      );
+      if (matchCount > 1) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   // GET principal: só o resumo do torneio, sem times nem partidas (ver
   // getSituation e getMatches pra isso).
   async getOne(tournamentId: string): Promise<TournamentSummary> {
