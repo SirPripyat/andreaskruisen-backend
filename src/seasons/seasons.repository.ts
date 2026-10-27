@@ -51,6 +51,15 @@ export class SeasonsRepository {
   // Exclusão em cascata: nada na season tem referência válida fora dela, então
   // apagar a season sem limpar os dependentes quebraria a FK constraint.
   async delete(id: string): Promise<Season> {
+    await this.txHost.tx.goal.deleteMany({
+      where: { match: { phase: { tournament: { seasonId: id } } } },
+    });
+    await this.txHost.tx.match.deleteMany({
+      where: { phase: { tournament: { seasonId: id } } },
+    });
+    await this.txHost.tx.phase.deleteMany({
+      where: { tournament: { seasonId: id } },
+    });
     await this.txHost.tx.tournamentTeam.deleteMany({
       where: { tournament: { seasonId: id } },
     });
