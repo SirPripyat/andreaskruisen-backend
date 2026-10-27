@@ -9,6 +9,16 @@ export interface RosterPlayer {
   photoUrl: string;
 }
 
+export interface SquadWithRelations extends Squad {
+  user: { id: string; name: string };
+  team: {
+    id: string;
+    name: string;
+    crestUrl: string;
+    league: { id: string; name: string };
+  };
+}
+
 @Injectable()
 export class SquadsRepository {
   constructor(
@@ -16,6 +26,23 @@ export class SquadsRepository {
       TransactionalAdapterPrisma<PrismaClient>
     >,
   ) {}
+
+  findAllForSeason(seasonId: string): Promise<SquadWithRelations[]> {
+    return this.txHost.tx.squad.findMany({
+      where: { seasonId },
+      include: {
+        user: { select: { id: true, name: true } },
+        team: {
+          select: {
+            id: true,
+            name: true,
+            crestUrl: true,
+            league: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+  }
 
   create(data: {
     seasonId: string;
@@ -28,6 +55,12 @@ export class SquadsRepository {
   findByUserAndSeason(userId: string, seasonId: string): Promise<Squad | null> {
     return this.txHost.tx.squad.findUnique({
       where: { seasonId_userId: { seasonId, userId } },
+    });
+  }
+
+  findByTeamAndSeason(teamId: string, seasonId: string): Promise<Squad | null> {
+    return this.txHost.tx.squad.findUnique({
+      where: { seasonId_teamId: { seasonId, teamId } },
     });
   }
 
