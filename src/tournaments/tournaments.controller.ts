@@ -73,6 +73,11 @@ export class TournamentsController {
     return this.tournamentsService.getMatches(id, query);
   }
 
+  @Get('tournaments/:id/fixtures')
+  getFixtures(@Param('id') id: string) {
+    return this.tournamentsService.getFixtures(id);
+  }
+
   @Get('tournaments/:id/matches/:matchId')
   getMatchDetail(@Param('id') id: string, @Param('matchId') matchId: string) {
     return this.tournamentsService.getMatchDetail(id, matchId);
@@ -103,9 +108,19 @@ export class TournamentsController {
     return this.tournamentsService.advancePhase(id, phaseId);
   }
 
-  @Get('tournaments/:id/stats')
-  getStats(@Param('id') id: string) {
-    return this.tournamentsService.getStats(id);
+  @Get('tournaments/:id/top-scorers')
+  getTopScorers(@Param('id') id: string) {
+    return this.tournamentsService.getTopScorers(id);
+  }
+
+  @Get('tournaments/:id/top-assists')
+  getTopAssists(@Param('id') id: string) {
+    return this.tournamentsService.getTopAssists(id);
+  }
+
+  @Get('tournaments/:id/dashboard')
+  getDashboard(@Param('id') id: string) {
+    return this.tournamentsService.getDashboard(id);
   }
 
   @Patch('tournaments/:id')

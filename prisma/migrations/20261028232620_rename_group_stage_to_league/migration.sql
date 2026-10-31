@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "TournamentFormat" RENAME VALUE 'GROUP_STAGE' TO 'LEAGUE';

@@ -1,13 +1,13 @@
 import { isValidMaxTeams } from './tournament-format-rules';
 
 describe('isValidMaxTeams', () => {
-  describe('GROUP_STAGE', () => {
+  describe('LEAGUE', () => {
     it.each([4, 8, 12, 16, 20, 24])('aceita %i times', (maxTeams) => {
-      expect(isValidMaxTeams('GROUP_STAGE', maxTeams)).toBe(true);
+      expect(isValidMaxTeams('LEAGUE', maxTeams)).toBe(true);
     });
 
     it.each([3, 10, 25])('rejeita %i times', (maxTeams) => {
-      expect(isValidMaxTeams('GROUP_STAGE', maxTeams)).toBe(false);
+      expect(isValidMaxTeams('LEAGUE', maxTeams)).toBe(false);
     });
   });
 

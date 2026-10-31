@@ -4,7 +4,7 @@ import { isValidMaxTeams } from '../tournament-format-rules';
 export const CreateTournamentSchema = z
   .object({
     name: z.string().min(1),
-    format: z.enum(['GROUP_STAGE', 'KNOCKOUT', 'GROUP_STAGE_KNOCKOUT']),
+    format: z.enum(['LEAGUE', 'KNOCKOUT', 'GROUP_STAGE_KNOCKOUT']),
     maxTeams: z.number().int(),
     // Elenco completo do torneio: precisa estar aqui porque as partidas da
     // primeira fase já são geradas na criação (ver TournamentsService.create).

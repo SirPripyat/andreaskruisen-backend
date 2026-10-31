@@ -241,7 +241,10 @@ model Squad {
 }
 
 enum TournamentFormat {
-  GROUP_STAGE
+  // Liga: todos os times num turno único só (tabela), sem mata-mata — o
+  // campeão é sempre o líder da tabela, por isso não faz sentido dividir em
+  // mais de um grupo (não haveria confronto entre os líderes pra decidir).
+  LEAGUE
   KNOCKOUT
   GROUP_STAGE_KNOCKOUT
 }

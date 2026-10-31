@@ -1,6 +1,7 @@
 export interface GroupStandingTeam {
   id: string;
   name: string;
+  crestUrl: string;
 }
 
 export interface GroupStandingMatch {
@@ -14,6 +15,7 @@ export interface GroupStanding {
   position: number;
   teamId: string;
   teamName: string;
+  teamCrestUrl: string;
   played: number;
   wins: number;
   draws: number;
@@ -76,12 +78,16 @@ export function computeGroupStandings(
   }
 
   const teamNameById = new Map(teams.map((team) => [team.id, team.name]));
+  const teamCrestUrlById = new Map(
+    teams.map((team) => [team.id, team.crestUrl]),
+  );
 
   const standings = [...accumulators.values()].map((acc) => {
     const goalDifference = acc.goalsFor - acc.goalsAgainst;
     return {
       teamId: acc.teamId,
       teamName: teamNameById.get(acc.teamId) ?? '',
+      teamCrestUrl: teamCrestUrlById.get(acc.teamId) ?? '',
       played: acc.played,
       wins: acc.wins,
       draws: acc.draws,

@@ -24,9 +24,11 @@ import {
   GeneratedKnockoutMatch,
   generateGroupStageMatches,
   generateKnockoutMatches,
+  generateLeagueMatches,
   knockoutRoundName,
 } from './match-generation';
 import { simulateMatch } from './match-simulation';
+import { determineChampionTeamId } from './tournament-champion';
 import {
   GroupPhaseMatch,
   MatchWithTeams,
@@ -79,8 +81,8 @@ export interface MatchListItem {
   // null = partida ainda não jogada (ver Match.playedAt).
   homeScore: number | null;
   awayScore: number | null;
-  homeTeam: TeamSummary;
-  awayTeam: TeamSummary;
+  homeTeam: ConfrontoTeam;
+  awayTeam: ConfrontoTeam;
   // true = a fase seguinte já foi gerada a partir desta (ver
   // TournamentsService.advancePhase); resultado não pode mais ser editado.
   locked: boolean;
@@ -88,6 +90,11 @@ export interface MatchListItem {
 
 export interface MatchesPage extends PaginatedResult<MatchListItem> {
   phase: PhaseSummary;
+}
+
+export interface MatchesByPhase {
+  phase: PhaseSummary;
+  matches: MatchListItem[];
 }
 
 export interface MatchPlayerOption {
@@ -126,9 +133,36 @@ export interface GoalLeader {
   count: number;
 }
 
-export interface TournamentStats {
-  topScorers: GoalLeader[];
-  topAssists: GoalLeader[];
+export interface NextMatchSummary {
+  id: string;
+  phaseName: string;
+  groupLabel: string | null;
+  round: number | null;
+  homeTeam: TeamSummary;
+  awayTeam: TeamSummary;
+}
+
+export interface TournamentDashboard {
+  name: string;
+  format: TournamentFormat;
+  maxTeams: number;
+  createdAt: Date;
+  // Fase em que o torneio está agora (a de maior order).
+  currentPhase: PhaseSummary | null;
+  totalMatches: number;
+  playedMatches: number;
+  remainingMatches: number;
+  topScorer: GoalLeader | null;
+  topAssist: GoalLeader | null;
+  nextMatch: NextMatchSummary | null;
+}
+
+export interface TeamTitle {
+  tournamentId: string;
+  tournamentName: string;
+  format: TournamentFormat;
+  seasonId: string;
+  seasonName: string;
 }
 
 // Deriva o placar a partir de quem marcou cada gol — Match não guarda
@@ -153,6 +187,7 @@ function computeMatchScore(
 function toMatchListItem(
   match: MatchWithTeams,
   locked: boolean,
+  ownerByTeamId: Map<string, TeamOwner>,
 ): MatchListItem {
   const score = match.playedAt
     ? computeMatchScore(
@@ -168,8 +203,14 @@ function toMatchListItem(
     round: match.round,
     homeScore: score?.homeGoals ?? null,
     awayScore: score?.awayGoals ?? null,
-    homeTeam: match.homeTeam,
-    awayTeam: match.awayTeam,
+    homeTeam: {
+      ...match.homeTeam,
+      owner: ownerByTeamId.get(match.homeTeam.id) ?? null,
+    },
+    awayTeam: {
+      ...match.awayTeam,
+      owner: ownerByTeamId.get(match.awayTeam.id) ?? null,
+    },
     locked,
   };
 }
@@ -220,21 +261,56 @@ export class TournamentsService {
     }
 
     const shuffledTeamIds = shuffle(dto.teamIds);
-    const isKnockout = dto.format === 'KNOCKOUT';
 
+    const firstPhase = this.buildFirstPhase(dto.format, shuffledTeamIds);
     await this.tournamentsRepository.createPhaseWithMatches({
       tournamentId: tournament.id,
-      type: isKnockout ? 'KNOCKOUT' : 'GROUP',
       order: 1,
-      name: isKnockout
-        ? knockoutRoundName(shuffledTeamIds.length, 1)
-        : 'Fase de grupos',
-      matches: isKnockout
-        ? generateKnockoutMatches(shuffledTeamIds)
-        : generateGroupStageMatches(shuffledTeamIds),
+      ...firstPhase,
     });
 
     return tournament;
+  }
+
+  // Primeira fase do torneio, de acordo com o formato: LEAGUE é um turno
+  // único com todos os times numa tabela só (sem mata-mata depois, ver
+  // determineChampionTeamId); GROUP_STAGE_KNOCKOUT divide em grupos de 4,
+  // cuja classificação alimenta o mata-mata gerado em advanceFromGroupStage;
+  // KNOCKOUT já começa direto no mata-mata.
+  private buildFirstPhase(
+    format: TournamentFormat,
+    shuffledTeamIds: string[],
+  ): {
+    type: 'GROUP' | 'KNOCKOUT';
+    name: string;
+    matches: {
+      homeTeamId: string;
+      awayTeamId: string;
+      groupLabel?: string;
+      round?: number;
+    }[];
+  } {
+    if (format === 'KNOCKOUT') {
+      return {
+        type: 'KNOCKOUT',
+        name: knockoutRoundName(shuffledTeamIds.length, 1),
+        matches: generateKnockoutMatches(shuffledTeamIds),
+      };
+    }
+
+    if (format === 'GROUP_STAGE_KNOCKOUT') {
+      return {
+        type: 'GROUP',
+        name: 'Fase de grupos',
+        matches: generateGroupStageMatches(shuffledTeamIds),
+      };
+    }
+
+    return {
+      type: 'GROUP',
+      name: 'Liga',
+      matches: generateLeagueMatches(shuffledTeamIds),
+    };
   }
 
   findBySeason(seasonId: string): Promise<Tournament[]> {
@@ -262,7 +338,7 @@ export class TournamentsService {
         return true;
       }
 
-      if (tournament.format === 'GROUP_STAGE') {
+      if (tournament.format === 'LEAGUE') {
         continue;
       }
 
@@ -352,7 +428,7 @@ export class TournamentsService {
     tournamentId: string,
     query: ListMatchesQuery,
   ): Promise<MatchesPage> {
-    await this.findOrThrow(tournamentId);
+    const tournament = await this.findOrThrow(tournamentId);
 
     const phase = query.round
       ? await this.tournamentsRepository.findPhaseByOrder(
@@ -377,12 +453,65 @@ export class TournamentsService {
       tournamentId,
       phase.order,
     );
+    const ownerByTeamId = await this.tournamentsRepository.findOwnersByTeamIds(
+      [
+        ...new Set(
+          result.data.flatMap((m) => [m.homeTeam.id, m.awayTeam.id]),
+        ),
+      ],
+      tournament.seasonId,
+    );
 
     return {
       phase,
       ...result,
-      data: result.data.map((match) => toMatchListItem(match, locked)),
+      data: result.data.map((match) =>
+        toMatchListItem(match, locked, ownerByTeamId),
+      ),
     };
+  }
+
+  // Histórico completo de partidas do torneio, por fase (grupos e depois
+  // mata-mata), já com dono do time e travamento resolvidos. Substitui o
+  // front buscar cada fase separadamente em /matches?round=N e juntar o
+  // resultado — mesma ideia de centralização de getDashboard.
+  async getFixtures(tournamentId: string): Promise<MatchesByPhase[]> {
+    const tournament = await this.findOrThrow(tournamentId);
+
+    const phases =
+      await this.tournamentsRepository.findPhasesByTournament(tournamentId);
+    if (phases.length === 0) {
+      return [];
+    }
+
+    const matchesByPhase = await Promise.all(
+      phases.map((phase) =>
+        this.tournamentsRepository.findMatchesByPhase(phase.id),
+      ),
+    );
+
+    // Só a última fase (maior order) ainda pode ter resultado editado — ver
+    // hasLaterPhase, cuja condição é equivalente aqui já que `phases` está
+    // ordenada por order.
+    const latestOrder = phases[phases.length - 1].order;
+
+    const ownerByTeamId = await this.tournamentsRepository.findOwnersByTeamIds(
+      [
+        ...new Set(
+          matchesByPhase
+            .flat()
+            .flatMap((match) => [match.homeTeam.id, match.awayTeam.id]),
+        ),
+      ],
+      tournament.seasonId,
+    );
+
+    return phases.map((phase, index) => ({
+      phase,
+      matches: matchesByPhase[index].map((match) =>
+        toMatchListItem(match, phase.order < latestOrder, ownerByTeamId),
+      ),
+    }));
   }
 
   // Detalhe de uma partida pro drawer de registro de gols: times com elenco
@@ -540,21 +669,32 @@ export class TournamentsService {
     return this.getMatchDetail(tournamentId, matchId);
   }
 
-  // Ranking agregado do torneio inteiro (todas as fases) — artilheiros e
-  // assistências, top 10.
-  async getStats(tournamentId: string): Promise<TournamentStats> {
+  // Ranking de artilheiros do torneio inteiro (todas as fases), top 10.
+  async getTopScorers(tournamentId: string): Promise<GoalLeader[]> {
     await this.findOrThrow(tournamentId);
 
-    const [topScorers, topAssists] = await Promise.all([
-      this.tournamentsRepository.findTopScorers(tournamentId, TOP_STATS_LIMIT),
-      this.tournamentsRepository.findTopAssists(tournamentId, TOP_STATS_LIMIT),
-    ]);
+    const topScorers = await this.tournamentsRepository.findTopScorers(
+      tournamentId,
+      TOP_STATS_LIMIT,
+    );
+    return this.resolveGoalLeaders(topScorers);
+  }
 
-    const playerIds = [
-      ...new Set(
-        [...topScorers, ...topAssists].map((leader) => leader.playerId),
-      ),
-    ];
+  // Ranking de assistências do torneio inteiro (todas as fases), top 10.
+  async getTopAssists(tournamentId: string): Promise<GoalLeader[]> {
+    await this.findOrThrow(tournamentId);
+
+    const topAssists = await this.tournamentsRepository.findTopAssists(
+      tournamentId,
+      TOP_STATS_LIMIT,
+    );
+    return this.resolveGoalLeaders(topAssists);
+  }
+
+  private async resolveGoalLeaders(
+    leaders: { playerId: string; count: number }[],
+  ): Promise<GoalLeader[]> {
+    const playerIds = [...new Set(leaders.map((leader) => leader.playerId))];
     const players =
       await this.tournamentsRepository.findPlayersByIds(playerIds);
     const playerById = new Map(players.map((player) => [player.id, player]));
@@ -563,26 +703,106 @@ export class TournamentsService {
     const teams = await this.tournamentsRepository.findTeamsByIds(teamIds);
     const teamById = new Map(teams.map((team) => [team.id, team]));
 
-    const toLeader = (leader: {
-      playerId: string;
-      count: number;
-    }): GoalLeader | null => {
-      const player = playerById.get(leader.playerId);
-      const team = player && teamById.get(player.teamId);
-      if (!player || !team) {
-        return null;
-      }
-      return { player: toPlayerOption(player), team, count: leader.count };
-    };
+    return leaders
+      .map((leader): GoalLeader | null => {
+        const player = playerById.get(leader.playerId);
+        const team = player && teamById.get(player.teamId);
+        if (!player || !team) {
+          return null;
+        }
+        return { player: toPlayerOption(player), team, count: leader.count };
+      })
+      .filter((leader): leader is GoalLeader => leader !== null);
+  }
+
+  // Resumo pro dashboard do torneio: progresso de jogos da fase atual,
+  // artilheiro/garçom geral e a próxima partida pendente — antes calculado no
+  // front em cima de /matches e /stats, centralizado aqui.
+  async getDashboard(tournamentId: string): Promise<TournamentDashboard> {
+    const tournament = await this.findOrThrow(tournamentId);
+
+    const currentPhase =
+      await this.tournamentsRepository.findLatestPhase(tournamentId);
+    const matches = currentPhase
+      ? await this.tournamentsRepository.findMatchesByPhase(currentPhase.id)
+      : [];
+
+    // Times sem Squad na temporada são CPU — a próxima partida só interessa
+    // pro dashboard se pelo menos um dos lados tiver um dono real.
+    const ownerByTeamId = await this.tournamentsRepository.findOwnersByTeamIds(
+      [...new Set(matches.flatMap((m) => [m.homeTeam.id, m.awayTeam.id]))],
+      tournament.seasonId,
+    );
+    // findMatchesByPhase já ordena por createdAt/id — a primeira sem
+    // playedAt entre os confrontos com dono é a próxima partida a disputar.
+    const nextMatch = matches.find(
+      (match) =>
+        match.playedAt === null &&
+        (ownerByTeamId.has(match.homeTeam.id) ||
+          ownerByTeamId.has(match.awayTeam.id)),
+    );
+
+    const [topScorer] = await this.tournamentsRepository.findTopScorers(
+      tournamentId,
+      1,
+    );
+    const [topAssist] = await this.tournamentsRepository.findTopAssists(
+      tournamentId,
+      1,
+    );
+    const [topScorerLeader, topAssistLeader] = await Promise.all([
+      topScorer ? this.resolveGoalLeader(topScorer) : null,
+      topAssist ? this.resolveGoalLeader(topAssist) : null,
+    ]);
+
+    const playedMatches = matches.filter(
+      (match) => match.playedAt !== null,
+    ).length;
 
     return {
-      topScorers: topScorers
-        .map(toLeader)
-        .filter((leader): leader is GoalLeader => leader !== null),
-      topAssists: topAssists
-        .map(toLeader)
-        .filter((leader): leader is GoalLeader => leader !== null),
+      name: tournament.name,
+      format: tournament.format,
+      maxTeams: tournament.maxTeams,
+      createdAt: tournament.createdAt,
+      currentPhase,
+      totalMatches: matches.length,
+      playedMatches,
+      remainingMatches: matches.length - playedMatches,
+      topScorer: topScorerLeader,
+      topAssist: topAssistLeader,
+      nextMatch:
+        nextMatch && currentPhase
+          ? {
+              id: nextMatch.id,
+              phaseName: currentPhase.name,
+              groupLabel: nextMatch.groupLabel,
+              round: nextMatch.round,
+              homeTeam: nextMatch.homeTeam,
+              awayTeam: nextMatch.awayTeam,
+            }
+          : null,
     };
+  }
+
+  private async resolveGoalLeader(leader: {
+    playerId: string;
+    count: number;
+  }): Promise<GoalLeader | null> {
+    const [player] = await this.tournamentsRepository.findPlayersByIds([
+      leader.playerId,
+    ]);
+    if (!player) {
+      return null;
+    }
+
+    const [team] = await this.tournamentsRepository.findTeamsByIds([
+      player.teamId,
+    ]);
+    if (!team) {
+      return null;
+    }
+
+    return { player: toPlayerOption(player), team, count: leader.count };
   }
 
   async update(
@@ -760,7 +980,7 @@ export class TournamentsService {
     await this.advanceKnockoutRound(tournamentId, phase);
   }
 
-  // Torneio GROUP_STAGE não tem próxima fase; só GROUP_STAGE_KNOCKOUT gera o
+  // Torneio LEAGUE não tem próxima fase; só GROUP_STAGE_KNOCKOUT gera o
   // mata-mata com os 2 primeiros de cada grupo. Chaveamento: o 1º de cada
   // grupo enfrenta o 2º do grupo seguinte (nunca o do próprio grupo), numa
   // lista de grupos ordenada por groupLabel.
@@ -858,5 +1078,70 @@ export class TournamentsService {
       throw new NotFoundException('Torneio não encontrado');
     }
     return tournament;
+  }
+
+  // Campeão da fase atual do torneio, ou null se ele ainda está em
+  // andamento ou não tem como ter um campeão único (ver regras em
+  // determineChampionTeamId). Usado por getTitlesForTeam; não é exposto
+  // direto num endpoint porque sozinho não diz a quem pertence o título.
+  async getChampionTeamId(tournamentId: string): Promise<string | null> {
+    const tournament = await this.findOrThrow(tournamentId);
+    const latestPhase =
+      await this.tournamentsRepository.findLatestPhase(tournamentId);
+    if (!latestPhase) {
+      return null;
+    }
+
+    const unplayedCount = await this.tournamentsRepository.countUnplayedMatches(
+      latestPhase.id,
+    );
+    const isLatestPhaseFullyPlayed = unplayedCount === 0;
+
+    if (latestPhase.type === 'KNOCKOUT') {
+      const matches = await this.tournamentsRepository.findMatchesByPhase(
+        latestPhase.id,
+      );
+      return determineChampionTeamId({
+        format: tournament.format,
+        isLatestPhaseFullyPlayed,
+        latestPhaseType: 'KNOCKOUT',
+        knockoutMatches: matches.map((match) => ({
+          homeTeamId: match.homeTeam.id,
+          awayTeamId: match.awayTeam.id,
+          goalScorerTeamIds: match.goalScorerTeamIds,
+        })),
+      });
+    }
+
+    const groupMatches = await this.tournamentsRepository.findGroupMatches(
+      latestPhase.id,
+    );
+    const standingsByGroup = await this.buildStandingsByGroup(groupMatches);
+    return determineChampionTeamId({
+      format: tournament.format,
+      isLatestPhaseFullyPlayed,
+      latestPhaseType: 'GROUP',
+      standingsByGroup,
+    });
+  }
+
+  // Histórico de títulos de um time (independente de quem o comandou em
+  // cada temporada, já que TournamentTeam aponta pro Team real — ver
+  // schema). Percorre todos os torneios de que o time já participou, em
+  // qualquer temporada, e verifica se ele foi o campeão de cada um.
+  async getTitlesForTeam(teamId: string): Promise<TeamTitle[]> {
+    const tournaments =
+      await this.tournamentsRepository.findTournamentsByTeam(teamId);
+
+    const titles: TeamTitle[] = [];
+    for (const tournament of tournaments) {
+      const championTeamId = await this.getChampionTeamId(
+        tournament.tournamentId,
+      );
+      if (championTeamId === teamId) {
+        titles.push(tournament);
+      }
+    }
+    return titles;
   }
 }

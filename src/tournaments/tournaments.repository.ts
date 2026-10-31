@@ -194,6 +194,40 @@ export class TournamentsRepository {
     });
   }
 
+  // Torneios de que um time (real, não o elenco de um participante numa
+  // temporada) já participou, em qualquer temporada — ver TeamsService
+  // getTitles. TournamentTeam aponta direto pro Team, então isso cobre o
+  // histórico completo do clube, independente de quem o controlou.
+  async findTournamentsByTeam(teamId: string): Promise<
+    {
+      tournamentId: string;
+      tournamentName: string;
+      format: TournamentFormat;
+      seasonId: string;
+      seasonName: string;
+    }[]
+  > {
+    const tournaments = await this.txHost.tx.tournament.findMany({
+      where: { teams: { some: { teamId } } },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        format: true,
+        seasonId: true,
+        season: { select: { name: true } },
+      },
+    });
+
+    return tournaments.map((tournament) => ({
+      tournamentId: tournament.id,
+      tournamentName: tournament.name,
+      format: tournament.format,
+      seasonId: tournament.seasonId,
+      seasonName: tournament.season.name,
+    }));
+  }
+
   createTeams(
     tournamentId: string,
     teamIds: string[],
@@ -272,6 +306,16 @@ export class TournamentsRepository {
   ): Promise<PhaseSummary | null> {
     return this.txHost.tx.phase.findUnique({
       where: { tournamentId_order: { tournamentId, order } },
+      select: { id: true, type: true, order: true, name: true },
+    });
+  }
+
+  // Todas as fases do torneio, da primeira à atual — usado em getFixtures
+  // pra montar o histórico completo de uma vez, sem uma query por fase.
+  findPhasesByTournament(tournamentId: string): Promise<PhaseSummary[]> {
+    return this.txHost.tx.phase.findMany({
+      where: { tournamentId },
+      orderBy: { order: 'asc' },
       select: { id: true, type: true, order: true, name: true },
     });
   }

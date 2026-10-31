@@ -1,10 +1,10 @@
 import { computeGroupStandings, GroupStandingMatch } from './group-standings';
 
 const teams = [
-  { id: 't1', name: 'Ajax' },
-  { id: 't2', name: 'Barcelona' },
-  { id: 't3', name: 'Chelsea' },
-  { id: 't4', name: 'Dortmund' },
+  { id: 't1', name: 'Ajax', crestUrl: 'https://example.com/ajax.png' },
+  { id: 't2', name: 'Barcelona', crestUrl: 'https://example.com/barcelona.png' },
+  { id: 't3', name: 'Chelsea', crestUrl: 'https://example.com/chelsea.png' },
+  { id: 't4', name: 'Dortmund', crestUrl: 'https://example.com/dortmund.png' },
 ];
 
 describe('computeGroupStandings', () => {
@@ -67,6 +67,7 @@ describe('computeGroupStandings', () => {
     const ajax = standings[0];
     expect(ajax).toMatchObject({
       teamId: 't1',
+      teamCrestUrl: 'https://example.com/ajax.png',
       played: 3,
       wins: 2,
       draws: 1,

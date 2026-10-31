@@ -14,26 +14,65 @@ export interface GeneratedKnockoutMatch {
 
 const GROUP_SIZE = 4;
 
-// Turno único pra 4 times (método do círculo, com o time 0 fixo): cada
-// time joga exatamente uma vez por rodada e todo par se enfrenta uma vez
-// ao fim das 3 rodadas. Índices são posições dentro do grupo (0 a 3).
-const GROUP_ROUND_PAIRINGS: [number, number][][] = [
-  [
-    [0, 3],
-    [1, 2],
-  ],
-  [
-    [0, 2],
-    [3, 1],
-  ],
-  [
-    [0, 1],
-    [2, 3],
-  ],
-];
+// Turno único pelo método do círculo, com o time 0 fixo: cada time joga
+// exatamente uma vez por rodada e todo par se enfrenta uma vez ao fim de
+// N-1 rodadas. Índices são posições dentro da lista recebida (0 a N-1); N
+// precisa ser par.
+function roundRobinPairings(teamsCount: number): [number, number][][] {
+  const positions = Array.from({ length: teamsCount }, (_, i) => i);
+  const half = teamsCount / 2;
+  const rounds: [number, number][][] = [];
 
-// Times já devem vir embaralhados pra quem chama; aqui a montagem de
-// grupos/confrontos é determinística, pra ficar fácil de testar.
+  for (let round = 0; round < teamsCount - 1; round++) {
+    const pairings: [number, number][] = [];
+    for (let i = 0; i < half; i++) {
+      pairings.push([positions[i], positions[teamsCount - 1 - i]]);
+    }
+    rounds.push(pairings);
+
+    // Rotaciona mantendo positions[0] fixo, pra montar a rodada seguinte.
+    const last = positions[teamsCount - 1];
+    for (let i = teamsCount - 1; i > 1; i--) {
+      positions[i] = positions[i - 1];
+    }
+    positions[1] = last;
+  }
+
+  return rounds;
+}
+
+function roundRobinMatches(
+  teamIds: string[],
+  groupLabel: string,
+): GeneratedGroupMatch[] {
+  const matches: GeneratedGroupMatch[] = [];
+
+  roundRobinPairings(teamIds.length).forEach((pairings, roundIndex) => {
+    for (const [home, away] of pairings) {
+      matches.push({
+        groupLabel,
+        round: roundIndex + 1,
+        homeTeamId: teamIds[home],
+        awayTeamId: teamIds[away],
+      });
+    }
+  });
+
+  return matches;
+}
+
+// Liga: turno único com todos os times numa tabela só (ver LEAGUE em
+// tournament-format-rules.ts) — por isso um único groupLabel.
+// Times já devem vir embaralhados pra quem chama; aqui a montagem dos
+// confrontos é determinística, pra ficar fácil de testar.
+export function generateLeagueMatches(teamIds: string[]): GeneratedGroupMatch[] {
+  return roundRobinMatches(teamIds, 'A');
+}
+
+// Fase de grupos do GROUP_STAGE_KNOCKOUT: turno único dentro de cada grupo
+// de 4 times, rotulados A, B, C... Times já devem vir embaralhados pra quem
+// chama; aqui a montagem de grupos/confrontos é determinística, pra ficar
+// fácil de testar.
 export function generateGroupStageMatches(
   teamIds: string[],
 ): GeneratedGroupMatch[] {
@@ -42,17 +81,7 @@ export function generateGroupStageMatches(
   for (let i = 0; i < teamIds.length; i += GROUP_SIZE) {
     const group = teamIds.slice(i, i + GROUP_SIZE);
     const groupLabel = groupLabelForIndex(i / GROUP_SIZE);
-
-    GROUP_ROUND_PAIRINGS.forEach((pairings, roundIndex) => {
-      for (const [home, away] of pairings) {
-        matches.push({
-          groupLabel,
-          round: roundIndex + 1,
-          homeTeamId: group[home],
-          awayTeamId: group[away],
-        });
-      }
-    });
+    matches.push(...roundRobinMatches(group, groupLabel));
   }
 
   return matches;
