@@ -34,7 +34,20 @@ export class UsersRepository {
     });
   }
 
+  findById(id: string): Promise<User | null> {
+    return this.txHost.tx.user.findUnique({ where: { id } });
+  }
+
   async userExist(name: string): Promise<boolean> {
     return (await this.findByName(name)) !== null;
+  }
+
+  // Sessões não têm valor de auditoria, então podem ser limpas antes de
+  // apagar o usuário. Squad e Transfer continuam com onDelete restrito de
+  // propósito: são histórico/estado de temporada e o service decide se
+  // bloqueia a exclusão nesses casos (ver UsersService.remove).
+  async delete(id: string): Promise<User> {
+    await this.txHost.tx.session.deleteMany({ where: { userId: id } });
+    return this.txHost.tx.user.delete({ where: { id } });
   }
 }

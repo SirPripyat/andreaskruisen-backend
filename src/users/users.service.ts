@@ -1,8 +1,17 @@
-import { ConflictException, Injectable, OnModuleInit } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Transactional } from '@nestjs-cls/transactional';
 import { hash } from 'bcrypt';
+import { Prisma } from '../../generated/prisma/client';
 import { CreateUser, CreateUserSchema } from './dto/create-user.schema';
 import { UsersRepository } from './users.repository';
+
+const FOREIGN_KEY_VIOLATION = 'P2003';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -35,6 +44,34 @@ export class UsersService implements OnModuleInit {
       name: dto.name,
       pinHash: await this.hashPin(dto.pin),
     });
+  }
+
+  @Transactional()
+  async remove(id: string, requestingUserId: string): Promise<void> {
+    const user = await this.repository.findById(id);
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    if (id === requestingUserId) {
+      throw new ConflictException(
+        'Você não pode excluir o próprio usuário logado',
+      );
+    }
+
+    try {
+      await this.repository.delete(id);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === FOREIGN_KEY_VIOLATION
+      ) {
+        throw new ConflictException(
+          'Usuário tem elenco ou transferências vinculadas e não pode ser excluído',
+        );
+      }
+      throw error;
+    }
   }
 
   async ensureDefaultAdmin(dto: CreateUser) {
