@@ -1,5 +1,6 @@
 import { PositionCode, PreferredFoot } from '../../generated/prisma/client';
 import {
+  buildEaPlayerPhotoUrl,
   mapPositions,
   mapPreferredFoot,
   mapRating,
@@ -93,6 +94,19 @@ describe('parseBirthdate', () => {
     expect(date.getUTCMonth()).toBe(0);
     expect(date.getUTCDate()).toBe(5);
   });
+
+  it('parses the newer ISO YYYY-MM-DD format as UTC midnight', () => {
+    const date = parseBirthdate('2000-07-21');
+    expect(date.toISOString()).toBe('2000-07-21T00:00:00.000Z');
+  });
+});
+
+describe('buildEaPlayerPhotoUrl', () => {
+  it('builds the EA ratings-images URL from the player eaId', () => {
+    expect(buildEaPlayerPhotoUrl(212194)).toBe(
+      'https://ratings-images-prod.pulse.ea.com/FC27/components/players/p212194.webp',
+    );
+  });
 });
 
 describe('mapPositions', () => {
@@ -136,5 +150,19 @@ describe('ratingsEqual', () => {
       buildPlayer({ stats: { ...buildPlayer().stats, sprintSpeed: 99 } }),
     );
     expect(ratingsEqual(a, b)).toBe(false);
+  });
+
+  it('returns true when both ratings are missing the pac/sho/pas/dri/def/phy aggregates', () => {
+    const statsWithoutAggregates = { ...buildPlayer().stats };
+    delete (statsWithoutAggregates as Record<string, unknown>).pac;
+    delete (statsWithoutAggregates as Record<string, unknown>).sho;
+    delete (statsWithoutAggregates as Record<string, unknown>).pas;
+    delete (statsWithoutAggregates as Record<string, unknown>).dri;
+    delete (statsWithoutAggregates as Record<string, unknown>).def;
+    delete (statsWithoutAggregates as Record<string, unknown>).phy;
+
+    const a = mapRating(buildPlayer({ stats: statsWithoutAggregates }));
+    const b = mapRating(buildPlayer({ stats: statsWithoutAggregates }));
+    expect(ratingsEqual(a, b)).toBe(true);
   });
 });

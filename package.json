@@ -22,6 +22,7 @@
     "import:players": "node --env-file=.env -r ts-node/register -r tsconfig-paths/register src/import/import-players.ts",
     "import:formations": "node --env-file=.env -r ts-node/register -r tsconfig-paths/register src/import/import-team-formations.ts",
     "import:lineups": "node --env-file=.env -r ts-node/register -r tsconfig-paths/register src/import/import-team-lineups.ts",
+    "update:player-photos": "node --env-file=.env -r ts-node/register -r tsconfig-paths/register src/import/update-player-photos.ts",
     "prisma": "npx prisma studio"
   },
   "dependencies": {

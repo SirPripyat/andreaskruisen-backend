@@ -194,13 +194,14 @@ model PlayerRating {
   skillMoves      Int
   weakFootAbility Int
 
-  // Categorias agregadas (PAC/SHO/PAS/DRI/DEF/PHY)
-  pac Int
-  sho Int
-  pas Int
-  dri Int
-  def Int
-  phy Int
+  // Categorias agregadas (PAC/SHO/PAS/DRI/DEF/PHY). Opcionais: o scraper
+  // deixou de enviá-las numa leva recente de dados.
+  pac Int?
+  sho Int?
+  pas Int?
+  dri Int?
+  def Int?
+  phy Int?
 
   // Atributos detalhados
   acceleration       Int
