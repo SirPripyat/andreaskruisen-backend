@@ -52,4 +52,22 @@ export class SquadsController {
   ) {
     return this.squadsService.getMine(request.user.id, seasonId);
   }
+
+  @Get(':teamId/players')
+  listRoster(
+    @Param('seasonId') seasonId: string,
+    @Param('teamId') teamId: string,
+  ) {
+    return this.squadsService.listRoster(seasonId, teamId);
+  }
+
+  // Formação + titulares/banco (SoFIFA) desse time nessa temporada — ver
+  // SquadsRepository.findLineupOverview pra como isso convive com trocas.
+  @Get(':teamId/lineup')
+  getLineup(
+    @Param('seasonId') seasonId: string,
+    @Param('teamId') teamId: string,
+  ) {
+    return this.squadsService.getLineup(seasonId, teamId);
+  }
 }

@@ -9,6 +9,7 @@ import { SeasonsRepository } from '../seasons/seasons.repository';
 import { AssignSquad } from './dto/assign-squad.schema';
 import { ChooseSquad } from './dto/choose-squad.schema';
 import {
+  LineupOverview,
   RosterPlayer,
   SquadsRepository,
   SquadWithRelations,
@@ -113,6 +114,27 @@ export class SquadsService {
       }
       throw error;
     }
+  }
+
+  async listRoster(seasonId: string, teamId: string): Promise<RosterPlayer[]> {
+    const season = await this.seasonsRepository.findById(seasonId);
+    if (!season) {
+      throw new NotFoundException('Temporada não encontrada');
+    }
+
+    return this.squadsRepository.findRoster(seasonId, teamId);
+  }
+
+  async getLineup(
+    seasonId: string,
+    teamId: string,
+  ): Promise<LineupOverview> {
+    const season = await this.seasonsRepository.findById(seasonId);
+    if (!season) {
+      throw new NotFoundException('Temporada não encontrada');
+    }
+
+    return this.squadsRepository.findLineupOverview(seasonId, teamId);
   }
 
   async getMine(

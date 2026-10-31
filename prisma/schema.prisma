@@ -30,6 +30,43 @@ enum PositionCode {
   ATA
 }
 
+// Catálogo fechado das formações que aparecem no JSON de formações do
+// scraper (ver src/import/formation-mapper.ts para o mapeamento entre o
+// texto em português do scraper e estes valores).
+enum Formation {
+  THREE_ONE_FOUR_TWO           @map("3-1-4-2")
+  THREE_FOUR_ONE_TWO           @map("3-4-1-2")
+  THREE_FOUR_TWO_ONE           @map("3-4-2-1")
+  THREE_FOUR_THREE             @map("3-4-3")
+  THREE_FOUR_THREE_EM_LINHA    @map("3-4-3 Em linha")
+  THREE_FIVE_TWO               @map("3-5-2")
+  FOUR_ONE_TWO_ONE_TWO_ABERTO  @map("4-1-2-1-2 Aberto")
+  FOUR_ONE_TWO_ONE_TWO_FECHADO @map("4-1-2-1-2 Fechado")
+  FOUR_ONE_THREE_TWO           @map("4-1-3-2")
+  FOUR_ONE_FOUR_ONE            @map("4-1-4-1")
+  FOUR_TWO_ONE_THREE           @map("4-2-1-3")
+  FOUR_TWO_TWO_TWO             @map("4-2-2-2")
+  FOUR_TWO_THREE_ONE_ABERTO    @map("4-2-3-1 Aberto")
+  FOUR_TWO_THREE_ONE_FECHADO   @map("4-2-3-1 Fechado")
+  FOUR_THREE_ONE_TWO           @map("4-3-1-2")
+  FOUR_THREE_TWO_ONE           @map("4-3-2-1")
+  FOUR_THREE_THREE_CONSERVADOR @map("4-3-3 Conservador")
+  FOUR_THREE_THREE_DEFENSIVO   @map("4-3-3 Defensivo")
+  FOUR_THREE_THREE_EM_LINHA    @map("4-3-3 Em linha")
+  FOUR_THREE_THREE_OFENSIVO    @map("4-3-3 Ofensivo")
+  FOUR_FOUR_ONE_ONE_MEIO_CAMPO @map("4-4-1-1 Meio-campo")
+  FOUR_FOUR_ONE_ONE_OFENSIVO   @map("4-4-1-1 Ofensivo")
+  FOUR_FOUR_TWO_CONSERVADOR    @map("4-4-2 Conservador")
+  FOUR_FOUR_TWO_EM_LINHA       @map("4-4-2 Em linha")
+  FOUR_FIVE_ONE_EM_LINHA       @map("4-5-1 Em linha")
+  FIVE_TWO_ONE_TWO             @map("5-2-1-2")
+  FIVE_TWO_TWO_ONE             @map("5-2-2-1")
+  FIVE_TWO_THREE               @map("5-2-3")
+  FIVE_THREE_TWO_CONSERVADOR   @map("5-3-2 Conservador")
+  FIVE_FOUR_ONE_EM_LINHA       @map("5-4-1 Em linha")
+  FIVE_FOUR_ONE_LOSANGO        @map("5-4-1 Losango")
+}
+
 model Nationality {
   id      String @id @default(uuid()) @db.Uuid
   name    String @unique
@@ -46,12 +83,17 @@ model League {
 }
 
 model Team {
-  id       String @id @default(uuid()) @db.Uuid
-  name     String
-  // Chave natural real do time: dois times diferentes podem ter o mesmo
-  // nome (ex.: "Nacional" do Uruguai e de Portugal), mas o crestUrl da EA
-  // nunca colide entre times distintos.
-  crestUrl String @unique
+  id   String @id @default(uuid()) @db.Uuid
+  name String
+  // Só exibição: o SoFIFA varia a resolução da imagem do escudo entre
+  // execuções do scraper (ex.: .../90.png numa leva, .../60.png na
+  // seguinte), então não é estável o suficiente pra ser chave de upsert
+  // (já causou Team duplicado - ver @@unique([name, leagueId]) abaixo).
+  crestUrl String
+
+  // Formação padrão do time real, vinda do JSON de formações do scraper
+  // (arquivo separado do de jogadores). Nula até a primeira importação.
+  formation Formation?
 
   leagueId String @db.Uuid
   league   League @relation(fields: [leagueId], references: [id])
@@ -64,8 +106,12 @@ model Team {
   matchesAway             Match[]                @relation("MatchAwayTeam")
   transfersAsOutgoingTeam Transfer[]             @relation("TransferOutgoingTeam")
   transfersAsIncomingTeam Transfer[]             @relation("TransferIncomingTeam")
+  lineupSlots             TeamLineupSlot[]
 
-  @@index([name])
+  // Chave natural real do time: o nome por si só pode colidir (ex.:
+  // "Nacional" do Uruguai e de Portugal), mas nome dentro da mesma liga não
+  // (dois times da mesma liga não têm o mesmo nome).
+  @@unique([name, leagueId])
 }
 
 model Player {
@@ -95,6 +141,7 @@ model Player {
   goalsAssisted     Goal[]                 @relation("GoalAssist")
   transfersOut      Transfer[]             @relation("TransferOutgoingPlayer")
   transfersIn       Transfer[]             @relation("TransferIncomingPlayer")
+  lineupSlots       TeamLineupSlot[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -111,6 +158,27 @@ model PlayerPosition {
   isPrimary Boolean      @default(false)
 
   @@unique([playerId, position])
+}
+
+// Escalação titular calculada do time (ver selectStartingLineup): quais 11
+// jogadores do elenco real (Player.teamId) entram na média de overall do
+// time, e em qual posição da formação cada um entraria. Recalculada inteira
+// (delete + insert) a cada mudança de elenco ou via endpoint manual — nunca
+// editada linha a linha. Time sem nenhuma linha aqui = escalação nunca
+// calculada, e a média do time cai pro elenco inteiro (ver teams.repository).
+model TeamLineupSlot {
+  id       String       @id @default(uuid()) @db.Uuid
+  teamId   String       @db.Uuid
+  team     Team         @relation(fields: [teamId], references: [id])
+  // Posição exigida pelo slot da formação, não necessariamente a posição
+  // principal do jogador: quando o elenco não tem jogador suficiente numa
+  // posição, o slot é preenchido pelo melhor jogador que sobrar de outra
+  // posição (ver selectStartingLineup).
+  position PositionCode
+  playerId String       @db.Uuid
+  player   Player       @relation(fields: [playerId], references: [id])
+
+  @@unique([teamId, playerId])
 }
 
 // Série histórica dos atributos do jogador: só ganha uma linha nova quando

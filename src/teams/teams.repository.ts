@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { Prisma, PrismaClient } from '../../generated/prisma/client';
+import { Formation, Prisma, PrismaClient } from '../../generated/prisma/client';
 import {
   PaginatedResult,
   PaginationQuery,
@@ -26,10 +26,18 @@ export interface TeamsSort {
   sortOrder: SortOrder;
 }
 
+export interface UpdateTeamData {
+  name?: string;
+  crestUrl?: string;
+  leagueId?: string;
+  formation?: Formation;
+}
+
 export interface TeamWithRatings {
   id: string;
   name: string;
   crestUrl: string;
+  formation: string | null;
   league: { id: string; name: string };
   averageOverallRating: number | null;
   averageDefenseRating: number | null;
@@ -41,6 +49,10 @@ interface TeamRow {
   id: string;
   name: string;
   crestUrl: string;
+  // $queryRaw não passa pelo tradutor de enum do Prisma Client: o Postgres
+  // devolve o label gravado na coluna, que já é o texto mapeado via @map
+  // (ex.: "4-2-1-3"), não o identificador do enum Formation.
+  formation: string | null;
   leagueId: string;
   leagueName: string;
   averageOverallRating: number | null;
@@ -55,6 +67,17 @@ const DEFENSE_POSITIONS = Prisma.sql`('ZAG', 'LD', 'LE')`;
 const MIDFIELD_POSITIONS = Prisma.sql`('VOL', 'MC', 'MD', 'ME', 'MEI')`;
 const ATTACK_POSITIONS = Prisma.sql`('PD', 'PE', 'ATA')`;
 
+// Restringe o join de Player aos titulares escalados (TeamLineupSlot) pra
+// esse time; se o time ainda não tem escalação calculada nenhuma, cai pro
+// elenco inteiro (comportamento anterior à escalação existir).
+const ONLY_STARTERS_OR_WHOLE_SQUAD = Prisma.sql`(
+  NOT EXISTS (SELECT 1 FROM "TeamLineupSlot" ls WHERE ls."teamId" = t.id)
+  OR EXISTS (
+    SELECT 1 FROM "TeamLineupSlot" ls
+    WHERE ls."teamId" = t.id AND ls."playerId" = p.id
+  )
+)`;
+
 @Injectable()
 export class TeamsRepository {
   constructor(
@@ -64,18 +87,24 @@ export class TeamsRepository {
   ) {}
 
   async findPaginated(
-    filter: { name?: string },
+    filter: { name?: string; withoutFormation?: boolean },
     sort: TeamsSort,
     pagination: PaginationQuery,
   ): Promise<PaginatedResult<TeamWithRatings>> {
     const total = await this.txHost.tx.team.count({
-      where: filter.name
-        ? { name: { contains: filter.name, mode: 'insensitive' } }
-        : {},
+      where: {
+        ...(filter.name
+          ? { name: { contains: filter.name, mode: 'insensitive' } }
+          : {}),
+        ...(filter.withoutFormation ? { formation: null } : {}),
+      },
     });
 
     const nameFilter = filter.name
       ? Prisma.sql`AND t.name ILIKE ${`%${filter.name}%`}`
+      : Prisma.empty;
+    const withoutFormationFilter = filter.withoutFormation
+      ? Prisma.sql`AND t.formation IS NULL`
       : Prisma.empty;
     const skip = (pagination.page - 1) * pagination.pageSize;
     const orderColumn = Prisma.raw(TEAM_SORT_COLUMN[sort.sortBy]);
@@ -89,6 +118,7 @@ export class TeamsRepository {
         t.id,
         t.name,
         t."crestUrl",
+        t.formation,
         l.id AS "leagueId",
         l.name AS "leagueName",
         ROUND(AVG(p."latestOverallRating")::numeric, 1)::float AS "averageOverallRating",
@@ -97,10 +127,10 @@ export class TeamsRepository {
         ROUND(AVG(CASE WHEN pp.position IN ${ATTACK_POSITIONS} THEN p."latestOverallRating" END)::numeric, 1)::float AS "averageAttackRating"
       FROM "Team" t
       JOIN "League" l ON l.id = t."leagueId"
-      LEFT JOIN "Player" p ON p."teamId" = t.id
+      LEFT JOIN "Player" p ON p."teamId" = t.id AND ${ONLY_STARTERS_OR_WHOLE_SQUAD}
       LEFT JOIN "PlayerPosition" pp ON pp."playerId" = p.id AND pp."isPrimary" = true
-      WHERE true ${nameFilter}
-      GROUP BY t.id, t.name, t."crestUrl", l.id, l.name
+      WHERE true ${nameFilter} ${withoutFormationFilter}
+      GROUP BY t.id, t.name, t."crestUrl", t.formation, l.id, l.name
       ORDER BY ${orderColumn} ${orderDirection} NULLS LAST, t.name ASC
       LIMIT ${pagination.pageSize} OFFSET ${skip}
     `;
@@ -110,6 +140,7 @@ export class TeamsRepository {
         id: row.id,
         name: row.name,
         crestUrl: row.crestUrl,
+        formation: row.formation,
         league: { id: row.leagueId, name: row.leagueName },
         averageOverallRating: row.averageOverallRating,
         averageDefenseRating: row.averageDefenseRating,
@@ -121,5 +152,51 @@ export class TeamsRepository {
       total,
       totalPages: Math.ceil(total / pagination.pageSize),
     };
+  }
+
+  // Mesmas médias de findPaginated, mas pra um único time (tela de
+  // gerenciamento de time) — por isso não reaproveita o SQL raw acima, que é
+  // feito pra paginar+ordenar vários times de uma vez.
+  async findById(id: string): Promise<TeamWithRatings | null> {
+    const rows = await this.txHost.tx.$queryRaw<TeamRow[]>`
+      SELECT
+        t.id,
+        t.name,
+        t."crestUrl",
+        t.formation,
+        l.id AS "leagueId",
+        l.name AS "leagueName",
+        ROUND(AVG(p."latestOverallRating")::numeric, 1)::float AS "averageOverallRating",
+        ROUND(AVG(CASE WHEN pp.position IN ${DEFENSE_POSITIONS} THEN p."latestOverallRating" END)::numeric, 1)::float AS "averageDefenseRating",
+        ROUND(AVG(CASE WHEN pp.position IN ${MIDFIELD_POSITIONS} THEN p."latestOverallRating" END)::numeric, 1)::float AS "averageMidfieldRating",
+        ROUND(AVG(CASE WHEN pp.position IN ${ATTACK_POSITIONS} THEN p."latestOverallRating" END)::numeric, 1)::float AS "averageAttackRating"
+      FROM "Team" t
+      JOIN "League" l ON l.id = t."leagueId"
+      LEFT JOIN "Player" p ON p."teamId" = t.id AND ${ONLY_STARTERS_OR_WHOLE_SQUAD}
+      LEFT JOIN "PlayerPosition" pp ON pp."playerId" = p.id AND pp."isPrimary" = true
+      WHERE t.id = ${id}::uuid
+      GROUP BY t.id, t.name, t."crestUrl", t.formation, l.id, l.name
+    `;
+
+    const row = rows[0];
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      name: row.name,
+      crestUrl: row.crestUrl,
+      formation: row.formation,
+      league: { id: row.leagueId, name: row.leagueName },
+      averageOverallRating: row.averageOverallRating,
+      averageDefenseRating: row.averageDefenseRating,
+      averageMidfieldRating: row.averageMidfieldRating,
+      averageAttackRating: row.averageAttackRating,
+    };
+  }
+
+  async update(id: string, data: UpdateTeamData): Promise<void> {
+    await this.txHost.tx.team.update({ where: { id }, data });
   }
 }
