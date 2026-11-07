@@ -11,9 +11,23 @@ import { SquadsRepository } from '../squads/squads.repository';
 import { TournamentsService } from '../tournaments/tournaments.service';
 import { CreateTransfer } from './dto/create-transfer.schema';
 import {
+  TransferPlayerSummary,
   TransfersRepository,
+  TransferTeamSummary,
   TransferWithRelations,
 } from './transfers.repository';
+
+// Cada transferência troca dois jogadores entre dois times. O front exibe
+// isso como o movimento de cada jogador (saiu de um time, foi pro outro),
+// então uma transferência gera duas entradas aqui, uma por jogador.
+export interface TransferPlayerMovement {
+  transferId: string;
+  player: TransferPlayerSummary;
+  fromTeam: TransferTeamSummary;
+  toTeam: TransferTeamSummary;
+  requestedBy: { id: string; name: string };
+  date: Date;
+}
 
 @Injectable()
 export class TransfersService {
@@ -85,12 +99,36 @@ export class TransfersService {
     return this.transfersRepository.swap(seasonId, outgoing, incoming, userId);
   }
 
-  async findBySeason(seasonId: string): Promise<TransferWithRelations[]> {
+  async findBySeason(seasonId: string): Promise<TransferPlayerMovement[]> {
     const season = await this.seasonsRepository.findById(seasonId);
     if (!season) {
       throw new NotFoundException('Temporada não encontrada');
     }
 
-    return this.transfersRepository.findBySeason(seasonId);
+    const transfers = await this.transfersRepository.findBySeason(seasonId);
+    return transfers.flatMap((transfer) => this.toPlayerMovements(transfer));
+  }
+
+  private toPlayerMovements(
+    transfer: TransferWithRelations,
+  ): [TransferPlayerMovement, TransferPlayerMovement] {
+    return [
+      {
+        transferId: transfer.id,
+        player: transfer.outgoingPlayer,
+        fromTeam: transfer.outgoingTeam,
+        toTeam: transfer.incomingTeam,
+        requestedBy: transfer.requestedBy,
+        date: transfer.createdAt,
+      },
+      {
+        transferId: transfer.id,
+        player: transfer.incomingPlayer,
+        fromTeam: transfer.incomingTeam,
+        toTeam: transfer.outgoingTeam,
+        requestedBy: transfer.requestedBy,
+        date: transfer.createdAt,
+      },
+    ];
   }
 }
