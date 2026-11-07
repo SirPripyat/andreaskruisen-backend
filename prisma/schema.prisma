@@ -104,14 +104,30 @@ model Team {
   tournamentEntries       TournamentTeam[]
   matchesHome             Match[]                @relation("MatchHomeTeam")
   matchesAway             Match[]                @relation("MatchAwayTeam")
+  matchesPenaltyWon       Match[]                @relation("MatchPenaltyWinner")
+  goalsScored             Goal[]                 @relation("GoalScoringTeam")
   transfersAsOutgoingTeam Transfer[]             @relation("TransferOutgoingTeam")
   transfersAsIncomingTeam Transfer[]             @relation("TransferIncomingTeam")
   lineupSlots             TeamLineupSlot[]
+  aliases                 TeamAlias[]
 
   // Chave natural real do time: o nome por si só pode colidir (ex.:
   // "Nacional" do Uruguai e de Portugal), mas nome dentro da mesma liga não
   // (dois times da mesma liga não têm o mesmo nome).
   @@unique([name, leagueId])
+}
+
+// Nome alternativo pelo qual um time é conhecido num catálogo externo além
+// do seu Team.name canônico (ex.: "PSG" pro Paris Saint-Germain) — usado só
+// pra resolver o import de escudos (ver team-crest-import.ts) quando o
+// catálogo de times da EA usa uma abreviação que o de jogadores (fonte do
+// Team.name) não usa. Curado manualmente; não afeta o que é exibido no app.
+model TeamAlias {
+  id    String @id @default(uuid()) @db.Uuid
+  alias String @unique
+
+  teamId String @db.Uuid
+  team   Team   @relation(fields: [teamId], references: [id])
 }
 
 model Player {
@@ -395,6 +411,18 @@ model Match {
   // Quando o resultado foi registrado (null = ainda não jogado).
   playedAt   DateTime?
 
+  // Resultado dos pênaltis, preenchido só quando a partida é de mata-mata
+  // (Phase.type == KNOCKOUT) e termina empatada no tempo normal — uma
+  // eliminatória não pode terminar empatada (ver
+  // TournamentsService.replaceMatchGoals/simulateMatch). Null quando não
+  // houve empate ou a fase não é KNOCKOUT. Os pênaltis não geram Goal: não
+  // contam pra artilharia/assistências, só decidem quem avança (ver
+  // advanceKnockoutRound e determineChampionTeamId).
+  penaltyHomeScore    Int?
+  penaltyAwayScore    Int?
+  penaltyWinnerTeamId String?   @db.Uuid
+  penaltyWinnerTeam   Team?     @relation("MatchPenaltyWinner", fields: [penaltyWinnerTeamId], references: [id])
+
   goals Goal[]
 
   createdAt DateTime @default(now())
@@ -402,12 +430,20 @@ model Match {
   @@index([phaseId])
 }
 
-// Um gol de uma partida. O time que marcou não é guardado diretamente: é
-// sempre o time do `scorer` (não há suporte a gol contra por ora).
+// Um gol de uma partida. `teamId` é o lado da partida (homeTeamId ou
+// awayTeamId) pelo qual o gol conta — snapshot tirado na hora do registro
+// (ver TournamentsService.replaceMatchGoals/simulateMatch), não derivado do
+// time atual do `scorer`: com transferências, o elenco de um time nessa
+// temporada (PlayerTeamAssignment) pode não ser mais o elenco real do
+// jogador (Player.teamId), e esse elenco pode mudar de novo depois que o
+// gol já foi registrado. Sem esse snapshot, uma troca posterior corromperia
+// o placar de partidas já jogadas.
 model Goal {
   id       String  @id @default(uuid()) @db.Uuid
   matchId  String  @db.Uuid
   match    Match   @relation(fields: [matchId], references: [id])
+  teamId   String  @db.Uuid
+  team     Team    @relation("GoalScoringTeam", fields: [teamId], references: [id])
   scorerId String  @db.Uuid
   scorer   Player  @relation("GoalScorer", fields: [scorerId], references: [id])
   // Opcional: nem todo gol tem assistência.
@@ -421,7 +457,8 @@ model Goal {
 
 // "Foto", dentro de uma temporada, de qual time cada jogador defende na liga.
 // Criada a partir do Player.teamId real quando a temporada começa; trocas
-// (Transferência, etapa futura) alteram só essa foto, nunca o Player.teamId.
+// (Transferência) alteram essa foto (teamId) e também isStarter, nunca o
+// Player.teamId.
 model PlayerTeamAssignment {
   id       String @id @default(uuid()) @db.Uuid
   seasonId String @db.Uuid
@@ -430,6 +467,14 @@ model PlayerTeamAssignment {
   player   Player @relation(fields: [playerId], references: [id])
   teamId   String @db.Uuid
   team     Team   @relation(fields: [teamId], references: [id])
+  // Titular (true) ou banco (false) do elenco DESSE time nessa temporada.
+  // Inicializado a partir do TeamLineupSlot real (SoFIFA) do jogador quando
+  // a temporada começa. Numa troca, é o SLOT que troca de dono, não o
+  // status intrínseco do jogador: quem entra assume o isStarter de quem
+  // saiu, e vice-versa (ver TransfersRepository.swap) — garante que todo
+  // elenco sempre tem exatamente 11 titulares, independente de quantas
+  // trocas aconteçam.
+  isStarter Boolean @default(false)
 
   @@unique([seasonId, playerId])
   @@index([seasonId, teamId])

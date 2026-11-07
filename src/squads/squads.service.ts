@@ -9,7 +9,9 @@ import { SeasonsRepository } from '../seasons/seasons.repository';
 import { AssignSquad } from './dto/assign-squad.schema';
 import { ChooseSquad } from './dto/choose-squad.schema';
 import {
+  groupBySector,
   LineupOverview,
+  RosterBySector,
   RosterPlayer,
   SquadsRepository,
   SquadWithRelations,
@@ -116,13 +118,14 @@ export class SquadsService {
     }
   }
 
-  async listRoster(seasonId: string, teamId: string): Promise<RosterPlayer[]> {
+  async listRoster(seasonId: string, teamId: string): Promise<RosterBySector> {
     const season = await this.seasonsRepository.findById(seasonId);
     if (!season) {
       throw new NotFoundException('Temporada não encontrada');
     }
 
-    return this.squadsRepository.findRoster(seasonId, teamId);
+    const players = await this.squadsRepository.findRoster(seasonId, teamId);
+    return groupBySector(players);
   }
 
   async getLineup(

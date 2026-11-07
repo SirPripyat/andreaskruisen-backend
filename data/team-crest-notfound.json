@@ -1,0 +1,497 @@
+{
+  "_readme": "Times do arquivo fc27-teams.json que NAO foram resolvidos pelo POST /teams/import-crests (nem por nome exato, nem pelos aliases em TeamAlias). Fluxo: preencha resolved_team_name com o Team.name exato nas entradas que você reconhecer, suba este mesmo arquivo em POST /teams/import-aliases (cria o TeamAlias correspondente) e rode POST /teams/import-crests de novo pra aplicar o escudo. Campo \"note\" só vem preenchido nos casos que já foram investigados e deliberadamente deixados assim (ver mensagem do Claude ou data/pending-team-crest-review.json).",
+  "total": 49,
+  "entries": [
+    {
+      "json_name": "Alem. Aachen",
+      "region": "Alemanha",
+      "resolved_team_name": "Alemannia Aachen",
+      "leagues": [
+        "3. Liga"
+      ],
+      "logo": "https://drop-assets.ea.com/images/4ZYYCfk0WSruz5xylnewVs/d1a45e888adffd02ebc9e513c1780962/l1826.png",
+      "note": null
+    },
+    {
+      "json_name": "Amed Sportif Faaliyetler",
+      "region": "Europa (outros)",
+      "resolved_team_name": "Amed SK",
+      "leagues": [
+        "Trendyol Süper Lig"
+      ],
+      "logo": "https://drop-assets.ea.com/images/7Jpk5xgqbnHSC1l5jv7AeN/840c0faaa2b291bcd8b583b704e4142c/l132392.png",
+      "note": null
+    },
+    {
+      "json_name": "Asociación Atlética Estudiantes",
+      "region": "Resto do Mundo",
+      "resolved_team_name": "Estudiantes de Río Cuarto",
+      "leagues": [
+        "Liga Profesional de Fútbol"
+      ],
+      "logo": "https://drop-assets.ea.com/images/1oAxECtsgWZCsG7A9JyOyp/31d20360d3d5892688e0148960efc94d/l115470.png",
+      "note": null
+    },
+    {
+      "json_name": "Bergamo Calcio",
+      "region": "Itália",
+      "resolved_team_name": "Atalanta BC",
+      "leagues": [
+        "Serie A Enilive"
+      ],
+      "logo": "https://drop-assets.ea.com/images/7d87cgyoT3O2jFWeC3sns8/60bc58861285c1b5672652bad0fa143e/l115845.png",
+      "note": "Possível nome genérico de região que a EA usa por licenciamento (Bergamo = onde fica a Atalanta), não confirmado."
+    },
+    {
+      "json_name": "Bohemians",
+      "region": "Europa (outros)",
+      "resolved_team_name": "Bohemian FC",
+      "leagues": [
+        "SSE Airtricity PD"
+      ],
+      "logo": "https://drop-assets.ea.com/images/mf6YLYvULkDK0gV7YDpnO/a65c3b85348611e9413553b5d9f416f2/l305.png",
+      "note": null
+    },
+    {
+      "json_name": "Charlton Athl.",
+      "region": "Inglaterra",
+      "resolved_team_name": "Charlton Athletic",
+      "leagues": [
+        "EFL Championship"
+      ],
+      "logo": "https://drop-assets.ea.com/images/2TegcGj6a3Wel0Ihs7MBIQ/574a74da82efecc9923b7124845ca087/l89.png",
+      "note": "Verifiquei o logo da EA baixando e inspecionando a imagem: é o escudo real do Charlton Athletic (espada vermelha/preta). A reversão anterior estava errada ou baseada em outro dado."
+    },
+    {
+      "json_name": "D. Alavés",
+      "region": "Espanha",
+      "resolved_team_name": "Deportivo Alavés",
+      "leagues": [
+        "LALIGA EA SPORTS"
+      ],
+      "logo": "https://drop-assets.ea.com/images/ewsYp4T4PjlqvzjiZLSYe/f7056823d84a9356b055c5c819637971/l463.png",
+      "note": "Verifiquei o logo da EA baixando e inspecionando a imagem: é o escudo real do Deportivo Alavés (escudo azul com bandeira, \"1921\"). A reversão anterior estava errada ou baseada em outro dado."
+    },
+    {
+      "json_name": "Daejeon Hana",
+      "region": "Resto do Mundo",
+      "resolved_team_name": "Daejeon Citizen",
+      "leagues": [
+        "K League 1"
+      ],
+      "logo": "https://drop-assets.ea.com/images/6tXO6HgPiNFml8LFpWQcen/ff42bba671970f4bfb58aaa548a8754a/l980.png",
+      "note": null
+    },
+    {
+      "json_name": "Dep. Cuenca",
+      "region": "CONMEBOL",
+      "resolved_team_name": "Deportivo Cuenca",
+      "leagues": [
+        "CONMEBOL Sudamericana"
+      ],
+      "logo": "https://drop-assets.ea.com/images/6kCBOU65QTaBu4TMUwdnD/04f4653168504da59bf8240f1f8d2615/l110982.png",
+      "note": null
+    },
+    {
+      "json_name": "Dep. La Guaira",
+      "region": "CONMEBOL",
+      "resolved_team_name": "Deportivo La Guaira",
+      "leagues": [
+        "CONMEBOL Libertadores"
+      ],
+      "logo": "https://drop-assets.ea.com/images/YRFoW9lp2OnI93gWvW9is/dd553f7b539524f366d35702ac9a0ae6/l112853.png",
+      "note": null
+    },
+    {
+      "json_name": "Dep. Riestra",
+      "region": "Resto do Mundo",
+      "resolved_team_name": "Deportivo Riestra",
+      "leagues": [
+        "Liga Profesional de Fútbol"
+      ],
+      "logo": "https://drop-assets.ea.com/images/3NGXKAiFQvdE5zZDJfdobm/7173c3ea1a633da354f491ba1f9b5082/l115472.png",
+      "note": null
+    },
+    {
+      "json_name": "Dijon Football Côte d’Or",
+      "region": "França",
+      "resolved_team_name": "Dijon FCO",
+      "leagues": [
+        "Ligue 2 BKT"
+      ],
+      "logo": "https://drop-assets.ea.com/images/5JBUADffdcfFxcWuX8HXZM/4660d14e258eeb68072f414324bccc9c/l110569.png",
+      "note": null
+    },
+    {
+      "json_name": "ES Troyes AC",
+      "region": "França",
+      "resolved_team_name": "ESTAC Troyes",
+      "leagues": [
+        "Ligue 1 McDonald's"
+      ],
+      "logo": "https://drop-assets.ea.com/images/2wSfZtOqEu4DeAknu370EJ/82f00c1fe7368057b270b03ad18acbe4/l294.png",
+      "note": null
+    },
+    {
+      "json_name": "Erzurumspor Futbol Kulübü",
+      "region": "Europa (outros)",
+      "resolved_team_name": "Erzurumspor FK",
+      "leagues": [
+        "Trendyol Süper Lig"
+      ],
+      "logo": "https://drop-assets.ea.com/images/1oO44eBYh7aNotHDHdT3m0/eb25e61a8dccc7d7ea2f1ad07d7c0d7c/l749.png",
+      "note": null
+    },
+    {
+      "json_name": "FC Petrolul",
+      "region": "Europa (outros)",
+      "resolved_team_name": "Asociația Clubul Sportiv Petrolul 52",
+      "leagues": [
+        "SUPERLIGA"
+      ],
+      "logo": "https://drop-assets.ea.com/images/2YdUXJC33lobt1ZylNSceC/ff0ca0ab4154dbc457377ab66f7547fc/l110078.png",
+      "note": null
+    },
+    {
+      "json_name": "FC Rapid 1923",
+      "region": "Europa (outros)",
+      "resolved_team_name": "Rapid Bucuresti",
+      "leagues": [
+        "SUPERLIGA"
+      ],
+      "logo": "https://drop-assets.ea.com/images/3KDS8Rsw3nkeiQ4gHn9L0e/b51d8a395387279e73a8c86e777bc4d8/l310.png",
+      "note": null
+    },
+    {
+      "json_name": "FC Univ. Cluj",
+      "region": "Europa (outros)",
+      "resolved_team_name": "Universitatea Cluj",
+      "leagues": [
+        "SUPERLIGA"
+      ],
+      "logo": "https://drop-assets.ea.com/images/2wTDP51qH7ccqO9A0k26i3/3512c1bb9a043d1e8c4bef46efb0ba8e/l110751.png",
+      "note": null
+    },
+    {
+      "json_name": "FK Csíkszereda",
+      "region": "Europa (outros)",
+      "resolved_team_name": "Csíkszereda Miercurea Ciuc",
+      "leagues": [
+        "SUPERLIGA"
+      ],
+      "logo": "https://drop-assets.ea.com/images/7uV2gFVsxMkZRzZMi6oHYH/cdfd40d1d93763f7ce64a4a0b10889cb/l114546.png",
+      "note": null
+    },
+    {
+      "json_name": "HamKam Fotball",
+      "region": "Europa (outros)",
+      "resolved_team_name": "Hamarkameratene",
+      "leagues": [
+        "Eliteserien"
+      ],
+      "logo": "https://drop-assets.ea.com/images/6pvXU0VKhmQaCFxWieWy09/f858bd1a981be8f7c760172097da3437/l1756.png",
+      "note": null
+    },
+    {
+      "json_name": "Hyderabad FC",
+      "region": "India",
+      "resolved_team_name": null,
+      "leagues": [
+        "ISL"
+      ],
+      "logo": "https://drop-assets.ea.com/images/dK0lOpY2Okdw6aSLZouJS/7a16842e298b6141ff22baf1b84bf501/l113301.png",
+      "note": "Pesquisei: não existe Team com esse nome no banco (não é problema de alias, o time não foi importado)."
+    },
+    {
+      "json_name": "IDV",
+      "region": "CONMEBOL",
+      "resolved_team_name": "Independiente del Valle",
+      "leagues": [
+        "CONMEBOL Libertadores"
+      ],
+      "logo": "https://drop-assets.ea.com/images/45JSuni9rUAHmMaKNMz9R1/02dc9faca6b12236feb46d76fccbeb08/l112908.png",
+      "note": null
+    },
+    {
+      "json_name": "Ind. Petrolero",
+      "region": "CONMEBOL",
+      "resolved_team_name": "Independiente Petrolero",
+      "leagues": [
+        "CONMEBOL Sudamericana"
+      ],
+      "logo": "https://drop-assets.ea.com/images/1VOryD7BDU3z7pzCOHHLI1/6d399189013656b84acfbed34d4d88b2/l115517.png",
+      "note": null
+    },
+    {
+      "json_name": "Ind. Rivadavia",
+      "region": "Resto do Mundo",
+      "resolved_team_name": "Independiente Rivadavia",
+      "leagues": [
+        "Liga Profesional de Fútbol"
+      ],
+      "logo": "https://drop-assets.ea.com/images/6toqrPQpW8BOHIKD8Lkwub/1235df5e805a053bb9044c7b6c18f2b6/l111020.png",
+      "note": null
+    },
+    {
+      "json_name": "Indep. Medellín",
+      "region": "CONMEBOL",
+      "resolved_team_name": "Independiente Medellín",
+      "leagues": [
+        "CONMEBOL Sudamericana"
+      ],
+      "logo": "https://drop-assets.ea.com/images/1zwmMux1AfERtOrMDVgx0a/ab8b894c496dea7385a48a46a577a8b9/l101103.png",
+      "note": null
+    },
+    {
+      "json_name": "Indep. Santa Fe",
+      "region": "CONMEBOL",
+      "resolved_team_name": "Independiente Santa Fe",
+      "leagues": [
+        "CONMEBOL Libertadores"
+      ],
+      "logo": "https://drop-assets.ea.com/images/5YkyTUejBsj6kcrHmfJ4cH/981eabe561ce5c0703dd5fc0b6d4046a/l101104.png",
+      "note": null
+    },
+    {
+      "json_name": "LAFC",
+      "region": "Estados Unidos",
+      "resolved_team_name": "Los Angeles FC",
+      "leagues": [
+        "Major League Soccer"
+      ],
+      "logo": "https://drop-assets.ea.com/images/1JeJkRlvG9NN8J77Bik4sy/0f1e3056e2a5bf286ee5ab3bb0e56c5a/l112996.png",
+      "note": null
+    },
+    {
+      "json_name": "Latium",
+      "region": "Itália",
+      "resolved_team_name": "SS Lazio",
+      "leagues": [
+        "Serie A Enilive"
+      ],
+      "logo": "https://drop-assets.ea.com/images/str7Ll9z06G8fmLBIa7Be/13c1a2f18bebd7917c153b4f51ad46cc/l115841.png",
+      "note": "Possível nome genérico de região que a EA usa por licenciamento (Lácio = onde fica a Lazio), não confirmado."
+    },
+    {
+      "json_name": "Laval MFC",
+      "region": "França",
+      "resolved_team_name": "Stade Lavallois Mayenne FC",
+      "leagues": [
+        "Ligue 2 BKT"
+      ],
+      "logo": "https://drop-assets.ea.com/images/6wGVJ7S3VJsZyZCEDKgsX0/2732f1279d8e6dd35d03705dac6e6603/l1814.png",
+      "note": null
+    },
+    {
+      "json_name": "Lombardia FC",
+      "region": "Itália",
+      "resolved_team_name": null,
+      "leagues": [
+        "Serie A Enilive"
+      ],
+      "logo": "https://drop-assets.ea.com/images/4v7odCdJvrQjX8Vrjk8j8w/0f88bea4238442fd0ac6d0064d03eed8/l131682.png",
+      "note": "Pesquisei: Lombardia tem dois clubes na Serie A (AC Milan e Inter Milan) e não achei sinal confiável pra saber qual desses dois esse nome genérico representa — \"Milano FC\" tem o mesmo problema. Ambos ainda estão com o crestUrl antigo do SoFIFA."
+    },
+    {
+      "json_name": "Macar",
+      "region": "CONMEBOL",
+      "resolved_team_name": "Macará",
+      "leagues": [
+        "CONMEBOL Sudamericana"
+      ],
+      "logo": "https://drop-assets.ea.com/images/15MaTxzOttYDdUd8eWDzbA/62177daa3d44d3073f06af79daa47773/l114578.png",
+      "note": null
+    },
+    {
+      "json_name": "Melb. Victory",
+      "region": "Resto do Mundo",
+      "resolved_team_name": "Melbourne Victory",
+      "leagues": [
+        "Isuzu UTE A-League"
+      ],
+      "logo": "https://drop-assets.ea.com/images/4hvBDWYTWjCAq2kbtG4gpc/1faf604c1bb0358a16cb08fed71feaa4/l111397.png",
+      "note": null
+    },
+    {
+      "json_name": "Milano FC",
+      "region": "Itália",
+      "resolved_team_name": null,
+      "leagues": [
+        "Serie A Enilive"
+      ],
+      "logo": "https://drop-assets.ea.com/images/7xQZAXx9Ko59UYUSDkVruZ/fee4f7f627fc666dfe7367e190978cc0/l131681.png",
+      "note": "Pesquisei: Milão tem dois clubes na Serie A (AC Milan e Inter Milan) e não achei sinal confiável pra saber qual desses dois esse nome genérico representa — \"Lombardia FC\" tem o mesmo problema. Ambos ainda estão com o crestUrl antigo do SoFIFA."
+    },
+    {
+      "json_name": "Mohun Bagan SG",
+      "region": "India",
+      "resolved_team_name": "Mohun Bagan Super Giant",
+      "leagues": [
+        "ISL"
+      ],
+      "logo": "https://drop-assets.ea.com/images/6rhdIyirNWI9I9MhOGiVdS/d9728bd4115d894a7b14016493ec4170/l113146.png",
+      "note": null
+    },
+    {
+      "json_name": "Omonia FC",
+      "region": "Europa (outros)",
+      "resolved_team_name": "Omonoia FC",
+      "leagues": [
+        "Liga Cyprus"
+      ],
+      "logo": "https://drop-assets.ea.com/images/1BdfHeBxktxq88BtvMFoGk/5d2e5b3e82869fa5994a14768066167e/l264.png",
+      "note": "No banco está como \"Omonoia FC\" (um \"o\" a mais que \"Omonia\") — minha busca anterior não bateu por causa dessa diferença de grafia."
+    },
+    {
+      "json_name": "Qingdao W. Coast",
+      "region": "China",
+      "resolved_team_name": "Qingdao West Coast FC",
+      "leagues": [
+        "CSL"
+      ],
+      "logo": "https://drop-assets.ea.com/images/5SI1G8eDJZ34qgYE4KkxmS/fff988a15258b38a5033f41616c0e0fc/l131488.png",
+      "note": null
+    },
+    {
+      "json_name": "Quertaro FC",
+      "region": "Mexico",
+      "resolved_team_name": "Querétaro",
+      "leagues": [
+        "Liga BBVA MX"
+      ],
+      "logo": "https://drop-assets.ea.com/images/2kCB0s6AfGdgMe5RFIeaVO/31f24b63850bbc5b929e798aa4f03f2f/l110150.png",
+      "note": null
+    },
+    {
+      "json_name": "Rodez AF",
+      "region": "França",
+      "resolved_team_name": "Rodez Aveyron Football",
+      "leagues": [
+        "Ligue 2 BKT"
+      ],
+      "logo": "https://drop-assets.ea.com/images/2pKU0819667HUYF2pflu4F/139bd2939734ffab9b4cb332588d40f1/l111659.png",
+      "note": null
+    },
+    {
+      "json_name": "SC Austria",
+      "region": "Europa (outros)",
+      "resolved_team_name": "Austria Lustenau",
+      "leagues": [
+        "Ö. Bundesliga"
+      ],
+      "logo": "https://drop-assets.ea.com/images/5PLnAMGwJ9QTNPyJh5rDQh/d1c232f577e3ae993026be6592da2495/l781.png",
+      "note": "Confirmado pelo usuário: SC Austria é o Austria Lustenau."
+    },
+    {
+      "json_name": "SJ Earthquakes",
+      "region": "Estados Unidos",
+      "resolved_team_name": "San Jose Earthquakes",
+      "leagues": [
+        "Major League Soccer"
+      ],
+      "logo": "https://drop-assets.ea.com/images/67Vt9sG0ufQbZaAQITB9cR/2ce21d748cb890b95a24cb60027e5b00/l111928.png",
+      "note": null
+    },
+    {
+      "json_name": "SZ Peng City",
+      "region": "China",
+      "resolved_team_name": "Shenzhen Peng City",
+      "leagues": [
+        "CSL"
+      ],
+      "logo": "https://drop-assets.ea.com/images/m5VkBh9HSwSCRFfvyBQbf/d584fab17ab99002c30abbcfbd056d51/l131487.png",
+      "note": null
+    },
+    {
+      "json_name": "Sp. Charleroi",
+      "region": "Europa (outros)",
+      "resolved_team_name": "Royal Charleroi Sporting Club",
+      "leagues": [
+        "1A Pro League"
+      ],
+      "logo": "https://drop-assets.ea.com/images/1xiVQre21TAetvTxDjZWuv/053a1c733cdd16c6f078ba5bbfee90ad/l670.png",
+      "note": null
+    },
+    {
+      "json_name": "Sporting KC",
+      "region": "Estados Unidos",
+      "resolved_team_name": "Sporting Kansas City",
+      "leagues": [
+        "Major League Soccer"
+      ],
+      "logo": "https://drop-assets.ea.com/images/77v1OlcIJQe0vNAe4ElnA4/fe1f3c571e2c8a8b67e968efafd6dbaa/l696.png",
+      "note": null
+    },
+    {
+      "json_name": "St. Pats",
+      "region": "Europa (outros)",
+      "resolved_team_name": "St Patrick's Athletic FC",
+      "leagues": [
+        "SSE Airtricity PD"
+      ],
+      "logo": "https://drop-assets.ea.com/images/1uv6yoyGAiacFzLnazvTHF/6ed21865c22f04f2ff9bf898904e4a9e/l423.png",
+      "note": null
+    },
+    {
+      "json_name": "Tianjin JMT FC",
+      "region": "China",
+      "resolved_team_name": "Tianjin Jinmen Tiger",
+      "leagues": [
+        "CSL"
+      ],
+      "logo": "https://drop-assets.ea.com/images/7LoSgHTaN1IWZUvG1EleYg/7151150b46c1ae465d6ad57dc73636a7/l111774.png",
+      "note": null
+    },
+    {
+      "json_name": "UCV FC",
+      "region": "CONMEBOL",
+      "resolved_team_name": "Universidad Central de Venezuela",
+      "leagues": [
+        "CONMEBOL Libertadores"
+      ],
+      "logo": "https://drop-assets.ea.com/images/1VOR6mctKMCJjA2GDuRlCH/b19cd43f257e6ba03516376fe4c1b4df/l115693.png",
+      "note": null
+    },
+    {
+      "json_name": "Uni. Católica",
+      "region": "CONMEBOL",
+      "resolved_team_name": "Universidad Católica",
+      "leagues": [
+        "CONMEBOL Libertadores",
+        "CONMEBOL Sudamericana"
+      ],
+      "logo": "https://drop-assets.ea.com/images/4L6JBQslLkCMXJLL3QoYW3/733cbd6c0d52421e01ae8d05d62ae0d1/l110975.png",
+      "note": null
+    },
+    {
+      "json_name": "WS Wanderers",
+      "region": "Resto do Mundo",
+      "resolved_team_name": "Western Sydney Wanderers",
+      "leagues": [
+        "Isuzu UTE A-League"
+      ],
+      "logo": "https://drop-assets.ea.com/images/58v1gLM0Cc8JV1NTVqSZpi/b91c713a32fb3c43caa741773f902abd/l112427.png",
+      "note": null
+    },
+    {
+      "json_name": "Well. Phoenix",
+      "region": "Resto do Mundo",
+      "resolved_team_name": "Wellington Phoenix",
+      "leagues": [
+        "Isuzu UTE A-League"
+      ],
+      "logo": "https://drop-assets.ea.com/images/6kKvEJbPY1h09y8uaiC5Y/5eedf529b9ab41ba32c71cfe09f7026b/l111766.png",
+      "note": null
+    },
+    {
+      "json_name": "Çorum Futbol Kulübü",
+      "region": "Europa (outros)",
+      "resolved_team_name": "Çorum FK",
+      "leagues": [
+        "Trendyol Süper Lig"
+      ],
+      "logo": "https://drop-assets.ea.com/images/4CyBSlvzboCIKGs8TlIsIF/8d0b3d2cf6bea49c2221d7dee7650dec/l132868.png",
+      "note": null
+    }
+  ]
+}

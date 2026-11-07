@@ -14,6 +14,7 @@ import {
   PaginationQuery,
   paginate,
 } from '../commons/pagination';
+import { TeamMatchResult } from './team-campaign';
 
 export interface PhaseSummary {
   id: string;
@@ -38,12 +39,19 @@ export interface TeamSummary {
   crestUrl: string;
 }
 
+export interface MatchPenalties {
+  homeScore: number;
+  awayScore: number;
+  winnerTeamId: string;
+}
+
 export interface MatchWithTeams {
   id: string;
   groupLabel: string | null;
   round: number | null;
   playedAt: Date | null;
   goalScorerTeamIds: string[];
+  penalties: MatchPenalties | null;
   homeTeam: TeamSummary;
   awayTeam: TeamSummary;
 }
@@ -51,10 +59,17 @@ export interface MatchWithTeams {
 export interface MatchForGoals {
   id: string;
   tournamentId: string;
+  // Temporada do torneio — usada pra resolver o elenco atual (ver
+  // PlayerTeamAssignment) na hora de validar/simular gols, já que as trocas
+  // mudam quem joga por qual time sem tocar em Player.teamId.
+  seasonId: string;
   phaseId: string;
   // Order (Phase.order) da fase da partida — usado pra saber se a partida
   // está travada (ver TournamentsRepository.hasLaterPhase).
   phaseOrder: number;
+  // Eliminatória (ver TournamentsService.replaceMatchGoals/simulateMatch):
+  // não pode terminar empatada, precisa de pênaltis.
+  phaseType: PhaseType;
   homeTeamId: string;
   awayTeamId: string;
   playedAt: Date | null;
@@ -86,10 +101,14 @@ export interface GoalWithPlayers {
 export interface MatchDetail {
   id: string;
   tournamentId: string;
+  // Ver comentário equivalente em MatchForGoals.
+  seasonId: string;
   phaseOrder: number;
+  phaseType: PhaseType;
   groupLabel: string | null;
   round: number | null;
   playedAt: Date | null;
+  penalties: MatchPenalties | null;
   homeTeam: TeamSummary;
   awayTeam: TeamSummary;
   goals: GoalWithPlayers[];
@@ -105,37 +124,71 @@ const MATCH_SELECT_FOR_LIST = {
   groupLabel: true,
   round: true,
   playedAt: true,
+  penaltyHomeScore: true,
+  penaltyAwayScore: true,
+  penaltyWinnerTeamId: true,
   homeTeam: { select: { id: true, name: true, crestUrl: true } },
   awayTeam: { select: { id: true, name: true, crestUrl: true } },
-  goals: { select: { scorer: { select: { teamId: true } } } },
+  goals: { select: { teamId: true } },
 } as const;
+
+// Pênaltis só existem como conjunto completo (os três campos preenchidos
+// juntos, ver TournamentsRepository.replaceMatchGoals) — nunca parcial.
+function toPenalties(match: {
+  penaltyHomeScore: number | null;
+  penaltyAwayScore: number | null;
+  penaltyWinnerTeamId: string | null;
+}): MatchPenalties | null {
+  if (
+    match.penaltyHomeScore === null ||
+    match.penaltyAwayScore === null ||
+    match.penaltyWinnerTeamId === null
+  ) {
+    return null;
+  }
+  return {
+    homeScore: match.penaltyHomeScore,
+    awayScore: match.penaltyAwayScore,
+    winnerTeamId: match.penaltyWinnerTeamId,
+  };
+}
 
 function toMatchWithTeams(match: {
   id: string;
   groupLabel: string | null;
   round: number | null;
   playedAt: Date | null;
+  penaltyHomeScore: number | null;
+  penaltyAwayScore: number | null;
+  penaltyWinnerTeamId: string | null;
   homeTeam: TeamSummary;
   awayTeam: TeamSummary;
-  goals: { scorer: { teamId: string } }[];
+  goals: { teamId: string }[];
 }): MatchWithTeams {
   return {
     id: match.id,
     groupLabel: match.groupLabel,
     round: match.round,
     playedAt: match.playedAt,
+    penalties: toPenalties(match),
     homeTeam: match.homeTeam,
     awayTeam: match.awayTeam,
-    goalScorerTeamIds: match.goals.map((goal) => goal.scorer.teamId),
+    goalScorerTeamIds: match.goals.map((goal) => goal.teamId),
   };
 }
 
-const PLAYER_SUMMARY_SELECT = {
+// Sem teamId: usado quando o time vem de outra fonte (PlayerTeamAssignment
+// da temporada), não do Player — ver findPlayersByTeamIds.
+const PLAYER_SELECT_FOR_SUMMARY = {
   id: true,
   name: true,
   photoUrl: true,
-  teamId: true,
   positions: { select: { position: true, isPrimary: true } },
+} as const;
+
+const PLAYER_SUMMARY_SELECT = {
+  ...PLAYER_SELECT_FOR_SUMMARY,
+  teamId: true,
 } as const;
 
 function toPlayerSummary(player: {
@@ -331,7 +384,7 @@ export class TournamentsRepository {
         awayTeamId: true,
         groupLabel: true,
         playedAt: true,
-        goals: { select: { scorer: { select: { teamId: true } } } },
+        goals: { select: { teamId: true } },
       },
     });
 
@@ -340,7 +393,7 @@ export class TournamentsRepository {
       awayTeamId: match.awayTeamId,
       groupLabel: match.groupLabel as string,
       playedAt: match.playedAt,
-      goalScorerTeamIds: match.goals.map((goal) => goal.scorer.teamId),
+      goalScorerTeamIds: match.goals.map((goal) => goal.teamId),
     }));
   }
 
@@ -395,7 +448,14 @@ export class TournamentsRepository {
         homeTeamId: true,
         awayTeamId: true,
         playedAt: true,
-        phase: { select: { tournamentId: true, order: true } },
+        phase: {
+          select: {
+            tournamentId: true,
+            order: true,
+            type: true,
+            tournament: { select: { seasonId: true } },
+          },
+        },
       },
     });
 
@@ -403,8 +463,10 @@ export class TournamentsRepository {
       ? {
           id: match.id,
           tournamentId: match.phase.tournamentId,
+          seasonId: match.phase.tournament.seasonId,
           phaseId: match.phaseId,
           phaseOrder: match.phase.order,
+          phaseType: match.phase.type,
           homeTeamId: match.homeTeamId,
           awayTeamId: match.awayTeamId,
           playedAt: match.playedAt,
@@ -466,7 +528,17 @@ export class TournamentsRepository {
         groupLabel: true,
         round: true,
         playedAt: true,
-        phase: { select: { tournamentId: true, order: true } },
+        penaltyHomeScore: true,
+        penaltyAwayScore: true,
+        penaltyWinnerTeamId: true,
+        phase: {
+          select: {
+            tournamentId: true,
+            order: true,
+            type: true,
+            tournament: { select: { seasonId: true } },
+          },
+        },
         homeTeam: { select: { id: true, name: true, crestUrl: true } },
         awayTeam: { select: { id: true, name: true, crestUrl: true } },
         goals: {
@@ -487,10 +559,13 @@ export class TournamentsRepository {
     return {
       id: match.id,
       tournamentId: match.phase.tournamentId,
+      seasonId: match.phase.tournament.seasonId,
       phaseOrder: match.phase.order,
+      phaseType: match.phase.type,
       groupLabel: match.groupLabel,
       round: match.round,
       playedAt: match.playedAt,
+      penalties: toPenalties(match),
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
       goals: match.goals.map((goal) => ({
@@ -501,16 +576,27 @@ export class TournamentsRepository {
     };
   }
 
-  // Elenco disponível pros seletores de artilheiro/assistência do drawer.
-  async findPlayersByTeamIds(teamIds: string[]): Promise<PlayerSummary[]> {
-    const players = await this.txHost.tx.player.findMany({
-      where: { teamId: { in: teamIds } },
-      orderBy: { name: 'asc' },
-      select: PLAYER_SUMMARY_SELECT,
+  // Elenco ATUAL da temporada (PlayerTeamAssignment) de cada time, pros
+  // seletores de artilheiro/assistência do drawer — não o elenco real
+  // estático do SoFIFA (Player.teamId): uma troca muda quem joga por qual
+  // time nessa temporada sem tocar em Player.teamId.
+  async findPlayersByTeamIds(
+    seasonId: string,
+    teamIds: string[],
+  ): Promise<PlayerSummary[]> {
+    const assignments = await this.txHost.tx.playerTeamAssignment.findMany({
+      where: { seasonId, teamId: { in: teamIds } },
+      orderBy: { player: { name: 'asc' } },
+      select: { teamId: true, player: { select: PLAYER_SELECT_FOR_SUMMARY } },
     });
-    return players.map(toPlayerSummary);
+    return assignments.map(({ teamId, player }) =>
+      toPlayerSummary({ ...player, teamId }),
+    );
   }
 
+  // Usado só pra exibição de estatísticas históricas (ranking de artilheiros/
+  // assistências e resumo do time) — ali o time mostrado é o elenco real
+  // estático (Player.teamId), não o da temporada; ver tournaments.service.ts.
   async findPlayersByIds(playerIds: string[]): Promise<PlayerSummary[]> {
     const players = await this.txHost.tx.player.findMany({
       where: { id: { in: playerIds } },
@@ -519,40 +605,73 @@ export class TournamentsRepository {
     return players.map(toPlayerSummary);
   }
 
-  // Elenco com overall pra simulação de resultado (ver match-simulation.ts).
+  // Time ATUAL da temporada de cada jogador informado — pra validar se o
+  // artilheiro/assistência pertence a um dos times da partida (ver
+  // TournamentsService.replaceMatchGoals). Usa PlayerTeamAssignment, não
+  // Player.teamId: uma troca muda quem representa qual time nessa temporada.
+  findAssignedTeamsByPlayerIds(
+    seasonId: string,
+    playerIds: string[],
+  ): Promise<{ playerId: string; teamId: string }[]> {
+    return this.txHost.tx.playerTeamAssignment.findMany({
+      where: { seasonId, playerId: { in: playerIds } },
+      select: { playerId: true, teamId: true },
+    });
+  }
+
+  // Elenco ATUAL da temporada com overall pra simulação de resultado (ver
+  // match-simulation.ts) — reflete trocas já aplicadas. Só os titulares
+  // (PlayerTeamAssignment.isStarter) podem marcar gol ou dar assistência; se
+  // o time não tem nenhum titular (isStarter) marcado, cai pro elenco
+  // inteiro (mesmo fallback usado pra média de overall em teams.repository).
   async findPlayersForSimulation(
+    seasonId: string,
     teamIds: string[],
   ): Promise<SimulationRosterPlayer[]> {
-    const players = await this.txHost.tx.player.findMany({
-      where: { teamId: { in: teamIds } },
+    const assignments = await this.txHost.tx.playerTeamAssignment.findMany({
+      where: { seasonId, teamId: { in: teamIds } },
       select: {
-        id: true,
         teamId: true,
-        latestOverallRating: true,
-        positions: { select: { position: true, isPrimary: true } },
+        isStarter: true,
+        player: {
+          select: {
+            id: true,
+            latestOverallRating: true,
+            positions: { select: { position: true, isPrimary: true } },
+          },
+        },
       },
     });
 
-    return players.map((player) => {
-      const primary =
-        player.positions.find((position) => position.isPrimary) ??
-        player.positions[0];
+    const teamsWithStarters = new Set(
+      assignments.filter((a) => a.isStarter).map((a) => a.teamId),
+    );
 
-      return {
-        id: player.id,
-        teamId: player.teamId,
-        overallRating: player.latestOverallRating,
-        position: primary?.position ?? 'ATA',
-      };
-    });
+    return assignments
+      .filter((a) => !teamsWithStarters.has(a.teamId) || a.isStarter)
+      .map((a) => {
+        const primary =
+          a.player.positions.find((position) => position.isPrimary) ??
+          a.player.positions[0];
+
+        return {
+          id: a.player.id,
+          teamId: a.teamId,
+          overallRating: a.player.latestOverallRating,
+          position: primary?.position ?? 'ATA',
+        };
+      });
   }
 
   // Substitui todos os gols da partida pelos informados (o drawer sempre
   // manda a lista completa, não um diff) e marca a partida como jogada.
-  // Chamador deve estar dentro de uma @Transactional() (ver tournaments.service).
+  // `penalties` null limpa um resultado de pênaltis anterior (ex.: resultado
+  // corrigido pra não empatar mais). Chamador deve estar dentro de uma
+  // @Transactional() (ver tournaments.service).
   async replaceMatchGoals(
     matchId: string,
-    goals: { scorerId: string; assistId: string | null }[],
+    goals: { scorerId: string; assistId: string | null; teamId: string }[],
+    penalties: MatchPenalties | null,
   ): Promise<void> {
     await this.txHost.tx.goal.deleteMany({ where: { matchId } });
     if (goals.length > 0) {
@@ -561,12 +680,18 @@ export class TournamentsRepository {
           matchId,
           scorerId: goal.scorerId,
           assistId: goal.assistId,
+          teamId: goal.teamId,
         })),
       });
     }
     await this.txHost.tx.match.update({
       where: { id: matchId },
-      data: { playedAt: new Date() },
+      data: {
+        playedAt: new Date(),
+        penaltyHomeScore: penalties?.homeScore ?? null,
+        penaltyAwayScore: penalties?.awayScore ?? null,
+        penaltyWinnerTeamId: penalties?.winnerTeamId ?? null,
+      },
     });
   }
 
@@ -621,5 +746,95 @@ export class TournamentsRepository {
     });
 
     return new Map(squads.map((squad) => [squad.teamId, squad.user]));
+  }
+
+  // Todo jogo já disputado pelo time (real, qualquer temporada/torneio),
+  // do ponto de vista dele — já resolve quem foi o adversário e goals
+  // pró/contra em vez de homeGoals/awayGoals, pra TeamsService não precisar
+  // saber qual lado o time jogou. Ordenado do mais recente pro mais antigo
+  // pra alimentar tanto "últimos 10 jogos" quanto a campanha da temporada
+  // (ver computeSeasonCampaign/toRecentMatches/computeHeadToHead).
+  async findPlayedMatchesForTeam(teamId: string): Promise<TeamMatchResult[]> {
+    const matches = await this.txHost.tx.match.findMany({
+      where: {
+        playedAt: { not: null },
+        OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }],
+      },
+      orderBy: { playedAt: 'desc' },
+      select: {
+        id: true,
+        playedAt: true,
+        homeTeamId: true,
+        awayTeamId: true,
+        homeTeam: { select: { id: true, name: true, crestUrl: true } },
+        awayTeam: { select: { id: true, name: true, crestUrl: true } },
+        goals: { select: { teamId: true } },
+        phase: { select: { tournament: { select: { seasonId: true } } } },
+      },
+    });
+
+    return matches.map((match) => {
+      const isHome = match.homeTeamId === teamId;
+      const opponent = isHome ? match.awayTeam : match.homeTeam;
+      const opponentTeamId = isHome ? match.awayTeamId : match.homeTeamId;
+
+      let goalsFor = 0;
+      let goalsAgainst = 0;
+      for (const goal of match.goals) {
+        if (goal.teamId === teamId) {
+          goalsFor++;
+        } else if (goal.teamId === opponentTeamId) {
+          goalsAgainst++;
+        }
+      }
+
+      return {
+        matchId: match.id,
+        playedAt: match.playedAt as Date,
+        seasonId: match.phase.tournament.seasonId,
+        opponent,
+        goalsFor,
+        goalsAgainst,
+      };
+    });
+  }
+
+  async findTopScorersForTeam(
+    teamId: string,
+    limit: number,
+  ): Promise<{ playerId: string; count: number }[]> {
+    const result = await this.txHost.tx.goal.groupBy({
+      by: ['scorerId'],
+      where: { teamId },
+      _count: { scorerId: true },
+      orderBy: { _count: { scorerId: 'desc' } },
+      take: limit,
+    });
+
+    return result.map((row) => ({
+      playerId: row.scorerId,
+      count: row._count.scorerId,
+    }));
+  }
+
+  async findTopAssistsForTeam(
+    teamId: string,
+    limit: number,
+  ): Promise<{ playerId: string; count: number }[]> {
+    const result = await this.txHost.tx.goal.groupBy({
+      by: ['assistId'],
+      where: {
+        teamId,
+        assistId: { not: null },
+      },
+      _count: { assistId: true },
+      orderBy: { _count: { assistId: 'desc' } },
+      take: limit,
+    });
+
+    return result.map((row) => ({
+      playerId: row.assistId as string,
+      count: row._count.assistId,
+    }));
   }
 }

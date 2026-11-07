@@ -14,6 +14,7 @@ const TEAM_SORT_FIELDS = [
 
 export const ListTeamsSchema = PaginationSchema.extend({
   name: z.string().trim().min(1).optional(),
+  leagueId: z.string().uuid().optional(),
   // Pra achar times ainda não importados do JSON de formações (ver
   // TeamsService.importFormationsFromJson).
   withoutFormation: booleanQueryParam(false),

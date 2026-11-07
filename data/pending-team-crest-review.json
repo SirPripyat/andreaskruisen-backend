@@ -1,0 +1,878 @@
+{
+  "_readme": "Times do arquivo fc27-teams.json que NAO foram aplicados automaticamente na importacao de crestUrl (ver conversa). Preencher 'crestUrl_correto' e o 'db_team_id' (ou nome) de cada entrada que puder ser resolvida manualmente.",
+  "ambiguous": [
+    {
+      "json_name": "Nacional",
+      "db_candidates": [
+        "Atlético Nacional",
+        "Club Nacional de Football",
+        "CD Nacional"
+      ],
+      "note": "mais de um time no banco bate com esse nome; escolher manualmente."
+    },
+    {
+      "json_name": "Gimnasia",
+      "db_candidates": [
+        "Gimnasia y Esgrima de Mendoza",
+        "Gimnasia y Esgrima La Plata"
+      ],
+      "note": "mais de um time no banco bate com esse nome; escolher manualmente."
+    },
+    {
+      "json_name": "Central Córdoba",
+      "db_candidates": [
+        "Instituto Atlético Central Córdoba",
+        "Central Cordoba SdE"
+      ],
+      "note": "mais de um time no banco bate com esse nome; escolher manualmente."
+    },
+    {
+      "json_name": "Estudiantes",
+      "db_candidates": [
+        "Estudiantes de Río Cuarto",
+        "Estudiantes de La Plata"
+      ],
+      "note": "mais de um time no banco bate com esse nome; escolher manualmente."
+    },
+    {
+      "json_name": "Rangers",
+      "db_candidates": [
+        "Rangers FC",
+        "Queens Park Rangers"
+      ],
+      "note": "mais de um time no banco bate com esse nome; escolher manualmente."
+    }
+  ],
+  "unmatched": [
+    {
+      "json_name": "Sp. Charleroi",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "STVV",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Royale Union SG",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "OH Leuven",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Alem. Aachen",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "AGF",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "F.C. København",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Lyngby BK",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Odense BK",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Hammarby IF",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "OL Lyonnes",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "FC Fleury 91",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Montpellier FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Les Marseillaises",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "US Saint-Malo",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "London City",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "GC Zürich",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "M'gladbach",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Slavia Praga",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Sparta Praga",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Slavia Praga",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Atl. Nacional",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Barcelona SC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "IDV",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Indep. Santa Fe",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Dep. La Guaira",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "UCV FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Uni. Católica",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Dep. Cuenca",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Indep. Medellín",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Alianza Atltico",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Macar",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Ind. Petrolero",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Beijing FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Tianjin JMT FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Zhejiang Pro",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Chengdu FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "SZ Peng City",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Qingdao W. Coast",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Charlton Athl.",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Blackburn R.",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "MK Dons",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "HamKam Fotball",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "N.E.C. Nijmegen",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "AEK Atenas",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Mohun Bagan SG",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Hyderabad FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Breidablik",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Melb. Victory",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Well. Phoenix",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "WS Wanderers",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Daejeon Hana",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "D. Alavés",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Albacete BP",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Granada Club de Fútbol",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Club Tigres",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Quertaro FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Club Puebla",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Club Len",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Atltico de SL",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "FC Jurez",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Omonia FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "C. Adeje Tenerife",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Madrid CFF",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Badalona Women",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Granada Club de Fútbol",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Logroño United",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "SC Braga",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Ind. Rivadavia",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Dep. Riestra",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Argentinos Jrs.",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Club Atlético Gimnasia y Esgrima",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Asociación Atlética Estudiantes",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "LOSC Lille",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Stade Brest",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "ES Troyes AC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Laval MFC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Rodez AF",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Dijon Football Côte d’Or",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Ferencvárosi TC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Sporting KC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "SJ Earthquakes",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "LAFC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Seattle Reign",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Portland Thorns",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "NC Courage",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Washington Spirit",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Chicago Stars FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Houston Dash",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Orlando Pride",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Rac. Louisville",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "KC Current",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Gotham FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Angel City FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "San Diego Wave",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Bay FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Utah Royals FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Denver Summit FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Boston Legacy FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "RB Salzburg",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "SCR Altach",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "SC Austria",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Legia Varsóvia",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Glasgow City FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Latium",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Bergamo Calcio",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Lombardia FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Milano FC",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Bohemians",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "St. Pats",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Univ. Craiova",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "FC Rapid 1923",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Dinamo 1948",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "FC Petrolul",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "FC Univ. Cluj",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "FK Csíkszereda",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "FC Rosengård",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "BK Hcken",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Erzurumspor Futbol Kulübü",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Amed Sportif Faaliyetler",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "Çorum Futbol Kulübü",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    },
+    {
+      "json_name": "FC Shakhtar",
+      "note": "nenhum time correspondente encontrado no banco (pode nao existir na nossa base, ou o nome no JSON esta abreviado/truncado)."
+    }
+  ],
+  "skipped_feminino": [
+    {
+      "json_name": "Charlton Athletic",
+      "would_collide_with": "Charlton Athletic",
+      "note": "time feminino do JSON tem o mesmo nome de um time masculino no banco; nao aplicado pois o banco hoje so tem times masculinos."
+    },
+    {
+      "json_name": "Manchester Utd",
+      "would_collide_with": "Manchester United",
+      "note": "time feminino do JSON tem o mesmo nome de um time masculino no banco; nao aplicado pois o banco hoje so tem times masculinos."
+    },
+    {
+      "json_name": "Roma",
+      "would_collide_with": "AS Roma",
+      "note": "time feminino do JSON tem o mesmo nome de um time masculino no banco; nao aplicado pois o banco hoje so tem times masculinos."
+    },
+    {
+      "json_name": "Deportivo Alavés",
+      "would_collide_with": "Deportivo Alavés",
+      "note": "time feminino do JSON tem o mesmo nome de um time masculino no banco; nao aplicado pois o banco hoje so tem times masculinos."
+    }
+  ],
+  "same_team_multiple_json_entries": [
+    {
+      "json_name_discarded": "VfB Stuttgart",
+      "db_team_kept_via": "VfB Stuttgart II",
+      "would_have_pointed_to": "VfB Stuttgart II",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "VfB Stuttgart",
+      "db_team_kept_via": "VfB Stuttgart II",
+      "would_have_pointed_to": "VfB Stuttgart II",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "TSG Hoffenheim",
+      "db_team_kept_via": "TSG Hoffenheim II",
+      "would_have_pointed_to": "TSG 1899 Hoffenheim II",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "TSG Hoffenheim",
+      "db_team_kept_via": "TSG Hoffenheim II",
+      "would_have_pointed_to": "TSG 1899 Hoffenheim II",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "PSG",
+      "db_team_kept_via": "PSG",
+      "would_have_pointed_to": "Paris Saint-Germain",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Paris FC",
+      "db_team_kept_via": "Paris FC",
+      "would_have_pointed_to": "Paris FC",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Havre AC",
+      "db_team_kept_via": "Havre AC",
+      "would_have_pointed_to": "Le Havre AC",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "FC Nantes",
+      "db_team_kept_via": "FC Nantes",
+      "would_have_pointed_to": "FC Nantes",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Strasbourg",
+      "db_team_kept_via": "Strasbourg",
+      "would_have_pointed_to": "RC Strasbourg Alsace",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Toulouse FC",
+      "db_team_kept_via": "Toulouse FC",
+      "would_have_pointed_to": "Toulouse FC",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "RC Lens",
+      "db_team_kept_via": "RC Lens",
+      "would_have_pointed_to": "RC Lens",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Arsenal",
+      "db_team_kept_via": "Arsenal",
+      "would_have_pointed_to": "Arsenal FC",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Chelsea",
+      "db_team_kept_via": "Chelsea",
+      "would_have_pointed_to": "Chelsea FC",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Spurs",
+      "db_team_kept_via": "Spurs",
+      "would_have_pointed_to": "Tottenham Hotspur",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Brighton",
+      "db_team_kept_via": "Brighton",
+      "would_have_pointed_to": "Brighton & Hove Albion",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Aston Villa",
+      "db_team_kept_via": "Aston Villa",
+      "would_have_pointed_to": "Aston Villa",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Liverpool",
+      "db_team_kept_via": "Liverpool",
+      "would_have_pointed_to": "Liverpool FC",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Crystal Palace",
+      "db_team_kept_via": "Crystal Palace",
+      "would_have_pointed_to": "Crystal Palace",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "West Ham",
+      "db_team_kept_via": "West Ham",
+      "would_have_pointed_to": "West Ham United",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Everton",
+      "db_team_kept_via": "Everton",
+      "would_have_pointed_to": "Everton FC",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Manchester City",
+      "db_team_kept_via": "Manchester City",
+      "would_have_pointed_to": "Manchester City",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Birmingham City",
+      "db_team_kept_via": "Birmingham City",
+      "would_have_pointed_to": "Birmingham City",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "FC Zürich",
+      "db_team_kept_via": "FC Zürich",
+      "would_have_pointed_to": "FC Zürich",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "RB Leipzig",
+      "db_team_kept_via": "RB Leipzig",
+      "would_have_pointed_to": "RB Leipzig",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Hamburger SV",
+      "db_team_kept_via": "Hamburger SV",
+      "would_have_pointed_to": "Hamburger SV",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "1. FC Köln",
+      "db_team_kept_via": "1. FC Köln",
+      "would_have_pointed_to": "1. FC Köln",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "FC Bayern München",
+      "db_team_kept_via": "FC Bayern München",
+      "would_have_pointed_to": "Bayern München",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Leverkusen",
+      "db_team_kept_via": "Leverkusen",
+      "would_have_pointed_to": "Bayer 04 Leverkusen",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "SC Freiburg",
+      "db_team_kept_via": "SC Freiburg",
+      "would_have_pointed_to": "SC Freiburg",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "SV Werder Bremen",
+      "db_team_kept_via": "SV Werder Bremen",
+      "would_have_pointed_to": "Werder Bremen",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "1. FSV Mainz 05",
+      "db_team_kept_via": "1. FSV Mainz 05",
+      "would_have_pointed_to": "1. FSV Mainz 05",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Frankfurt",
+      "db_team_kept_via": "Frankfurt",
+      "would_have_pointed_to": "Eintracht Frankfurt",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Union Berlin",
+      "db_team_kept_via": "Union Berlin",
+      "would_have_pointed_to": "1. FC Union Berlin",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "1. FC Nürnberg",
+      "db_team_kept_via": "1. FC Nürnberg",
+      "would_have_pointed_to": "1. FC Nürnberg",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "VfL Wolfsburg",
+      "db_team_kept_via": "VfL Wolfsburg",
+      "would_have_pointed_to": "VfL Wolfsburg",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Juventus",
+      "db_team_kept_via": "Juventus",
+      "would_have_pointed_to": "Juventus FC",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "SK Brann",
+      "db_team_kept_via": "SK Brann",
+      "would_have_pointed_to": "SK Brann",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Ajax",
+      "db_team_kept_via": "Ajax",
+      "would_have_pointed_to": "Ajax",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "FC Twente",
+      "db_team_kept_via": "FC Twente",
+      "would_have_pointed_to": "FC Twente",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Atlético de Madrid",
+      "db_team_kept_via": "Atlético de Madrid",
+      "would_have_pointed_to": "Atlético Madrid",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "FC Barcelona",
+      "db_team_kept_via": "FC Barcelona",
+      "would_have_pointed_to": "FC Barcelona",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "RC Deportivo",
+      "db_team_kept_via": "RC Deportivo",
+      "would_have_pointed_to": "RC Deportivo A Coruña",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Real Madrid",
+      "db_team_kept_via": "Real Madrid",
+      "would_have_pointed_to": "Real Madrid",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Athletic Club",
+      "db_team_kept_via": "Athletic Club",
+      "would_have_pointed_to": "Athletic Club",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Celta",
+      "db_team_kept_via": "Celta Fortuna",
+      "would_have_pointed_to": "RC Celta Fortuna",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "RCD Espanyol",
+      "db_team_kept_via": "RCD Espanyol",
+      "would_have_pointed_to": "RCD Espanyol",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "R. Racing Club",
+      "db_team_kept_via": "Racing Club",
+      "would_have_pointed_to": "Racing Club",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Real Sociedad",
+      "db_team_kept_via": "Real Sociedad B",
+      "would_have_pointed_to": "Real Sociedad de Fútbol B",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Real Sociedad",
+      "db_team_kept_via": "Real Sociedad B",
+      "would_have_pointed_to": "Real Sociedad de Fútbol B",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Valencia CF",
+      "db_team_kept_via": "Valencia CF",
+      "would_have_pointed_to": "Valencia CF",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "Sevilla FC",
+      "db_team_kept_via": "Sevilla FC",
+      "would_have_pointed_to": "Sevilla FC",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "SD Eibar",
+      "db_team_kept_via": "SD Eibar",
+      "would_have_pointed_to": "SD Eibar",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    },
+    {
+      "json_name_discarded": "SL Benfica",
+      "db_team_kept_via": "SL Benfica",
+      "would_have_pointed_to": "SL Benfica",
+      "note": "mais de um nome do JSON apontava pro mesmo time do banco (ex.: time titular vs reserva/B, ou clube homonimo de outro pais); ficou valendo a entrada mais confiavel."
+    }
+  ]
+}

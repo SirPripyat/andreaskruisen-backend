@@ -4,6 +4,7 @@ import {
   SimulationPlayer,
   samplePoisson,
   simulateMatch,
+  simulatePenaltyShootout,
 } from './match-simulation';
 
 // Gerador determinístico só pros testes — nunca usado em produção (lá é
@@ -125,5 +126,34 @@ describe('simulateMatch', () => {
   it('time sem elenco não marca gol', () => {
     const result = simulateMatch([], makeRoster(80), () => 0.9);
     expect(result.homeGoals).toEqual([]);
+  });
+});
+
+describe('simulatePenaltyShootout', () => {
+  it('decide nas 5 cobranças quando um time converte mais', () => {
+    // 5 rodadas, casa converte todas (valor 0 < 0.75) e fora converte só 3
+    // (as 2 últimas erram com 0.9) -> 5 a 3, sem precisar de morte súbita.
+    const rng = queueRng([0, 0, 0, 0, 0, 0, 0, 0.9, 0, 0.9]);
+    const result = simulatePenaltyShootout(rng);
+    expect(result).toEqual({ homeScore: 5, awayScore: 3, homeWon: true });
+  });
+
+  it('vai pra morte súbita se empatar nas 5 cobranças normais', () => {
+    // 5 rodadas com os dois errando tudo (0.9 >= 0.75) -> 0 a 0, entra em
+    // morte súbita: casa converte (0.1), fora erra (0.9) -> decide 1 a 0.
+    const rng = queueRng([
+      0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.1, 0.9,
+    ]);
+    const result = simulatePenaltyShootout(rng);
+    expect(result).toEqual({ homeScore: 1, awayScore: 0, homeWon: true });
+  });
+
+  it('nunca termina empatado, mesmo em muitas rodadas de sorteio', () => {
+    const rng = createSeededRng(123);
+    for (let i = 0; i < 100; i++) {
+      const result = simulatePenaltyShootout(rng);
+      expect(result.homeScore).not.toBe(result.awayScore);
+      expect(result.homeWon).toBe(result.homeScore > result.awayScore);
+    }
   });
 });

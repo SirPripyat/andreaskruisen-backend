@@ -4,8 +4,9 @@ import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-pr
 import { Prisma, PrismaClient, Season } from '../../generated/prisma/client';
 
 // Postgres recusa queries com mais de 65535 parâmetros bindados; cada linha
-// de PlayerTeamAssignment usa 3 (seasonId, playerId, teamId), então esse
-// tamanho de lote fica bem abaixo do limite mesmo com a base toda de jogadores.
+// de PlayerTeamAssignment usa 4 (seasonId, playerId, teamId, isStarter),
+// então esse tamanho de lote fica bem abaixo do limite mesmo com a base toda
+// de jogadores.
 const SEED_BATCH_SIZE = 5000;
 
 @Injectable()
@@ -88,7 +89,11 @@ export class SeasonsRepository {
 
   async seedPlayerAssignmentsFromRealTeams(seasonId: string): Promise<number> {
     const players = await this.txHost.tx.player.findMany({
-      select: { id: true, teamId: true },
+      select: {
+        id: true,
+        teamId: true,
+        lineupSlots: { select: { id: true }, take: 1 },
+      },
     });
 
     for (let i = 0; i < players.length; i += SEED_BATCH_SIZE) {
@@ -98,6 +103,9 @@ export class SeasonsRepository {
           seasonId,
           playerId: player.id,
           teamId: player.teamId,
+          // Status real (SoFIFA) de titular/banco no início da temporada
+          // (ver comentário em PlayerTeamAssignment.isStarter no schema).
+          isStarter: player.lineupSlots.length > 0,
         })),
       });
     }

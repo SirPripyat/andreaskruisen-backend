@@ -53,6 +53,9 @@ export class SquadsController {
     return this.squadsService.getMine(request.user.id, seasonId);
   }
 
+  // Elenco inteiro da temporada, agrupado por setor (goleiros, defensores,
+  // meio-campistas, atacantes), cada jogador com isStarter (titular do time
+  // real no SoFIFA, ver TeamLineupSlot) — ver SquadsRepository.groupBySector.
   @Get(':teamId/players')
   listRoster(
     @Param('seasonId') seasonId: string,

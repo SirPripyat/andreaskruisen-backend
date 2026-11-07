@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import {
+  PhaseType,
   PositionCode,
   Prisma,
   Tournament,
@@ -27,10 +28,19 @@ import {
   generateLeagueMatches,
   knockoutRoundName,
 } from './match-generation';
-import { simulateMatch } from './match-simulation';
+import { simulateMatch, simulatePenaltyShootout } from './match-simulation';
+import {
+  computeHeadToHead,
+  computeSeasonCampaign,
+  HeadToHeadRecord,
+  RecentMatchResult,
+  SeasonCampaign,
+  toRecentMatches,
+} from './team-campaign';
 import { determineChampionTeamId } from './tournament-champion';
 import {
   GroupPhaseMatch,
+  MatchPenalties,
   MatchWithTeams,
   PhaseSummary,
   PlayerSummary,
@@ -40,6 +50,8 @@ import {
 } from './tournaments.repository';
 
 const TOP_STATS_LIMIT = 10;
+const TOP_TEAM_STATS_LIMIT = 3;
+const RECENT_MATCHES_LIMIT = 10;
 
 const FOREIGN_KEY_VIOLATION = 'P2003';
 
@@ -81,6 +93,9 @@ export interface MatchListItem {
   // null = partida ainda não jogada (ver Match.playedAt).
   homeScore: number | null;
   awayScore: number | null;
+  // Resultado dos pênaltis quando a partida é de mata-mata e empata no
+  // tempo normal (ver tournament-champion.ts) — null quando não houve.
+  penalties: MatchPenalties | null;
   homeTeam: ConfrontoTeam;
   awayTeam: ConfrontoTeam;
   // true = a fase seguinte já foi gerada a partir desta (ver
@@ -118,7 +133,11 @@ export interface MatchDetailResponse {
   id: string;
   groupLabel: string | null;
   round: number | null;
+  // Eliminatória (ver TournamentsService.replaceMatchGoals): o front usa
+  // isso pra saber se precisa pedir o resultado dos pênaltis num empate.
+  phaseType: PhaseType;
   playedAt: Date | null;
+  penalties: MatchPenalties | null;
   homeTeam: MatchTeamWithPlayers;
   awayTeam: MatchTeamWithPlayers;
   goals: MatchGoal[];
@@ -165,6 +184,22 @@ export interface TeamTitle {
   seasonName: string;
 }
 
+// Resumo pra tela de gerenciamento de um time (ver TeamsService.getOne):
+// quem controla, campanha da temporada ativa, últimos jogos, artilheiros e
+// assistências do elenco atual, e o retrospecto histórico contra cada
+// adversário (maior freguês/carrasco).
+export interface TeamStats {
+  owner: TeamOwner | null;
+  // null = não há temporada ativa (não é "zero jogos"; ver
+  // computeSeasonCampaign pro caso de zero jogos numa temporada que existe).
+  seasonCampaign: SeasonCampaign | null;
+  lastMatches: RecentMatchResult[];
+  topScorers: GoalLeader[];
+  topAssists: GoalLeader[];
+  biggestVictim: HeadToHeadRecord | null;
+  biggestTormentor: HeadToHeadRecord | null;
+}
+
 // Deriva o placar a partir de quem marcou cada gol — Match não guarda
 // placar diretamente (ver comentário no schema do Match).
 function computeMatchScore(
@@ -203,6 +238,7 @@ function toMatchListItem(
     round: match.round,
     homeScore: score?.homeGoals ?? null,
     awayScore: score?.awayGoals ?? null,
+    penalties: match.penalties,
     homeTeam: {
       ...match.homeTeam,
       owner: ownerByTeamId.get(match.homeTeam.id) ?? null,
@@ -222,6 +258,62 @@ function toPlayerOption(player: PlayerSummary): MatchPlayerOption {
     photoUrl: player.photoUrl,
     position: player.position,
   };
+}
+
+// Placar a partir dos goals já resolvidos pro time de cada um (ainda não
+// persistidos) pra saber se a partida empatou — mesma ideia de
+// computeMatchScore, mas antes de gravar.
+function countGoalsByTeam(
+  goals: { teamId: string }[],
+  homeTeamId: string,
+): { homeGoals: number; awayGoals: number } {
+  let homeGoals = 0;
+  let awayGoals = 0;
+  for (const goal of goals) {
+    if (goal.teamId === homeTeamId) {
+      homeGoals++;
+    } else {
+      awayGoals++;
+    }
+  }
+  return { homeGoals, awayGoals };
+}
+
+// Eliminatória não pode terminar empatada (ver comentário no schema do
+// Match): se empatou, o admin precisa informar os pênaltis; se não
+// empatou (ou a fase não é mata-mata), pênaltis não fazem sentido.
+function resolveManualPenalties(
+  phaseType: PhaseType,
+  homeTeamId: string,
+  awayTeamId: string,
+  homeGoals: number,
+  awayGoals: number,
+  dtoPenalties: { homeScore: number; awayScore: number } | undefined,
+): MatchPenalties | null {
+  const isDrawInKnockout = phaseType === 'KNOCKOUT' && homeGoals === awayGoals;
+
+  if (isDrawInKnockout) {
+    if (!dtoPenalties) {
+      throw new BadRequestException(
+        'Partida eliminatória empatada precisa do resultado dos pênaltis',
+      );
+    }
+    return {
+      homeScore: dtoPenalties.homeScore,
+      awayScore: dtoPenalties.awayScore,
+      winnerTeamId:
+        dtoPenalties.homeScore > dtoPenalties.awayScore
+          ? homeTeamId
+          : awayTeamId,
+    };
+  }
+
+  if (dtoPenalties) {
+    throw new BadRequestException(
+      'Pênaltis só se aplicam a um empate em partida eliminatória',
+    );
+  }
+  return null;
 }
 
 @Injectable()
@@ -525,10 +617,10 @@ export class TournamentsService {
       throw new NotFoundException('Partida não encontrada');
     }
 
-    const players = await this.tournamentsRepository.findPlayersByTeamIds([
-      match.homeTeam.id,
-      match.awayTeam.id,
-    ]);
+    const players = await this.tournamentsRepository.findPlayersByTeamIds(
+      match.seasonId,
+      [match.homeTeam.id, match.awayTeam.id],
+    );
     const locked = await this.tournamentsRepository.hasLaterPhase(
       tournamentId,
       match.phaseOrder,
@@ -538,7 +630,9 @@ export class TournamentsService {
       id: match.id,
       groupLabel: match.groupLabel,
       round: match.round,
+      phaseType: match.phaseType,
       playedAt: match.playedAt,
+      penalties: match.penalties,
       locked,
       homeTeam: {
         ...match.homeTeam,
@@ -593,13 +687,24 @@ export class TournamentsService {
         ),
       ),
     ];
-    const players =
-      await this.tournamentsRepository.findPlayersByIds(playerIds);
+    // Elenco ATUAL da temporada (reflete trocas já aplicadas), não o time
+    // real estático do jogador — ver comentário em
+    // TournamentsRepository.findAssignedTeamsByPlayerIds.
+    const assignments =
+      await this.tournamentsRepository.findAssignedTeamsByPlayerIds(
+        match.seasonId,
+        playerIds,
+      );
     const teamIdByPlayerId = new Map(
-      players.map((player) => [player.id, player.teamId]),
+      assignments.map((assignment) => [assignment.playerId, assignment.teamId]),
     );
     const matchTeamIds = new Set([match.homeTeamId, match.awayTeamId]);
 
+    const goals: {
+      scorerId: string;
+      assistId: string | null;
+      teamId: string;
+    }[] = [];
     for (const goal of dto.goals) {
       const scorerTeamId = teamIdByPlayerId.get(goal.scorerId);
       if (!scorerTeamId || !matchTeamIds.has(scorerTeamId)) {
@@ -616,14 +721,28 @@ export class TournamentsService {
           'Assistência precisa ser do mesmo time do artilheiro',
         );
       }
+
+      goals.push({
+        scorerId: goal.scorerId,
+        assistId: goal.assistId ?? null,
+        teamId: scorerTeamId,
+      });
     }
+
+    const { homeGoals, awayGoals } = countGoalsByTeam(goals, match.homeTeamId);
+    const penalties = resolveManualPenalties(
+      match.phaseType,
+      match.homeTeamId,
+      match.awayTeamId,
+      homeGoals,
+      awayGoals,
+      dto.penalties,
+    );
 
     await this.tournamentsRepository.replaceMatchGoals(
       matchId,
-      dto.goals.map((goal) => ({
-        scorerId: goal.scorerId,
-        assistId: goal.assistId ?? null,
-      })),
+      goals,
+      penalties,
     );
 
     return this.getMatchDetail(tournamentId, matchId);
@@ -646,10 +765,10 @@ export class TournamentsService {
       throw new ConflictException('Partida já tem resultado registrado');
     }
 
-    const roster = await this.tournamentsRepository.findPlayersForSimulation([
-      match.homeTeamId,
-      match.awayTeamId,
-    ]);
+    const roster = await this.tournamentsRepository.findPlayersForSimulation(
+      match.seasonId,
+      [match.homeTeamId, match.awayTeamId],
+    );
     const homeRoster = roster.filter((p) => p.teamId === match.homeTeamId);
     const awayRoster = roster.filter((p) => p.teamId === match.awayTeamId);
 
@@ -661,10 +780,33 @@ export class TournamentsService {
 
     const result = simulateMatch(homeRoster, awayRoster);
 
-    await this.tournamentsRepository.replaceMatchGoals(matchId, [
-      ...result.homeGoals,
-      ...result.awayGoals,
-    ]);
+    let penalties: MatchPenalties | null = null;
+    if (
+      match.phaseType === 'KNOCKOUT' &&
+      result.homeGoals.length === result.awayGoals.length
+    ) {
+      const shootout = simulatePenaltyShootout();
+      penalties = {
+        homeScore: shootout.homeScore,
+        awayScore: shootout.awayScore,
+        winnerTeamId: shootout.homeWon ? match.homeTeamId : match.awayTeamId,
+      };
+    }
+
+    await this.tournamentsRepository.replaceMatchGoals(
+      matchId,
+      [
+        ...result.homeGoals.map((goal) => ({
+          ...goal,
+          teamId: match.homeTeamId,
+        })),
+        ...result.awayGoals.map((goal) => ({
+          ...goal,
+          teamId: match.awayTeamId,
+        })),
+      ],
+      penalties,
+    );
 
     return this.getMatchDetail(tournamentId, matchId);
   }
@@ -1033,11 +1175,16 @@ export class TournamentsService {
         match.goalScorerTeamIds,
       );
       if (score.homeGoals === score.awayGoals) {
-        // Empate em mata-mata ainda não tem resolução automática (sem
-        // pênaltis) — não avança até o placar ser corrigido pra um vencedor.
-        throw new ConflictException(
-          'Existe partida empatada nesta fase; corrija o resultado antes de avançar',
-        );
+        // Empate no tempo normal: eliminatória não pode terminar empatada,
+        // então o resultado só foi aceito (ver replaceMatchGoals/
+        // simulateMatch) com os pênaltis já definidos.
+        if (!match.penalties) {
+          throw new ConflictException(
+            'Existe partida empatada nesta fase sem pênaltis definidos; corrija o resultado antes de avançar',
+          );
+        }
+        winnerTeamIds.push(match.penalties.winnerTeamId);
+        continue;
       }
       winnerTeamIds.push(
         score.homeGoals > score.awayGoals
@@ -1109,6 +1256,7 @@ export class TournamentsService {
           homeTeamId: match.homeTeam.id,
           awayTeamId: match.awayTeam.id,
           goalScorerTeamIds: match.goalScorerTeamIds,
+          penaltyWinnerTeamId: match.penalties?.winnerTeamId ?? null,
         })),
       });
     }
@@ -1123,6 +1271,58 @@ export class TournamentsService {
       latestPhaseType: 'GROUP',
       standingsByGroup,
     });
+  }
+
+  // Resumo pra tela de gerenciamento de um time — ver TeamStats. Dono e
+  // campanha são da temporada ativa (ownership e "campanha da temporada" só
+  // fazem sentido pra uma temporada por vez); últimos jogos, artilheiros,
+  // assistências e retrospecto por adversário são o histórico completo do
+  // clube, em qualquer temporada.
+  async getTeamStats(teamId: string): Promise<TeamStats> {
+    const [matches, activeSeason] = await Promise.all([
+      this.tournamentsRepository.findPlayedMatchesForTeam(teamId),
+      this.seasonsRepository.findActive(),
+    ]);
+
+    const owner = activeSeason
+      ? ((
+          await this.tournamentsRepository.findOwnersByTeamIds(
+            [teamId],
+            activeSeason.id,
+          )
+        ).get(teamId) ?? null)
+      : null;
+
+    const seasonCampaign = activeSeason
+      ? computeSeasonCampaign(matches, activeSeason.id)
+      : null;
+
+    const { biggestVictim, biggestTormentor } = computeHeadToHead(matches);
+
+    const [topScorersRaw, topAssistsRaw] = await Promise.all([
+      this.tournamentsRepository.findTopScorersForTeam(
+        teamId,
+        TOP_TEAM_STATS_LIMIT,
+      ),
+      this.tournamentsRepository.findTopAssistsForTeam(
+        teamId,
+        TOP_TEAM_STATS_LIMIT,
+      ),
+    ]);
+    const [topScorers, topAssists] = await Promise.all([
+      this.resolveGoalLeaders(topScorersRaw),
+      this.resolveGoalLeaders(topAssistsRaw),
+    ]);
+
+    return {
+      owner,
+      seasonCampaign,
+      lastMatches: toRecentMatches(matches, RECENT_MATCHES_LIMIT),
+      topScorers,
+      topAssists,
+      biggestVictim,
+      biggestTormentor,
+    };
   }
 
   // Histórico de títulos de um time (independente de quem o comandou em

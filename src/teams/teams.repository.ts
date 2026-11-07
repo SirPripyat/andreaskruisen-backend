@@ -87,7 +87,7 @@ export class TeamsRepository {
   ) {}
 
   async findPaginated(
-    filter: { name?: string; withoutFormation?: boolean },
+    filter: { name?: string; leagueId?: string; withoutFormation?: boolean },
     sort: TeamsSort,
     pagination: PaginationQuery,
   ): Promise<PaginatedResult<TeamWithRatings>> {
@@ -96,12 +96,16 @@ export class TeamsRepository {
         ...(filter.name
           ? { name: { contains: filter.name, mode: 'insensitive' } }
           : {}),
+        ...(filter.leagueId ? { leagueId: filter.leagueId } : {}),
         ...(filter.withoutFormation ? { formation: null } : {}),
       },
     });
 
     const nameFilter = filter.name
       ? Prisma.sql`AND t.name ILIKE ${`%${filter.name}%`}`
+      : Prisma.empty;
+    const leagueFilter = filter.leagueId
+      ? Prisma.sql`AND l.id = ${filter.leagueId}::uuid`
       : Prisma.empty;
     const withoutFormationFilter = filter.withoutFormation
       ? Prisma.sql`AND t.formation IS NULL`
@@ -129,7 +133,7 @@ export class TeamsRepository {
       JOIN "League" l ON l.id = t."leagueId"
       LEFT JOIN "Player" p ON p."teamId" = t.id AND ${ONLY_STARTERS_OR_WHOLE_SQUAD}
       LEFT JOIN "PlayerPosition" pp ON pp."playerId" = p.id AND pp."isPrimary" = true
-      WHERE true ${nameFilter} ${withoutFormationFilter}
+      WHERE true ${nameFilter} ${leagueFilter} ${withoutFormationFilter}
       GROUP BY t.id, t.name, t."crestUrl", t.formation, l.id, l.name
       ORDER BY ${orderColumn} ${orderDirection} NULLS LAST, t.name ASC
       LIMIT ${pagination.pageSize} OFFSET ${skip}

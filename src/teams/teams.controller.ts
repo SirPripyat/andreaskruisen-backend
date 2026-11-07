@@ -101,4 +101,39 @@ export class TeamsController {
 
     return this.teamsService.importLineupsFromJson(file.buffer);
   }
+
+  // Sobrescreve crestUrl a partir do catálogo oficial de times da EA
+  // (arquivo separado dos demais imports): casa por name + liga, ignora
+  // times femininos — ver TeamsService.importCrestsFromJson.
+  @Post('import-crests')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AdminGuard)
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_IMPORT_FILE_SIZE } }),
+  )
+  async importCrests(@UploadedFile() file: UploadedJsonFile | undefined) {
+    if (!file) {
+      throw new BadRequestException('Envie o arquivo JSON no campo "file"');
+    }
+
+    return this.teamsService.importCrestsFromJson(file.buffer);
+  }
+
+  // Resolução manual dos "notFound" do import-crests: suba o mesmo arquivo
+  // gerado em data/team-crest-notfound.json depois de preencher
+  // resolved_team_name nas entradas que reconhecer — cria o TeamAlias
+  // correspondente. Rode import-crests de novo depois pra aplicar o escudo.
+  @Post('import-aliases')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AdminGuard)
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_IMPORT_FILE_SIZE } }),
+  )
+  async importAliases(@UploadedFile() file: UploadedJsonFile | undefined) {
+    if (!file) {
+      throw new BadRequestException('Envie o arquivo JSON no campo "file"');
+    }
+
+    return this.teamsService.importAliasesFromJson(file.buffer);
+  }
 }

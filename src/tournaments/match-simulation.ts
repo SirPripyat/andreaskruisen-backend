@@ -16,11 +16,24 @@ export interface SimulatedMatchResult {
   awayGoals: SimulatedGoal[];
 }
 
+export interface SimulatedPenaltyShootout {
+  homeScore: number;
+  awayScore: number;
+  // true = o time de casa venceu os pênaltis.
+  homeWon: boolean;
+}
+
 // Média de gols por time numa partida "equilibrada"; o lambda de cada time
 // sobe ou desce proporcionalmente à força relativa dos elencos.
 const BASE_LAMBDA = 1.4;
 const MAX_GOALS_PER_TEAM = 10;
 const ASSIST_CHANCE = 0.65;
+
+// Taxa de conversão de cada cobrança de pênalti — não depende da força do
+// elenco (ao contrário dos gols em jogo): é um duelo individual só entre
+// cobrador e goleiro.
+const PENALTY_KICK_SUCCESS_RATE = 0.75;
+const PENALTY_SHOOTOUT_ROUNDS = 5;
 
 type PositionTier = 'ATTACK' | 'MIDFIELD' | 'DEFENSE' | 'GK';
 
@@ -160,4 +173,30 @@ export function simulateMatch(
     homeGoals: generateTeamGoals(homeRoster, homeGoalsCount, rng),
     awayGoals: generateTeamGoals(awayRoster, awayGoalsCount, rng),
   };
+}
+
+// Disputa de pênaltis pra desempatar uma eliminatória (ver
+// TournamentsService.simulateMatch) — 5 cobranças alternadas por time e,
+// se continuar empatado, morte súbita (1 cobrança por vez) até alguém
+// marcar e o outro não na mesma rodada. Não depende do elenco: é sempre o
+// mesmo duelo individual cobrador x goleiro (ver PENALTY_KICK_SUCCESS_RATE).
+export function simulatePenaltyShootout(
+  rng: () => number = Math.random,
+): SimulatedPenaltyShootout {
+  let homeScore = 0;
+  let awayScore = 0;
+
+  for (let round = 0; round < PENALTY_SHOOTOUT_ROUNDS; round++) {
+    if (rng() < PENALTY_KICK_SUCCESS_RATE) homeScore++;
+    if (rng() < PENALTY_KICK_SUCCESS_RATE) awayScore++;
+  }
+
+  while (homeScore === awayScore) {
+    const homeScored = rng() < PENALTY_KICK_SUCCESS_RATE;
+    const awayScored = rng() < PENALTY_KICK_SUCCESS_RATE;
+    if (homeScored) homeScore++;
+    if (awayScored) awayScore++;
+  }
+
+  return { homeScore, awayScore, homeWon: homeScore > awayScore };
 }

@@ -8,7 +8,12 @@ describe('determineChampionTeamId', () => {
         isLatestPhaseFullyPlayed: false,
         latestPhaseType: 'KNOCKOUT',
         knockoutMatches: [
-          { homeTeamId: 't1', awayTeamId: 't2', goalScorerTeamIds: [] },
+          {
+            homeTeamId: 't1',
+            awayTeamId: 't2',
+            goalScorerTeamIds: [],
+            penaltyWinnerTeamId: null,
+          },
         ],
       }),
     ).toBeNull();
@@ -25,6 +30,7 @@ describe('determineChampionTeamId', () => {
             homeTeamId: 't1',
             awayTeamId: 't2',
             goalScorerTeamIds: ['t1', 't1', 't2'],
+            penaltyWinnerTeamId: null,
           },
         ],
       });
@@ -37,14 +43,24 @@ describe('determineChampionTeamId', () => {
         isLatestPhaseFullyPlayed: true,
         latestPhaseType: 'KNOCKOUT',
         knockoutMatches: [
-          { homeTeamId: 't1', awayTeamId: 't2', goalScorerTeamIds: ['t1'] },
-          { homeTeamId: 't3', awayTeamId: 't4', goalScorerTeamIds: ['t3'] },
+          {
+            homeTeamId: 't1',
+            awayTeamId: 't2',
+            goalScorerTeamIds: ['t1'],
+            penaltyWinnerTeamId: null,
+          },
+          {
+            homeTeamId: 't3',
+            awayTeamId: 't4',
+            goalScorerTeamIds: ['t3'],
+            penaltyWinnerTeamId: null,
+          },
         ],
       });
       expect(championId).toBeNull();
     });
 
-    it('retorna null se a final empatou', () => {
+    it('retorna null se a final empatou sem pênaltis definidos', () => {
       const championId = determineChampionTeamId({
         format: 'KNOCKOUT',
         isLatestPhaseFullyPlayed: true,
@@ -54,10 +70,28 @@ describe('determineChampionTeamId', () => {
             homeTeamId: 't1',
             awayTeamId: 't2',
             goalScorerTeamIds: ['t1', 't2'],
+            penaltyWinnerTeamId: null,
           },
         ],
       });
       expect(championId).toBeNull();
+    });
+
+    it('devolve o vencedor dos pênaltis quando a final empatou no tempo normal', () => {
+      const championId = determineChampionTeamId({
+        format: 'KNOCKOUT',
+        isLatestPhaseFullyPlayed: true,
+        latestPhaseType: 'KNOCKOUT',
+        knockoutMatches: [
+          {
+            homeTeamId: 't1',
+            awayTeamId: 't2',
+            goalScorerTeamIds: ['t1', 't2'],
+            penaltyWinnerTeamId: 't2',
+          },
+        ],
+      });
+      expect(championId).toBe('t2');
     });
   });
 

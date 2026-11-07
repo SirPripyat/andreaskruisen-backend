@@ -4,6 +4,10 @@ export interface ChampionMatch {
   homeTeamId: string;
   awayTeamId: string;
   goalScorerTeamIds: string[];
+  // Vencedor nos pênaltis quando o placar empata — eliminatória não pode
+  // terminar empatada (ver TournamentsService.replaceMatchGoals). Null
+  // quando o placar não empatou (os pênaltis nem rolaram).
+  penaltyWinnerTeamId: string | null;
 }
 
 export interface ChampionGroupStanding {
@@ -64,7 +68,7 @@ export function determineChampionTeamId(input: ChampionInput): string | null {
     const final = input.knockoutMatches[0];
     const score = computeMatchScore(final);
     if (score.homeGoals === score.awayGoals) {
-      return null;
+      return final.penaltyWinnerTeamId;
     }
     return score.homeGoals > score.awayGoals
       ? final.homeTeamId
