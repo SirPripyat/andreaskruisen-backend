@@ -6,11 +6,23 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthenticatedUser, AuthService } from './auth.service';
-import { SESSION_COOKIE_NAME } from './session-cookie';
 
 export interface AuthenticatedRequest extends Request {
   user: AuthenticatedUser;
+  token: string;
 }
+
+const BEARER_PREFIX = 'Bearer ';
+
+const extractBearerToken = (
+  authorizationHeader?: string,
+): string | undefined => {
+  if (!authorizationHeader?.startsWith(BEARER_PREFIX)) {
+    return undefined;
+  }
+
+  return authorizationHeader.slice(BEARER_PREFIX.length);
+};
 
 @Injectable()
 export class SessionAuthGuard implements CanActivate {
@@ -18,13 +30,14 @@ export class SessionAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const token = request.cookies?.[SESSION_COOKIE_NAME];
+    const token = extractBearerToken(request.headers.authorization);
 
     if (!token) {
       throw new UnauthorizedException('Sessão não encontrada');
     }
 
     request.user = await this.authService.validateSession(token);
+    request.token = token;
     return true;
   }
 }
