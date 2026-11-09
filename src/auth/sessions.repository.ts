@@ -19,14 +19,24 @@ export class SessionsRepository {
     return this.txHost.tx.session.create({ data });
   }
 
-  findValidByToken(
-    token: string,
-  ): Promise<
-    (Session & { user: { id: string; name: string; role: UserRole } }) | null
+  findValidByToken(token: string): Promise<
+    | (Session & {
+        user: {
+          id: string;
+          name: string;
+          role: UserRole;
+          selectedSeasonId: string | null;
+        };
+      })
+    | null
   > {
     return this.txHost.tx.session.findFirst({
       where: { token, expiresAt: { gt: new Date() } },
-      include: { user: { select: { id: true, name: true, role: true } } },
+      include: {
+        user: {
+          select: { id: true, name: true, role: true, selectedSeasonId: true },
+        },
+      },
     });
   }
 

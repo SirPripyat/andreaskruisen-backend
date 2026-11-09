@@ -12,6 +12,7 @@ export interface AuthenticatedUser {
   id: string;
   name: string;
   role: UserRole;
+  selectedSeasonId: string | null;
 }
 
 @Injectable()
@@ -38,7 +39,12 @@ export class AuthService {
     await this.sessionsRepository.create({ token, userId: user.id, expiresAt });
 
     return {
-      user: { id: user.id, name: user.name, role: user.role },
+      user: {
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        selectedSeasonId: user.selectedSeasonId,
+      },
       token,
       expiresAt,
     };

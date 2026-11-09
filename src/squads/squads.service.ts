@@ -128,10 +128,7 @@ export class SquadsService {
     return groupBySector(players);
   }
 
-  async getLineup(
-    seasonId: string,
-    teamId: string,
-  ): Promise<LineupOverview> {
+  async getLineup(seasonId: string, teamId: string): Promise<LineupOverview> {
     const season = await this.seasonsRepository.findById(seasonId);
     if (!season) {
       throw new NotFoundException('Temporada não encontrada');

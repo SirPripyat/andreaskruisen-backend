@@ -546,11 +546,7 @@ export class TournamentsService {
       phase.order,
     );
     const ownerByTeamId = await this.tournamentsRepository.findOwnersByTeamIds(
-      [
-        ...new Set(
-          result.data.flatMap((m) => [m.homeTeam.id, m.awayTeam.id]),
-        ),
-      ],
+      [...new Set(result.data.flatMap((m) => [m.homeTeam.id, m.awayTeam.id]))],
       tournament.seasonId,
     );
 

@@ -8,11 +8,16 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
+import {
+  SeasonContextGuard,
+  SeasonScopedRequest,
+} from '../seasons/season-context.guard';
 import {
   CreateTournament,
   CreateTournamentSchema,
@@ -37,18 +42,20 @@ import { TournamentsService } from './tournaments.service';
 export class TournamentsController {
   constructor(private readonly tournamentsService: TournamentsService) {}
 
-  @Post('seasons/:seasonId/tournaments')
+  @Post('tournaments')
+  @UseGuards(SessionAuthGuard, SeasonContextGuard)
   create(
-    @Param('seasonId') seasonId: string,
+    @Req() request: SeasonScopedRequest,
     @Body(new ZodValidationPipe(CreateTournamentSchema))
     dto: CreateTournament,
   ) {
-    return this.tournamentsService.create(seasonId, dto);
+    return this.tournamentsService.create(request.seasonId, dto);
   }
 
-  @Get('seasons/:seasonId/tournaments')
-  findBySeason(@Param('seasonId') seasonId: string) {
-    return this.tournamentsService.findBySeason(seasonId);
+  @Get('tournaments')
+  @UseGuards(SessionAuthGuard, SeasonContextGuard)
+  findBySeason(@Req() request: SeasonScopedRequest) {
+    return this.tournamentsService.findBySeason(request.seasonId);
   }
 
   @Get('tournaments/:id')

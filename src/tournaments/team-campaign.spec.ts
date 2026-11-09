@@ -6,11 +6,16 @@ import {
   toRecentMatches,
 } from './team-campaign';
 
-function team(id: string, name = id): { id: string; name: string; crestUrl: string } {
+function team(
+  id: string,
+  name = id,
+): { id: string; name: string; crestUrl: string } {
   return { id, name, crestUrl: `${id}.png` };
 }
 
-function match(data: Partial<TeamMatchResult> & { opponentId: string }): TeamMatchResult {
+function match(
+  data: Partial<TeamMatchResult> & { opponentId: string },
+): TeamMatchResult {
   return {
     matchId: data.matchId ?? `match-${data.opponentId}-${Math.random()}`,
     playedAt: data.playedAt ?? new Date('2026-01-01'),
@@ -38,10 +43,30 @@ describe('matchOutcome', () => {
 describe('computeSeasonCampaign', () => {
   it('soma jogos, pontos e gols só da temporada informada', () => {
     const matches = [
-      match({ opponentId: 'a', seasonId: 'season-1', goalsFor: 2, goalsAgainst: 1 }), // V
-      match({ opponentId: 'b', seasonId: 'season-1', goalsFor: 1, goalsAgainst: 1 }), // E
-      match({ opponentId: 'c', seasonId: 'season-1', goalsFor: 0, goalsAgainst: 2 }), // D
-      match({ opponentId: 'a', seasonId: 'season-2', goalsFor: 5, goalsAgainst: 0 }), // outra temporada
+      match({
+        opponentId: 'a',
+        seasonId: 'season-1',
+        goalsFor: 2,
+        goalsAgainst: 1,
+      }), // V
+      match({
+        opponentId: 'b',
+        seasonId: 'season-1',
+        goalsFor: 1,
+        goalsAgainst: 1,
+      }), // E
+      match({
+        opponentId: 'c',
+        seasonId: 'season-1',
+        goalsFor: 0,
+        goalsAgainst: 2,
+      }), // D
+      match({
+        opponentId: 'a',
+        seasonId: 'season-2',
+        goalsFor: 5,
+        goalsAgainst: 0,
+      }), // outra temporada
     ];
 
     const campaign = computeSeasonCampaign(matches, 'season-1');

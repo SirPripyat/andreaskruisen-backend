@@ -1,39 +1,31 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  AuthenticatedRequest,
-  SessionAuthGuard,
-} from '../auth/session-auth.guard';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
+import {
+  SeasonContextGuard,
+  SeasonScopedRequest,
+} from '../seasons/season-context.guard';
 import {
   CreateTransfer,
   CreateTransferSchema,
 } from './dto/create-transfer.schema';
 import { TransfersService } from './transfers.service';
 
-@Controller('seasons/:seasonId/transfers')
-@UseGuards(SessionAuthGuard)
+@Controller('transfers')
+@UseGuards(SessionAuthGuard, SeasonContextGuard)
 export class TransfersController {
   constructor(private readonly transfersService: TransfersService) {}
 
   @Post()
   create(
-    @Req() request: AuthenticatedRequest,
-    @Param('seasonId') seasonId: string,
+    @Req() request: SeasonScopedRequest,
     @Body(new ZodValidationPipe(CreateTransferSchema)) dto: CreateTransfer,
   ) {
-    return this.transfersService.create(seasonId, request.user.id, dto);
+    return this.transfersService.create(request.seasonId, request.user.id, dto);
   }
 
   @Get()
-  findBySeason(@Param('seasonId') seasonId: string) {
-    return this.transfersService.findBySeason(seasonId);
+  findBySeason(@Req() request: SeasonScopedRequest) {
+    return this.transfersService.findBySeason(request.seasonId);
   }
 }

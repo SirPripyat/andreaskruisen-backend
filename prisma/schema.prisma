@@ -273,6 +273,13 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Temporada que esse usuário escolheu ver. Null = ainda não escolheu, cai
+  // no fallback global (Season.isActive) até escolher uma vez. onDelete:
+  // SetNull porque apagar a season só deve resetar a escolha do usuário pro
+  // default global, nunca bloquear a exclusão da season.
+  selectedSeasonId String? @db.Uuid
+  selectedSeason   Season? @relation(fields: [selectedSeasonId], references: [id], onDelete: SetNull)
+
   sessions           Session[]
   squads             Squad[]
   transfersRequested Transfer[]
@@ -301,10 +308,11 @@ model Season {
   // SeasonsService.selectActive), dentro de uma transação.
   isActive  Boolean  @default(false)
 
-  squads      Squad[]
-  assignments PlayerTeamAssignment[]
-  tournaments Tournament[]
-  transfers   Transfer[]
+  squads          Squad[]
+  assignments     PlayerTeamAssignment[]
+  tournaments     Tournament[]
+  transfers       Transfer[]
+  selectedByUsers User[]
 }
 
 // O elenco de um participante numa temporada: o time real que ele escolheu

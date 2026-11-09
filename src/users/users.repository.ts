@@ -38,6 +38,17 @@ export class UsersRepository {
     return this.txHost.tx.user.findUnique({ where: { id } });
   }
 
+  updateSelectedSeason(
+    id: string,
+    seasonId: string,
+  ): Promise<Pick<User, 'id' | 'name' | 'role' | 'selectedSeasonId'>> {
+    return this.txHost.tx.user.update({
+      where: { id },
+      data: { selectedSeasonId: seasonId },
+      select: { id: true, name: true, role: true, selectedSeasonId: true },
+    });
+  }
+
   async userExist(name: string): Promise<boolean> {
     return (await this.findByName(name)) !== null;
   }

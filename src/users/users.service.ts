@@ -74,6 +74,20 @@ export class UsersService implements OnModuleInit {
     }
   }
 
+  async selectSeason(userId: string, seasonId: string) {
+    try {
+      return await this.repository.updateSelectedSeason(userId, seasonId);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === FOREIGN_KEY_VIOLATION
+      ) {
+        throw new NotFoundException('Temporada não encontrada');
+      }
+      throw error;
+    }
+  }
+
   async ensureDefaultAdmin(dto: CreateUser) {
     const user = await this.repository.findByName(dto.name);
 

@@ -1,7 +1,4 @@
-export type TournamentFormat =
-  | 'LEAGUE'
-  | 'KNOCKOUT'
-  | 'GROUP_STAGE_KNOCKOUT';
+export type TournamentFormat = 'LEAGUE' | 'KNOCKOUT' | 'GROUP_STAGE_KNOCKOUT';
 
 interface TeamCountRule {
   allowed: number[];

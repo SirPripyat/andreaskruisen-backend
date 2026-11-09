@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -17,6 +18,7 @@ import {
 } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import { CreateUser, CreateUserSchema } from './dto/create-user.schema';
+import { SelectSeason, SelectSeasonSchema } from './dto/select-season.schema';
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -39,5 +41,14 @@ export class UsersController {
   @UseGuards(SessionAuthGuard, AdminGuard)
   async remove(@Param('id') id: string, @Req() request: AuthenticatedRequest) {
     await this.usersService.remove(id, request.user.id);
+  }
+
+  @Patch('me/selected-season')
+  @UseGuards(SessionAuthGuard)
+  selectSeason(
+    @Req() request: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(SelectSeasonSchema)) dto: SelectSeason,
+  ) {
+    return this.usersService.selectSeason(request.user.id, dto.seasonId);
   }
 }

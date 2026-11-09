@@ -65,7 +65,9 @@ function roundRobinMatches(
 // tournament-format-rules.ts) — por isso um único groupLabel.
 // Times já devem vir embaralhados pra quem chama; aqui a montagem dos
 // confrontos é determinística, pra ficar fácil de testar.
-export function generateLeagueMatches(teamIds: string[]): GeneratedGroupMatch[] {
+export function generateLeagueMatches(
+  teamIds: string[],
+): GeneratedGroupMatch[] {
   return roundRobinMatches(teamIds, 'A');
 }
 

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import { Prisma, Season } from '../../generated/prisma/client';
+import { AuthenticatedUser } from '../auth/auth.service';
 import { CreateSeason } from './dto/create-season.schema';
 import { UpdateSeason } from './dto/update-season.schema';
 import { SeasonsRepository } from './seasons.repository';
@@ -83,6 +84,21 @@ export class SeasonsService {
   async selectActive(id: string): Promise<Season> {
     await this.findOrThrow(id);
     return this.seasonsRepository.setActive(id);
+  }
+
+  // Resolve a temporada "efetiva" de um usuário: a que ele escolheu
+  // pessoalmente (User.selectedSeasonId) ou, na falta dela, o default
+  // global (Season.isActive). Usado por SeasonContextGuard pra tirar o
+  // seasonId da URL nos endpoints de squads/tournaments/transfers.
+  async getEffectiveSeasonId(
+    user: Pick<AuthenticatedUser, 'selectedSeasonId'>,
+  ): Promise<string> {
+    if (user.selectedSeasonId) {
+      return user.selectedSeasonId;
+    }
+
+    const active = await this.getActive();
+    return active.id;
   }
 
   private async findOrThrow(id: string): Promise<Season> {

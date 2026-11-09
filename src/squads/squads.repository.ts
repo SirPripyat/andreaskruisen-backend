@@ -38,13 +38,15 @@ export interface RosterBySector {
 // (averageDefenseRating etc.), pra ficar consistente com o resto da API. A
 // ordem dentro de cada array é a ordem de exibição das posições dentro do
 // setor (ex.: meio-campo do mais ofensivo, MEI, ao mais defensivo, VOL).
-const SECTOR_POSITIONS: { key: keyof RosterBySector; positions: PositionCode[] }[] =
-  [
-    { key: 'goalkeepers', positions: ['GOL'] },
-    { key: 'defenders', positions: ['ZAG', 'LD', 'LE'] },
-    { key: 'midfielders', positions: ['MEI', 'ME', 'MD', 'MC', 'VOL'] },
-    { key: 'attackers', positions: ['PD', 'ATA', 'PE'] },
-  ];
+const SECTOR_POSITIONS: {
+  key: keyof RosterBySector;
+  positions: PositionCode[];
+}[] = [
+  { key: 'goalkeepers', positions: ['GOL'] },
+  { key: 'defenders', positions: ['ZAG', 'LD', 'LE'] },
+  { key: 'midfielders', positions: ['MEI', 'ME', 'MD', 'MC', 'VOL'] },
+  { key: 'attackers', positions: ['PD', 'ATA', 'PE'] },
+];
 
 // Dentro de cada setor: agrupado por posição (ordem de SECTOR_POSITIONS),
 // e dentro da mesma posição, titulares primeiro e depois por overall (maior

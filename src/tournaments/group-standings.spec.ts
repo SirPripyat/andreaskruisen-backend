@@ -2,7 +2,11 @@ import { computeGroupStandings, GroupStandingMatch } from './group-standings';
 
 const teams = [
   { id: 't1', name: 'Ajax', crestUrl: 'https://example.com/ajax.png' },
-  { id: 't2', name: 'Barcelona', crestUrl: 'https://example.com/barcelona.png' },
+  {
+    id: 't2',
+    name: 'Barcelona',
+    crestUrl: 'https://example.com/barcelona.png',
+  },
   { id: 't3', name: 'Chelsea', crestUrl: 'https://example.com/chelsea.png' },
   { id: 't4', name: 'Dortmund', crestUrl: 'https://example.com/dortmund.png' },
 ];
