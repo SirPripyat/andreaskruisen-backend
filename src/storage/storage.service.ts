@@ -11,7 +11,7 @@ export class StorageService {
   private readonly bucket: string;
 
   constructor(
-    private readonly configService: ConfigService,
+    configService: ConfigService,
 
     @Inject(GCS_CLIENT)
     private readonly storage: Storage,

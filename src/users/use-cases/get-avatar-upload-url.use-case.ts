@@ -11,10 +11,7 @@ export class GetAvatarUploadUrlUseCase {
     contentType: string,
   ): Promise<{ uploadUrl: string }> {
     const path = buildAvatarPath(userId);
-    const uploadUrl = await this.storageService.getUploadUrl(
-      path,
-      contentType,
-    );
+    const uploadUrl = await this.storageService.getUploadUrl(path, contentType);
 
     return { uploadUrl };
   }

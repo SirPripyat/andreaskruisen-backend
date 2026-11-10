@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import { Prisma } from '../../../generated/prisma/client';
 import { UsersRepository } from '../users.repository';

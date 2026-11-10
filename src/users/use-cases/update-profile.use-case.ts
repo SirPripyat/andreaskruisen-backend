@@ -31,10 +31,7 @@ export class UpdateProfileUseCase {
     });
   }
 
-  private async ensureNameIsFree(
-    name: string,
-    userId: string,
-  ): Promise<void> {
+  private async ensureNameIsFree(name: string, userId: string): Promise<void> {
     const existingUser = await this.repository.findByName(name);
 
     if (existingUser && existingUser.id !== userId) {
