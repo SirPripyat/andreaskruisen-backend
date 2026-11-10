@@ -5,27 +5,31 @@ import {
   SeasonContextGuard,
   SeasonScopedRequest,
 } from '../seasons/season-context.guard';
-import {
-  CreateTransfer,
-  CreateTransferSchema,
-} from './dto/create-transfer.schema';
-import { TransfersService } from './transfers.service';
+import { CreateTransfer, CreateTransferSchema } from './dto';
+import { CreateTransferUseCase, ListTransfersUseCase } from './use-cases';
 
 @Controller('transfers')
 @UseGuards(SessionAuthGuard, SeasonContextGuard)
 export class TransfersController {
-  constructor(private readonly transfersService: TransfersService) {}
+  constructor(
+    private readonly createTransferUseCase: CreateTransferUseCase,
+    private readonly listTransfersUseCase: ListTransfersUseCase,
+  ) {}
 
   @Post()
   create(
     @Req() request: SeasonScopedRequest,
     @Body(new ZodValidationPipe(CreateTransferSchema)) dto: CreateTransfer,
   ) {
-    return this.transfersService.create(request.seasonId, request.user.id, dto);
+    return this.createTransferUseCase.execute(
+      request.seasonId,
+      request.user.id,
+      dto,
+    );
   }
 
   @Get()
   findBySeason(@Req() request: SeasonScopedRequest) {
-    return this.transfersService.findBySeason(request.seasonId);
+    return this.listTransfersUseCase.execute(request.seasonId);
   }
 }

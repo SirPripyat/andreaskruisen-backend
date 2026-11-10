@@ -47,6 +47,8 @@ Nada da economia pode ser fixo no código. Hoje é "1 moeda por ponto de overall
 - Migrations versionadas para qualquer mudança no banco.
 - Não colocar lógica de scraping neste repositório.
 - Em caso de dúvida sobre regra do campeonato, perguntar antes de assumir.
+- `type` em vez de `interface` (enforced pelo Biome: `style.useConsistentTypeDefinitions`). `interface X extends Y` vira `type X = Y & { ... }`.
+- Funções standalone (domínio, utilitários, scripts de import, helpers de teste) em arrow function (`const fn = () => {}`), não `function fn() {}`. Métodos de classe (controllers/services/repositories/guards do Nest) continuam como métodos normais — não virar arrow function de propriedade.
 
 ## Ordem de implementação sugerida
 

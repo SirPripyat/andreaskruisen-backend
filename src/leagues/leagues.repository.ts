@@ -14,4 +14,12 @@ export class LeaguesRepository {
   findAll(): Promise<League[]> {
     return this.txHost.tx.league.findMany({ orderBy: { name: 'asc' } });
   }
+
+  upsertByName(name: string): Promise<League> {
+    return this.txHost.tx.league.upsert({
+      where: { name },
+      create: { name },
+      update: {},
+    });
+  }
 }

@@ -8,12 +8,12 @@ import { SessionsRepository } from './sessions.repository';
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
 
-export interface AuthenticatedUser {
+export type AuthenticatedUser = {
   id: string;
   name: string;
   role: UserRole;
   selectedSeasonId: string | null;
-}
+};
 
 @Injectable()
 export class AuthService {
@@ -27,11 +27,8 @@ export class AuthService {
   ): Promise<{ user: AuthenticatedUser; token: string; expiresAt: Date }> {
     const user = await this.usersRepository.findByName(dto.name);
 
-    // Mesma mensagem para usuário inexistente ou PIN errado, pra não revelar
-    // quais nomes estão cadastrados.
-    if (!user || !(await compare(dto.pin, user.pinHash))) {
+    if (!user || !(await compare(dto.pin, user.pinHash)))
       throw new UnauthorizedException('Credenciais inválidas');
-    }
 
     const token = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
@@ -57,9 +54,8 @@ export class AuthService {
   async validateSession(token: string): Promise<AuthenticatedUser> {
     const session = await this.sessionsRepository.findValidByToken(token);
 
-    if (!session) {
+    if (!session)
       throw new UnauthorizedException('Sessão inválida ou expirada');
-    }
 
     return session.user;
   }

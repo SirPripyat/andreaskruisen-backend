@@ -1,41 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import {
-  PositionCode,
-  PrismaClient,
-  Transfer,
-} from '../../generated/prisma/client';
-
-export interface TransferTeamSummary {
-  id: string;
-  name: string;
-  crestUrl: string;
-}
-
-export interface TransferPlayerSummary {
-  id: string;
-  name: string;
-  photoUrl: string;
-}
-
-// O time atual de um jogador numa temporada: estado presente, derivado do
-// PlayerTeamAssignment (ver schema), não de Player.teamId.
-export interface TransferAssignment {
-  player: TransferPlayerSummary;
-  team: TransferTeamSummary;
-  // Posição principal do jogador — usada depois da troca pra recalcular
-  // quem é titular NESSA posição em cada time (ver swap/recomputeStarters).
-  position: PositionCode;
-}
-
-export interface TransferWithRelations extends Transfer {
-  requestedBy: { id: string; name: string };
-  outgoingPlayer: TransferPlayerSummary;
-  outgoingTeam: TransferTeamSummary;
-  incomingPlayer: TransferPlayerSummary;
-  incomingTeam: TransferTeamSummary;
-}
+import { PositionCode, PrismaClient } from '../../generated/prisma/client';
+import { TransferAssignment, TransferWithRelations } from './types';
 
 const TRANSFER_INCLUDE = {
   requestedBy: { select: { id: true, name: true } },

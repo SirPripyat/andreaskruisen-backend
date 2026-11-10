@@ -7,10 +7,10 @@ import {
 import { Request } from 'express';
 import { AuthenticatedUser, AuthService } from './auth.service';
 
-export interface AuthenticatedRequest extends Request {
+export type AuthenticatedRequest = Request & {
   user: AuthenticatedUser;
   token: string;
-}
+};
 
 const BEARER_PREFIX = 'Bearer ';
 

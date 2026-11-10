@@ -1,121 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import {
-  Formation,
-  PositionCode,
-  PreferredFoot,
-  PrismaClient,
-  Squad,
-} from '../../generated/prisma/client';
-
-export interface RosterPlayer {
-  id: string;
-  name: string;
-  photoUrl: string;
-  birthdate: Date;
-  position: PositionCode;
-  overallRating: number;
-  preferredFoot: PreferredFoot;
-  nationality: { id: string; name: string; flagUrl: string };
-  isStarter: boolean;
-}
-
-export interface LineupOverview {
-  formation: Formation | null;
-  starters: RosterPlayer[];
-  bench: RosterPlayer[];
-}
-
-export interface RosterBySector {
-  goalkeepers: RosterPlayer[];
-  defenders: RosterPlayer[];
-  midfielders: RosterPlayer[];
-  attackers: RosterPlayer[];
-}
-
-// Mesmo agrupamento usado nas médias por setor de TeamsRepository
-// (averageDefenseRating etc.), pra ficar consistente com o resto da API. A
-// ordem dentro de cada array é a ordem de exibição das posições dentro do
-// setor (ex.: meio-campo do mais ofensivo, MEI, ao mais defensivo, VOL).
-const SECTOR_POSITIONS: {
-  key: keyof RosterBySector;
-  positions: PositionCode[];
-}[] = [
-  { key: 'goalkeepers', positions: ['GOL'] },
-  { key: 'defenders', positions: ['ZAG', 'LD', 'LE'] },
-  { key: 'midfielders', positions: ['MEI', 'ME', 'MD', 'MC', 'VOL'] },
-  { key: 'attackers', positions: ['PD', 'ATA', 'PE'] },
-];
-
-// Dentro de cada setor: agrupado por posição (ordem de SECTOR_POSITIONS),
-// e dentro da mesma posição, titulares primeiro e depois por overall (maior
-// pra menor) — nunca intercala posições diferentes.
-export function groupBySector(players: RosterPlayer[]): RosterBySector {
-  const bySector = {} as RosterBySector;
-
-  for (const { key, positions } of SECTOR_POSITIONS) {
-    bySector[key] = players
-      .filter((player) => positions.includes(player.position))
-      .sort(
-        (a, b) =>
-          positions.indexOf(a.position) - positions.indexOf(b.position) ||
-          Number(b.isStarter) - Number(a.isStarter) ||
-          b.overallRating - a.overallRating,
-      );
-  }
-
-  return bySector;
-}
-
-// Pools de posição usados pra limitar o banco a, no máximo, 7 reservas (os
-// de maior overall em cada pool), em vez do elenco reserva inteiro. Cada
-// pool agrupa posições próximas pra que a falta de um reserva numa posição
-// específica (ex.: nenhum ATA sobrando) seja naturalmente coberta por outra
-// do mesmo pool (ex.: PD/PE), em vez de deixar a vaga vazia.
-const BENCH_POSITION_POOLS: { positions: PositionCode[]; take: number }[] = [
-  { positions: ['GOL'], take: 1 },
-  { positions: ['ZAG', 'LD', 'LE'], take: 2 },
-  { positions: ['VOL', 'MC', 'MEI'], take: 2 },
-  { positions: ['PE', 'ATA', 'PD'], take: 2 },
-];
-
-// Ordem de exibição (titulares e banco): goleiro, defesa, meio, ataque —
-// mesma ordem de declaração do enum PositionCode no schema.
-const POSITION_DISPLAY_ORDER = new Map<PositionCode, number>(
-  [
-    'GOL',
-    'ZAG',
-    'LD',
-    'LE',
-    'VOL',
-    'MC',
-    'MD',
-    'ME',
-    'MEI',
-    'PD',
-    'PE',
-    'ATA',
-  ].map((position, index) => [position as PositionCode, index]),
-);
-
-function sortByPosition(players: RosterPlayer[]): RosterPlayer[] {
-  return [...players].sort(
-    (a, b) =>
-      (POSITION_DISPLAY_ORDER.get(a.position) ?? 0) -
-      (POSITION_DISPLAY_ORDER.get(b.position) ?? 0),
-  );
-}
-
-export interface SquadWithRelations extends Squad {
-  user: { id: string; name: string };
-  team: {
-    id: string;
-    name: string;
-    crestUrl: string;
-    league: { id: string; name: string };
-  };
-}
+import { PrismaClient, Squad } from '../../generated/prisma/client';
+import { LineupOverview, RosterPlayer, SquadWithRelations } from './types';
+import { limitBench, sortByPosition } from './utils';
 
 @Injectable()
 export class SquadsRepository {
@@ -272,15 +160,4 @@ export class SquadsRepository {
       bench: sortByPosition(limitBench(bench)),
     };
   }
-}
-
-// Reduz o banco aos melhores (maior overall) de cada pool de posição,
-// pulando vagas sem jogador disponível no pool.
-function limitBench(bench: RosterPlayer[]): RosterPlayer[] {
-  return BENCH_POSITION_POOLS.flatMap(({ positions, take }) =>
-    bench
-      .filter((player) => positions.includes(player.position))
-      .sort((a, b) => b.overallRating - a.overallRating)
-      .slice(0, take),
-  );
 }

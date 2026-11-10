@@ -10,8 +10,12 @@ import {
 } from '@nestjs/common';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
-import { CreateSeason, CreateSeasonSchema } from './dto/create-season.schema';
-import { UpdateSeason, UpdateSeasonSchema } from './dto/update-season.schema';
+import {
+  CreateSeason,
+  CreateSeasonSchema,
+  UpdateSeason,
+  UpdateSeasonSchema,
+} from './dto';
 import { SeasonsService } from './seasons.service';
 
 @Controller('seasons')

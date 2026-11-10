@@ -8,5 +8,6 @@ import { PlayersService } from './players.service';
   imports: [AuthModule],
   controllers: [PlayersController],
   providers: [PlayersService, PlayersRepository],
+  exports: [PlayersRepository],
 })
 export class PlayersModule {}

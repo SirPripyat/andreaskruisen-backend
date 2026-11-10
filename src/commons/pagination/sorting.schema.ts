@@ -5,11 +5,11 @@ export type SortOrder = z.infer<typeof SortOrderSchema>;
 
 // Gera um schema {sortBy, sortOrder} validando sortBy contra os campos que
 // aquela listagem permite ordenar (cada entidade declara os seus próprios).
-export function createSortSchema<T extends readonly [string, ...string[]]>(
+export const createSortSchema = <T extends readonly [string, ...string[]]>(
   fields: T,
   defaultField: T[number],
   defaultOrder: SortOrder = 'asc',
-) {
+) => {
   const sortBySchema = z.enum(fields);
 
   // z.enum's generic inference can't resolve T[number] back to its own
@@ -20,4 +20,4 @@ export function createSortSchema<T extends readonly [string, ...string[]]>(
     sortBy: sortBySchema.default(defaultField as any),
     sortOrder: SortOrderSchema.default(defaultOrder),
   });
-}
+};

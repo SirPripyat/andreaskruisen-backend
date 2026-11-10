@@ -6,7 +6,6 @@ import {
   Param,
   Patch,
   Post,
-  Put,
   Query,
   Req,
   UseGuards,
@@ -21,126 +20,109 @@ import {
 import {
   CreateTournament,
   CreateTournamentSchema,
-} from './dto/create-tournament.schema';
-import {
   GetSituationQuery,
   GetSituationSchema,
-} from './dto/get-situation.schema';
-import { ListMatchesQuery, ListMatchesSchema } from './dto/list-matches.schema';
-import {
-  ReplaceMatchGoals,
-  ReplaceMatchGoalsSchema,
-} from './dto/replace-match-goals.schema';
-import {
   UpdateTournament,
   UpdateTournamentSchema,
-} from './dto/update-tournament.schema';
-import { TournamentsService } from './tournaments.service';
+} from './dto';
+import {
+  AdvancePhaseUseCase,
+  CreateTournamentUseCase,
+  GetTopAssistsUseCase,
+  GetTopScorersUseCase,
+  GetTournamentDashboardUseCase,
+  GetTournamentFixturesUseCase,
+  GetTournamentSituationUseCase,
+  GetTournamentUseCase,
+  ListTournamentsUseCase,
+  RemoveTournamentUseCase,
+  UpdateTournamentUseCase,
+} from './use-cases';
 
-@Controller()
+@Controller('tournaments')
 @UseGuards(SessionAuthGuard)
 export class TournamentsController {
-  constructor(private readonly tournamentsService: TournamentsService) {}
+  constructor(
+    private readonly createTournamentUseCase: CreateTournamentUseCase,
+    private readonly listTournamentsUseCase: ListTournamentsUseCase,
+    private readonly getTournamentUseCase: GetTournamentUseCase,
+    private readonly getTournamentSituationUseCase: GetTournamentSituationUseCase,
+    private readonly getTournamentFixturesUseCase: GetTournamentFixturesUseCase,
+    private readonly advancePhaseUseCase: AdvancePhaseUseCase,
+    private readonly getTopScorersUseCase: GetTopScorersUseCase,
+    private readonly getTopAssistsUseCase: GetTopAssistsUseCase,
+    private readonly getTournamentDashboardUseCase: GetTournamentDashboardUseCase,
+    private readonly updateTournamentUseCase: UpdateTournamentUseCase,
+    private readonly removeTournamentUseCase: RemoveTournamentUseCase,
+  ) {}
 
-  @Post('tournaments')
+  @Post()
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   create(
     @Req() request: SeasonScopedRequest,
     @Body(new ZodValidationPipe(CreateTournamentSchema))
     dto: CreateTournament,
   ) {
-    return this.tournamentsService.create(request.seasonId, dto);
+    return this.createTournamentUseCase.execute(request.seasonId, dto);
   }
 
-  @Get('tournaments')
+  @Get()
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   findBySeason(@Req() request: SeasonScopedRequest) {
-    return this.tournamentsService.findBySeason(request.seasonId);
+    return this.listTournamentsUseCase.execute(request.seasonId);
   }
 
-  @Get('tournaments/:id')
+  @Get(':id')
   getOne(@Param('id') id: string) {
-    return this.tournamentsService.getOne(id);
+    return this.getTournamentUseCase.execute(id);
   }
 
-  @Get('tournaments/:id/situation')
+  @Get(':id/situation')
   getSituation(
     @Param('id') id: string,
     @Query(new ZodValidationPipe(GetSituationSchema))
     query: GetSituationQuery,
   ) {
-    return this.tournamentsService.getSituation(id, query);
+    return this.getTournamentSituationUseCase.execute(id, query);
   }
 
-  @Get('tournaments/:id/matches')
-  getMatches(
-    @Param('id') id: string,
-    @Query(new ZodValidationPipe(ListMatchesSchema)) query: ListMatchesQuery,
-  ) {
-    return this.tournamentsService.getMatches(id, query);
-  }
-
-  @Get('tournaments/:id/fixtures')
+  @Get(':id/fixtures')
   getFixtures(@Param('id') id: string) {
-    return this.tournamentsService.getFixtures(id);
+    return this.getTournamentFixturesUseCase.execute(id);
   }
 
-  @Get('tournaments/:id/matches/:matchId')
-  getMatchDetail(@Param('id') id: string, @Param('matchId') matchId: string) {
-    return this.tournamentsService.getMatchDetail(id, matchId);
-  }
-
-  @Put('tournaments/:id/matches/:matchId/goals')
-  @UseGuards(SessionAuthGuard, AdminGuard)
-  replaceMatchGoals(
-    @Param('id') id: string,
-    @Param('matchId') matchId: string,
-    @Body(new ZodValidationPipe(ReplaceMatchGoalsSchema))
-    dto: ReplaceMatchGoals,
-  ) {
-    return this.tournamentsService.replaceMatchGoals(id, matchId, dto);
-  }
-
-  @Post('tournaments/:id/matches/:matchId/simulate')
-  @UseGuards(SessionAuthGuard, AdminGuard)
-  simulateMatch(@Param('id') id: string, @Param('matchId') matchId: string) {
-    return this.tournamentsService.simulateMatch(id, matchId);
-  }
-
-  // Gera a próxima fase (mata-mata) a partir desta. Trava a edição das
-  // partidas da fase informada (ver TournamentsService.advancePhase).
-  @Post('tournaments/:id/phases/:phaseId/advance')
+  @Post(':id/phases/:phaseId/advance')
   @UseGuards(SessionAuthGuard, AdminGuard)
   advancePhase(@Param('id') id: string, @Param('phaseId') phaseId: string) {
-    return this.tournamentsService.advancePhase(id, phaseId);
+    return this.advancePhaseUseCase.execute(id, phaseId);
   }
 
-  @Get('tournaments/:id/top-scorers')
+  @Get(':id/top-scorers')
   getTopScorers(@Param('id') id: string) {
-    return this.tournamentsService.getTopScorers(id);
+    return this.getTopScorersUseCase.execute(id);
   }
 
-  @Get('tournaments/:id/top-assists')
+  @Get(':id/top-assists')
   getTopAssists(@Param('id') id: string) {
-    return this.tournamentsService.getTopAssists(id);
+    return this.getTopAssistsUseCase.execute(id);
   }
 
-  @Get('tournaments/:id/dashboard')
+  @Get(':id/dashboard')
   getDashboard(@Param('id') id: string) {
-    return this.tournamentsService.getDashboard(id);
+    return this.getTournamentDashboardUseCase.execute(id);
   }
 
-  @Patch('tournaments/:id')
+  @Patch(':id')
   update(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(UpdateTournamentSchema))
     dto: UpdateTournament,
   ) {
-    return this.tournamentsService.update(id, dto);
+    return this.updateTournamentUseCase.execute(id, dto);
   }
 
-  @Delete('tournaments/:id')
+  @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.tournamentsService.remove(id);
+    return this.removeTournamentUseCase.execute(id);
   }
 }

@@ -8,11 +8,6 @@ const SeasonSquadSchema = z.object({
 export const CreateSeasonSchema = z
   .object({
     name: z.string().min(1),
-    // Vínculos usuário-time já conhecidos no momento da criação (ex.: times
-    // definidos antes do início da temporada). Opcional: squads também podem
-    // ser escolhidos depois via POST /squads (ou POST
-    // /seasons/:seasonId/squads/assign, pra um admin vincular em nome de
-    // outro usuário).
     squads: z.array(SeasonSquadSchema).optional(),
   })
   .refine(

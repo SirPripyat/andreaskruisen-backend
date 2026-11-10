@@ -3,10 +3,6 @@ import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { Prisma, PrismaClient, Season } from '../../generated/prisma/client';
 
-// Postgres recusa queries com mais de 65535 parâmetros bindados; cada linha
-// de PlayerTeamAssignment usa 4 (seasonId, playerId, teamId, isStarter),
-// então esse tamanho de lote fica bem abaixo do limite mesmo com a base toda
-// de jogadores.
 const SEED_BATCH_SIZE = 5000;
 
 @Injectable()
@@ -49,8 +45,6 @@ export class SeasonsRepository {
     return this.txHost.tx.season.update({ where: { id }, data });
   }
 
-  // Exclusão em cascata: nada na season tem referência válida fora dela, então
-  // apagar a season sem limpar os dependentes quebraria a FK constraint.
   async delete(id: string): Promise<Season> {
     await this.txHost.tx.goal.deleteMany({
       where: { match: { phase: { tournament: { seasonId: id } } } },
@@ -103,8 +97,6 @@ export class SeasonsRepository {
           seasonId,
           playerId: player.id,
           teamId: player.teamId,
-          // Status real (SoFIFA) de titular/banco no início da temporada
-          // (ver comentário em PlayerTeamAssignment.isStarter no schema).
           isStarter: player.lineupSlots.length > 0,
         })),
       });

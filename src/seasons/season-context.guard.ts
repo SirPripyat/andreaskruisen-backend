@@ -2,9 +2,9 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { AuthenticatedRequest } from '../auth/session-auth.guard';
 import { SeasonsService } from './seasons.service';
 
-export interface SeasonScopedRequest extends AuthenticatedRequest {
+export type SeasonScopedRequest = AuthenticatedRequest & {
   seasonId: string;
-}
+};
 
 @Injectable()
 export class SeasonContextGuard implements CanActivate {

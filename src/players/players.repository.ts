@@ -1,21 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { PrismaClient } from '../../generated/prisma/client';
-import { PaginationQuery, paginate, SortOrder } from '../commons/pagination';
-
-// Mapeia o campo de ordenação exposto na API pro campo real no Prisma.
-// overallRating não existe em Player; a listagem ordena pela cópia
-// mantida em latestOverallRating (ver player-import.ts).
-const PLAYER_ORDER_BY_FIELD = {
-  name: 'name',
-  overallRating: 'latestOverallRating',
-} as const;
-
-export interface PlayersSort {
-  sortBy: keyof typeof PLAYER_ORDER_BY_FIELD;
-  sortOrder: SortOrder;
-}
+import { Player, PrismaClient } from '../../generated/prisma/client';
+import { PaginationQuery, paginate } from '../commons/pagination';
+import {
+  PLAYER_ORDER_BY_FIELD,
+  PlayerImportSnapshot,
+  PlayerPositionInput,
+  PlayerRatingInput,
+  PlayersSort,
+  PlayerTeamDimension,
+  UpsertPlayerData,
+} from './types';
 
 @Injectable()
 export class PlayersRepository {
@@ -54,5 +50,81 @@ export class PlayersRepository {
         }),
       pagination,
     );
+  }
+
+  upsertByEaId(data: UpsertPlayerData): Promise<Player> {
+    return this.txHost.tx.player.upsert({
+      where: { eaId: data.eaId },
+      create: data,
+      update: {
+        name: data.name,
+        photoUrl: data.photoUrl,
+        birthdate: data.birthdate,
+        preferredFoot: data.preferredFoot,
+        nationalityId: data.nationalityId,
+        teamId: data.teamId,
+        latestOverallRating: data.latestOverallRating,
+      },
+    });
+  }
+
+  async replacePositions(
+    playerId: string,
+    positions: PlayerPositionInput[],
+  ): Promise<void> {
+    await this.txHost.tx.$transaction([
+      this.txHost.tx.playerPosition.deleteMany({ where: { playerId } }),
+      this.txHost.tx.playerPosition.createMany({
+        data: positions.map((position) => ({ playerId, ...position })),
+      }),
+    ]);
+  }
+
+  async findImportSnapshotsByEaIds(
+    eaIds: number[],
+  ): Promise<Map<number, PlayerImportSnapshot>> {
+    const players = await this.txHost.tx.player.findMany({
+      where: { eaId: { in: eaIds } },
+      select: {
+        eaId: true,
+        positions: { select: { position: true, isPrimary: true } },
+        ratings: { orderBy: { capturedAt: 'desc' }, take: 1 },
+      },
+    });
+
+    return new Map(
+      players.map((player) => [
+        player.eaId,
+        {
+          positions: player.positions,
+          latestRating: player.ratings[0] ?? null,
+        },
+      ]),
+    );
+  }
+
+  async findTeamDimensionsByEaIds(
+    eaIds: number[],
+  ): Promise<Map<number, PlayerTeamDimension>> {
+    const players = await this.txHost.tx.player.findMany({
+      where: { eaId: { in: eaIds } },
+      select: { id: true, eaId: true, teamId: true },
+    });
+
+    return new Map(
+      players.map((player) => [
+        player.eaId,
+        { id: player.id, teamId: player.teamId },
+      ]),
+    );
+  }
+
+  async createRating(
+    playerId: string,
+    rating: PlayerRatingInput,
+  ): Promise<void> {
+    await this.txHost.tx.playerRating.create({
+      data: { playerId, ...rating },
+    });
   }
 }

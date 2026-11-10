@@ -19,7 +19,11 @@
     "rules": {
       "preset": "recommended",
       "style": {
-        "useImportType": "off"
+        "useImportType": "off",
+        "useConsistentTypeDefinitions": {
+          "level": "error",
+          "options": { "style": "type" }
+        }
       }
     }
   },

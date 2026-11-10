@@ -1,13 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { z } from 'zod';
+import { Injectable } from '@nestjs/common';
 import { PaginatedResult } from '../commons/pagination';
-import { importPlayers, PlayerImportSummary } from '../import/player-import';
-import { ScraperPlayerSchema } from '../import/scraper-player.schema';
-import { PrismaService } from '../prisma';
 import { ListPlayersQuery } from './dto/list-players.schema';
 import { PlayersRepository } from './players.repository';
 
-export interface PlayerListItem {
+export type PlayerListItem = {
   id: string;
   eaId: number;
   name: string;
@@ -18,14 +14,11 @@ export interface PlayerListItem {
   nationality: { id: string; name: string; flagUrl: string };
   positions: { position: string; isPrimary: boolean }[];
   latestRating: { overallRating: number; capturedAt: Date } | null;
-}
+};
 
 @Injectable()
 export class PlayersService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly playersRepository: PlayersRepository,
-  ) {}
+  constructor(private readonly playersRepository: PlayersRepository) {}
 
   async list(
     query: ListPlayersQuery,
@@ -67,27 +60,5 @@ export class PlayersService {
           : null,
       })),
     };
-  }
-
-  async importFromJson(
-    fileBuffer: Buffer,
-    capturedAt: Date,
-  ): Promise<PlayerImportSummary> {
-    let raw: unknown;
-    try {
-      raw = JSON.parse(fileBuffer.toString('utf-8'));
-    } catch {
-      throw new BadRequestException('Arquivo não é um JSON válido');
-    }
-
-    const parsed = z.array(ScraperPlayerSchema).safeParse(raw);
-    if (!parsed.success) {
-      throw new BadRequestException({
-        message: 'JSON não corresponde ao schema de jogadores esperado',
-        errors: parsed.error.issues,
-      });
-    }
-
-    return importPlayers(this.prisma, parsed.data, capturedAt);
   }
 }

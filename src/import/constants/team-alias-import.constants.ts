@@ -1,0 +1,1 @@
+export const IMPORT_ALIAS_BATCH_SIZE = 25;

@@ -7,7 +7,9 @@ import { PrismaClient } from '../generated/prisma/client';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { ImportModule } from './import/import.module';
 import { LeaguesModule } from './leagues/leagues.module';
+import { MatchesModule } from './matches/matches.module';
 import { PlayersModule } from './players/players.module';
 import { PrismaModule, PrismaService } from './prisma';
 import { SeasonsModule } from './seasons/seasons.module';
@@ -40,8 +42,10 @@ import { UsersModule } from './users/users.module';
     PlayersModule,
     TeamsModule,
     TournamentsModule,
+    MatchesModule,
     TransfersModule,
     LeaguesModule,
+    ImportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

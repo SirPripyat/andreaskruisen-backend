@@ -1,75 +1,36 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { Formation, Prisma, PrismaClient } from '../../generated/prisma/client';
 import {
-  PaginatedResult,
-  PaginationQuery,
-  SortOrder,
-} from '../commons/pagination';
+  Formation,
+  Prisma,
+  PrismaClient,
+  Team,
+} from '../../generated/prisma/client';
+import { PaginatedResult, PaginationQuery } from '../commons/pagination';
+import {
+  LineupSlotInput,
+  TeamCrestDimension,
+  TeamRow,
+  TeamSortField,
+  TeamsSort,
+  TeamWithRatings,
+  UpdateTeamData,
+} from './types';
+import { TeamMatchResult } from './utils';
 
-// Mapeia o campo de ordenação exposto na API pra coluna/alias real da query
-// raw abaixo. Vem só de um lookup fixo (nunca interpolado direto da query
-// string), então é seguro passar pra Prisma.raw().
-const TEAM_SORT_COLUMN = {
+const TEAM_SORT_COLUMN: Record<TeamSortField, string> = {
   name: 't.name',
   averageOverallRating: '"averageOverallRating"',
   averageDefenseRating: '"averageDefenseRating"',
   averageMidfieldRating: '"averageMidfieldRating"',
   averageAttackRating: '"averageAttackRating"',
-} as const;
+};
 
-export type TeamSortField = keyof typeof TEAM_SORT_COLUMN;
-
-export interface TeamsSort {
-  sortBy: TeamSortField;
-  sortOrder: SortOrder;
-}
-
-export interface UpdateTeamData {
-  name?: string;
-  crestUrl?: string;
-  leagueId?: string;
-  formation?: Formation;
-}
-
-export interface TeamWithRatings {
-  id: string;
-  name: string;
-  crestUrl: string;
-  formation: string | null;
-  league: { id: string; name: string };
-  averageOverallRating: number | null;
-  averageDefenseRating: number | null;
-  averageMidfieldRating: number | null;
-  averageAttackRating: number | null;
-}
-
-interface TeamRow {
-  id: string;
-  name: string;
-  crestUrl: string;
-  // $queryRaw não passa pelo tradutor de enum do Prisma Client: o Postgres
-  // devolve o label gravado na coluna, que já é o texto mapeado via @map
-  // (ex.: "4-2-1-3"), não o identificador do enum Formation.
-  formation: string | null;
-  leagueId: string;
-  leagueName: string;
-  averageOverallRating: number | null;
-  averageDefenseRating: number | null;
-  averageMidfieldRating: number | null;
-  averageAttackRating: number | null;
-}
-
-// Classificação por posição primária (GOL fica fora das três faixas: não é
-// defesa, meio ou ataque).
 const DEFENSE_POSITIONS = Prisma.sql`('ZAG', 'LD', 'LE')`;
 const MIDFIELD_POSITIONS = Prisma.sql`('VOL', 'MC', 'MD', 'ME', 'MEI')`;
 const ATTACK_POSITIONS = Prisma.sql`('PD', 'PE', 'ATA')`;
 
-// Restringe o join de Player aos titulares escalados (TeamLineupSlot) pra
-// esse time; se o time ainda não tem escalação calculada nenhuma, cai pro
-// elenco inteiro (comportamento anterior à escalação existir).
 const ONLY_STARTERS_OR_WHOLE_SQUAD = Prisma.sql`(
   NOT EXISTS (SELECT 1 FROM "TeamLineupSlot" ls WHERE ls."teamId" = t.id)
   OR EXISTS (
@@ -114,9 +75,6 @@ export class TeamsRepository {
     const orderColumn = Prisma.raw(TEAM_SORT_COLUMN[sort.sortBy]);
     const orderDirection = Prisma.raw(sort.sortOrder);
 
-    // Ordenar/paginar por médias calculadas a partir de Player/PlayerPosition
-    // não dá pra expressar com findMany+orderBy do Prisma (exigiria agregar
-    // antes de paginar), por isso essa query usa SQL raw com joins + CASE.
     const rows = await this.txHost.tx.$queryRaw<TeamRow[]>`
       SELECT
         t.id,
@@ -158,9 +116,6 @@ export class TeamsRepository {
     };
   }
 
-  // Mesmas médias de findPaginated, mas pra um único time (tela de
-  // gerenciamento de time) — por isso não reaproveita o SQL raw acima, que é
-  // feito pra paginar+ordenar vários times de uma vez.
   async findById(id: string): Promise<TeamWithRatings | null> {
     const rows = await this.txHost.tx.$queryRaw<TeamRow[]>`
       SELECT
@@ -202,5 +157,177 @@ export class TeamsRepository {
 
   async update(id: string, data: UpdateTeamData): Promise<void> {
     await this.txHost.tx.team.update({ where: { id }, data });
+  }
+
+  upsertByNameAndLeague(data: {
+    name: string;
+    leagueId: string;
+    crestUrl: string;
+  }): Promise<Team> {
+    return this.txHost.tx.team.upsert({
+      where: { name_leagueId: { name: data.name, leagueId: data.leagueId } },
+      create: data,
+      update: { crestUrl: data.crestUrl, leagueId: data.leagueId },
+    });
+  }
+
+  async replaceLineup(
+    teamId: string,
+    formation: Formation,
+    slots: LineupSlotInput[],
+  ): Promise<void> {
+    await this.txHost.tx.$transaction([
+      this.txHost.tx.team.update({
+        where: { id: teamId },
+        data: { formation },
+      }),
+      this.txHost.tx.teamLineupSlot.deleteMany({ where: { teamId } }),
+      this.txHost.tx.teamLineupSlot.createMany({
+        data: slots.map((slot) => ({ teamId, ...slot })),
+      }),
+    ]);
+  }
+
+  async findIdsByNames(names: string[]): Promise<Map<string, string[]>> {
+    const teams = await this.txHost.tx.team.findMany({
+      where: { name: { in: names } },
+      select: { id: true, name: true },
+    });
+
+    const idsByName = new Map<string, string[]>();
+    for (const team of teams) {
+      const ids = idsByName.get(team.name) ?? [];
+      ids.push(team.id);
+      idsByName.set(team.name, ids);
+    }
+
+    return idsByName;
+  }
+
+  async findCrestDimensionsByNames(
+    names: string[],
+  ): Promise<Map<string, TeamCrestDimension[]>> {
+    const teams = await this.txHost.tx.team.findMany({
+      where: { name: { in: names } },
+      select: { id: true, name: true, league: { select: { name: true } } },
+    });
+
+    const dimensionsByName = new Map<string, TeamCrestDimension[]>();
+    for (const team of teams) {
+      const dimensions = dimensionsByName.get(team.name) ?? [];
+      dimensions.push({ id: team.id, leagueName: team.league.name });
+      dimensionsByName.set(team.name, dimensions);
+    }
+
+    return dimensionsByName;
+  }
+
+  async findIdsByAliases(aliases: string[]): Promise<Map<string, string>> {
+    const teamAliases = await this.txHost.tx.teamAlias.findMany({
+      where: { alias: { in: aliases } },
+      select: { alias: true, teamId: true },
+    });
+
+    return new Map(
+      teamAliases.map((teamAlias) => [teamAlias.alias, teamAlias.teamId]),
+    );
+  }
+
+  async upsertAlias(alias: string, teamId: string): Promise<void> {
+    await this.txHost.tx.teamAlias.upsert({
+      where: { alias },
+      create: { alias, teamId },
+      update: { teamId },
+    });
+  }
+
+  // Todo jogo já disputado pelo time (real, qualquer temporada/torneio),
+  // do ponto de vista dele — já resolve quem foi o adversário e goals
+  // pró/contra em vez de homeGoals/awayGoals. Ordenado do mais recente pro
+  // mais antigo pra alimentar tanto "últimos 10 jogos" quanto a campanha da
+  // temporada (ver computeSeasonCampaign/toRecentMatches/computeHeadToHead
+  // em utils/team-campaign.utils.ts).
+  async findPlayedMatchesForTeam(teamId: string): Promise<TeamMatchResult[]> {
+    const matches = await this.txHost.tx.match.findMany({
+      where: {
+        playedAt: { not: null },
+        OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }],
+      },
+      orderBy: { playedAt: 'desc' },
+      select: {
+        id: true,
+        playedAt: true,
+        homeTeamId: true,
+        awayTeamId: true,
+        homeTeam: { select: { id: true, name: true, crestUrl: true } },
+        awayTeam: { select: { id: true, name: true, crestUrl: true } },
+        goals: { select: { teamId: true } },
+        phase: { select: { tournament: { select: { seasonId: true } } } },
+      },
+    });
+
+    return matches.map((match) => {
+      const isHome = match.homeTeamId === teamId;
+      const opponent = isHome ? match.awayTeam : match.homeTeam;
+      const opponentTeamId = isHome ? match.awayTeamId : match.homeTeamId;
+
+      let goalsFor = 0;
+      let goalsAgainst = 0;
+      for (const goal of match.goals) {
+        if (goal.teamId === teamId) {
+          goalsFor++;
+        } else if (goal.teamId === opponentTeamId) {
+          goalsAgainst++;
+        }
+      }
+
+      return {
+        matchId: match.id,
+        playedAt: match.playedAt as Date,
+        seasonId: match.phase.tournament.seasonId,
+        opponent,
+        goalsFor,
+        goalsAgainst,
+      };
+    });
+  }
+
+  async findTopScorersForTeam(
+    teamId: string,
+    limit: number,
+  ): Promise<{ playerId: string; count: number }[]> {
+    const result = await this.txHost.tx.goal.groupBy({
+      by: ['scorerId'],
+      where: { teamId },
+      _count: { scorerId: true },
+      orderBy: { _count: { scorerId: 'desc' } },
+      take: limit,
+    });
+
+    return result.map((row) => ({
+      playerId: row.scorerId,
+      count: row._count.scorerId,
+    }));
+  }
+
+  async findTopAssistsForTeam(
+    teamId: string,
+    limit: number,
+  ): Promise<{ playerId: string; count: number }[]> {
+    const result = await this.txHost.tx.goal.groupBy({
+      by: ['assistId'],
+      where: {
+        teamId,
+        assistId: { not: null },
+      },
+      _count: { assistId: true },
+      orderBy: { _count: { assistId: 'desc' } },
+      take: limit,
+    });
+
+    return result.map((row) => ({
+      playerId: row.assistId as string,
+      count: row._count.assistId,
+    }));
   }
 }

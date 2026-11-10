@@ -8,5 +8,6 @@ import { LeaguesService } from './leagues.service';
   imports: [AuthModule],
   controllers: [LeaguesController],
   providers: [LeaguesService, LeaguesRepository],
+  exports: [LeaguesRepository],
 })
 export class LeaguesModule {}
