@@ -17,8 +17,7 @@ export class GetAvatarUrlUseCase {
     }
 
     const url = await this.storageService.getReadUrl(user.avatarPath);
-    const cacheBustedUrl = `${url}&v=${user.updatedAt.getTime()}`;
 
-    return { url: cacheBustedUrl };
+    return { url };
   }
 }
