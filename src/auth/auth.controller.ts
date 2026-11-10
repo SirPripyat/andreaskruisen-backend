@@ -8,6 +8,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import { AuthService } from './auth.service';
 import { type Login, LoginSchema } from './dto/login.schema';
@@ -17,6 +18,7 @@ import { AuthenticatedRequest, SessionAuthGuard } from './session-auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body(new ZodValidationPipe(LoginSchema)) dto: Login) {

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { ClsModule } from 'nestjs-cls';
@@ -7,6 +9,7 @@ import { PrismaClient } from '../generated/prisma/client';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { validateEnv } from './commons/config/env.schema';
 import { ImportModule } from './import/import.module';
 import { LeaguesModule } from './leagues/leagues.module';
 import { MatchesModule } from './matches/matches.module';
@@ -14,6 +17,7 @@ import { PlayersModule } from './players/players.module';
 import { PrismaModule, PrismaService } from './prisma';
 import { SeasonsModule } from './seasons/seasons.module';
 import { SquadsModule } from './squads/squads.module';
+import { StorageModule } from './storage/storage.module';
 import { TeamsModule } from './teams/teams.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { TransfersModule } from './transfers/transfers.module';
@@ -21,7 +25,8 @@ import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
     PrismaModule,
     ClsModule.forRoot({
       global: true,
@@ -46,8 +51,9 @@ import { UsersModule } from './users/users.module';
     TransfersModule,
     LeaguesModule,
     ImportModule,
+    StorageModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

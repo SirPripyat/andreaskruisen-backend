@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - main
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: andreuskruisen_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/andreuskruisen_ci
+      FRONTEND_URL: http://localhost:3000
+      SALT_ROUND: "10"
+      DEFAULT_USER_NAME: ci-admin
+      DEFAULT_USER_PIN: "000000"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm exec prisma generate
+
+      - run: pnpm exec prisma migrate deploy
+
+      - name: Check schema.prisma matches migrations history
+        run: pnpm exec prisma migrate diff --from-config-datasource --to-schema=prisma/schema.prisma --exit-code
+
+      - run: pnpm run lint:ci
+
+      - run: pnpm run build
+
+      - run: pnpm test
