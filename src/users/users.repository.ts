@@ -49,6 +49,21 @@ export class UsersRepository {
     });
   }
 
+  updateAvatarPath(id: string, avatarPath: string): Promise<User> {
+    return this.txHost.tx.user.update({ where: { id }, data: { avatarPath } });
+  }
+
+  updateProfile(
+    id: string,
+    data: { name?: string; pinHash?: string },
+  ): Promise<Pick<User, 'id' | 'name' | 'role'>> {
+    return this.txHost.tx.user.update({
+      where: { id },
+      data,
+      select: { id: true, name: true, role: true },
+    });
+  }
+
   async userExist(name: string): Promise<boolean> {
     return (await this.findByName(name)) !== null;
   }

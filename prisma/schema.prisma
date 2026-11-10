@@ -283,6 +283,8 @@ model User {
   sessions           Session[]
   squads             Squad[]
   transfersRequested Transfer[]
+
+  avatarPath String?
 }
 
 model Session {

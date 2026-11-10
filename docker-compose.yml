@@ -9,6 +9,33 @@ services:
         - ${POSTGRES_PORT}:5432
       volumes:
         - postgres_data:/var/lib/postgresql/data
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+        interval: 5s
+        timeout: 5s
+        retries: 10
+        start_period: 5s
+
+  fake-gcs-server:
+    image: fsouza/fake-gcs-server:1.52
+    command: -scheme http -public-host localhost:4443
+    ports:
+      - "4443:4443"
+
+  fake-gcs-init:
+    image: curlimages/curl:8.10.1
+    depends_on:
+      - fake-gcs-server
+    entrypoint:
+      - sh
+      - -c
+      - |
+        until curl -s -o /dev/null http://fake-gcs-server:4443/storage/v1/b; do
+          sleep 1
+        done
+        curl -s -X POST http://fake-gcs-server:4443/storage/v1/b \
+          -H "Content-Type: application/json" \
+          -d "{\"name\":\"${GCS_BUCKET}\"}"
 
 volumes:
   postgres_data:

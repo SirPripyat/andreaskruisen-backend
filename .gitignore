@@ -42,6 +42,9 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
+# fake service account key for local GCS emulator testing
+.fake-gcs/
+
 # temp directory
 .temp
 .tmp

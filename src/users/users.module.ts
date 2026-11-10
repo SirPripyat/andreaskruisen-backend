@@ -1,13 +1,43 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { forwardRef, Module, OnModuleInit } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { StorageModule } from '../storage/storage.module';
+import {
+  ConfirmAvatarUploadUseCase,
+  CreateUserUseCase,
+  EnsureDefaultAdminUseCase,
+  GetAvatarUploadUrlUseCase,
+  GetAvatarUrlUseCase,
+  ListUsersUseCase,
+  RemoveUserUseCase,
+  SelectSeasonUseCase,
+  UpdateProfileUseCase,
+} from './use-cases';
 import { UsersController } from './users.controller';
 import { UsersRepository } from './users.repository';
-import { UsersService } from './users.service';
 
 @Module({
-  imports: [forwardRef(() => AuthModule)],
+  imports: [forwardRef(() => AuthModule), StorageModule],
   controllers: [UsersController],
-  providers: [UsersService, UsersRepository],
+  providers: [
+    UsersRepository,
+    ListUsersUseCase,
+    CreateUserUseCase,
+    RemoveUserUseCase,
+    SelectSeasonUseCase,
+    EnsureDefaultAdminUseCase,
+    GetAvatarUploadUrlUseCase,
+    ConfirmAvatarUploadUseCase,
+    GetAvatarUrlUseCase,
+    UpdateProfileUseCase,
+  ],
   exports: [UsersRepository],
 })
-export class UsersModule {}
+export class UsersModule implements OnModuleInit {
+  constructor(
+    private readonly ensureDefaultAdminUseCase: EnsureDefaultAdminUseCase,
+  ) {}
+
+  async onModuleInit() {
+    await this.ensureDefaultAdminUseCase.execute();
+  }
+}
