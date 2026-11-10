@@ -1,4 +1,4 @@
-import { PlayerPositionInput } from '../../players/players.repository';
+import { PlayerPositionInput } from '../../players/types';
 import { ScraperPlayer } from '../dto';
 
 export const mapPositions = (player: ScraperPlayer): PlayerPositionInput[] => [

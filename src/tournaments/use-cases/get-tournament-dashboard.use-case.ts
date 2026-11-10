@@ -54,7 +54,7 @@ export class GetTournamentDashboardUseCase {
     ).length;
 
     const getNextMatch = () => {
-      if (!nextMatch && !currentPhase) return null;
+      if (!nextMatch || !currentPhase) return null;
 
       return {
         id: nextMatch.id,

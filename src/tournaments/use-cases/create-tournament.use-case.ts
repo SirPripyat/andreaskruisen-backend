@@ -31,22 +31,24 @@ export class CreateTournamentUseCase {
       maxTeams: dto.maxTeams,
     });
 
-    this.registerTeamsInTournament(tournament.id, dto.teamIds);
-    this.generatePhase(tournament.id, dto);
+    await this.registerTeamsInTournament(tournament.id, dto.teamIds);
+    await this.generatePhase(tournament.id, dto);
 
     return tournament;
   }
 
   private registerTeamsInTournament(id: string, teamIds: string[]) {
-    this.tournamentsRepository.createTeams(id, teamIds).catch((error) => {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === FOREIGN_KEY_VIOLATION
-      )
-        throw new BadRequestException('Time não encontrado');
+    return this.tournamentsRepository
+      .createTeams(id, teamIds)
+      .catch((error) => {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === FOREIGN_KEY_VIOLATION
+        )
+          throw new BadRequestException('Time não encontrado');
 
-      throw error;
-    });
+        throw error;
+      });
   }
 
   private async generatePhase(id: string, dto: CreateTournament) {

@@ -2,10 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { z } from 'zod';
 import { LeaguesRepository } from '../../leagues/leagues.repository';
 import { NationalitiesRepository } from '../../nationalities/nationalities.repository';
-import {
-  PlayerImportSnapshot,
-  PlayersRepository,
-} from '../../players/players.repository';
+import { PlayersRepository } from '../../players/players.repository';
+import { PlayerImportSnapshot } from '../../players/types';
 import { TeamsRepository } from '../../teams/teams.repository';
 import { IMPORT_BATCH_SIZE, NATIONAL_TEAMS_LEAGUE } from '../constants';
 import { ScraperPlayer, ScraperPlayerSchema } from '../dto';

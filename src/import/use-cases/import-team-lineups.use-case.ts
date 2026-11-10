@@ -1,9 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { z } from 'zod';
-import {
-  PlayersRepository,
-  PlayerTeamDimension,
-} from '../../players/players.repository';
+import { PlayersRepository } from '../../players/players.repository';
+import { PlayerTeamDimension } from '../../players/types';
 import { TeamsRepository } from '../../teams/teams.repository';
 import { LineupSlotInput } from '../../teams/types';
 import { IMPORT_LINEUP_BATCH_SIZE } from '../constants';

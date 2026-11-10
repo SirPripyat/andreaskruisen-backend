@@ -1,7 +1,4 @@
-import {
-  PlayerPositionInput,
-  UpsertPlayerData,
-} from '../../players/players.repository';
+import { PlayerPositionInput, UpsertPlayerData } from '../../players/types';
 import { NormalizedRating } from '../utils';
 
 export type TeamDimension = {
