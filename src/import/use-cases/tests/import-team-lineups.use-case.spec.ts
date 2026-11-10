@@ -1,7 +1,5 @@
-import {
-  PlayersRepository,
-  PlayerTeamDimension,
-} from '../../../players/players.repository';
+import { PlayersRepository } from '../../../players/players.repository';
+import { PlayerTeamDimension } from '../../../players/types';
 import { TeamsRepository } from '../../../teams/teams.repository';
 import { ImportTeamLineupsUseCase } from '../import-team-lineups.use-case';
 

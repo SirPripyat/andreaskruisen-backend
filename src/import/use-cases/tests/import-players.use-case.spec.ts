@@ -1,9 +1,7 @@
 import { LeaguesRepository } from '../../../leagues/leagues.repository';
 import { NationalitiesRepository } from '../../../nationalities/nationalities.repository';
-import {
-  PlayerImportSnapshot,
-  PlayersRepository,
-} from '../../../players/players.repository';
+import { PlayersRepository } from '../../../players/players.repository';
+import { PlayerImportSnapshot } from '../../../players/types';
 import { TeamsRepository } from '../../../teams/teams.repository';
 import { ImportPlayersUseCase } from '../import-players.use-case';
 

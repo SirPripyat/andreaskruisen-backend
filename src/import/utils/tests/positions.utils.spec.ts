@@ -1,4 +1,4 @@
-import { PlayerPositionInput } from '../../../players/players.repository';
+import { PlayerPositionInput } from '../../../players/types';
 import { ScraperPlayer, ScraperStats } from '../../dto';
 import { arePositionsEqual, mapPositions } from '../positions.utils';
 

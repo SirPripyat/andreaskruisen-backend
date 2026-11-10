@@ -21,6 +21,26 @@ export class PlayersRepository {
     >,
   ) {}
 
+  // Igual findPaginatedForSeason: o time exibido é a "foto" da temporada
+  // (PlayerTeamAssignment), não o Player.teamId real. seasonAssignments
+  // vazio = jogador não faz parte dessa temporada (ex.: importado depois
+  // dela ter começado, nunca "fotografado" — ver seedPlayerAssignmentsFromRealTeams).
+  findByIdForSeason(seasonId: string, id: string) {
+    return this.txHost.tx.player.findUnique({
+      where: { id },
+      include: {
+        nationality: true,
+        positions: true,
+        ratings: { orderBy: { capturedAt: 'desc' }, take: 1 },
+        seasonAssignments: {
+          where: { seasonId },
+          include: { team: true },
+        },
+        _count: { select: { goalsScored: true, goalsAssisted: true } },
+      },
+    });
+  }
+
   findPaginated(
     filter: { name?: string },
     sort: PlayersSort,
@@ -46,6 +66,49 @@ export class PlayersRepository {
             nationality: true,
             positions: true,
             ratings: { orderBy: { capturedAt: 'desc' }, take: 1 },
+          },
+        }),
+      pagination,
+    );
+  }
+
+  findPaginatedForSeason(
+    seasonId: string,
+    filter: { name?: string },
+    sort: PlayersSort,
+    pagination: PaginationQuery,
+  ) {
+    const where = {
+      seasonId,
+      ...(filter.name
+        ? {
+            player: {
+              name: { contains: filter.name, mode: 'insensitive' as const },
+            },
+          }
+        : {}),
+    };
+    const orderBy = {
+      player: { [PLAYER_ORDER_BY_FIELD[sort.sortBy]]: sort.sortOrder },
+    };
+
+    return paginate(
+      () => this.txHost.tx.playerTeamAssignment.count({ where }),
+      ({ skip, take }) =>
+        this.txHost.tx.playerTeamAssignment.findMany({
+          where,
+          skip,
+          take,
+          orderBy,
+          include: {
+            team: true,
+            player: {
+              include: {
+                nationality: true,
+                positions: true,
+                ratings: { orderBy: { capturedAt: 'desc' }, take: 1 },
+              },
+            },
           },
         }),
       pagination,
