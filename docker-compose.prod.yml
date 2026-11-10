@@ -24,6 +24,7 @@ services:
       SALT_ROUND: ${SALT_ROUND}
       DEFAULT_USER_NAME: ${DEFAULT_USER_NAME}
       DEFAULT_USER_PIN: ${DEFAULT_USER_PIN}
+      GCS_BUCKET: ${GCS_BUCKET}
     depends_on:
       postgres:
         condition: service_healthy
