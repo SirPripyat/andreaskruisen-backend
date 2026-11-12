@@ -10,9 +10,12 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './commons/config/env.schema';
+import { FavoritesModule } from './favorites/favorites.module';
 import { ImportModule } from './import/import.module';
 import { LeaguesModule } from './leagues/leagues.module';
 import { MatchesModule } from './matches/matches.module';
+import { MeModule } from './me/me.module';
+import { NationalitiesModule } from './nationalities/nationalities.module';
 import { PlayersModule } from './players/players.module';
 import { PrismaModule, PrismaService } from './prisma';
 import { SeasonsModule } from './seasons/seasons.module';
@@ -44,14 +47,17 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     SeasonsModule,
     SquadsModule,
+    FavoritesModule,
     PlayersModule,
     TeamsModule,
     TournamentsModule,
     MatchesModule,
     TransfersModule,
     LeaguesModule,
+    NationalitiesModule,
     ImportModule,
     StorageModule,
+    MeModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
