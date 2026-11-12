@@ -1,34 +1,25 @@
 import { forwardRef, Module, OnModuleInit } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
-import { StorageModule } from '../storage/storage.module';
 import {
-  ConfirmAvatarUploadUseCase,
   CreateUserUseCase,
   EnsureDefaultAdminUseCase,
-  GetAvatarUploadUrlUseCase,
-  GetAvatarUrlUseCase,
   ListUsersUseCase,
   RemoveUserUseCase,
-  SelectSeasonUseCase,
-  UpdateProfileUseCase,
 } from './use-cases';
 import { UsersController } from './users.controller';
+import { UsersFacade } from './users.facade';
 import { UsersRepository } from './users.repository';
 
 @Module({
-  imports: [forwardRef(() => AuthModule), StorageModule],
+  imports: [forwardRef(() => AuthModule)],
   controllers: [UsersController],
   providers: [
     UsersRepository,
+    UsersFacade,
     ListUsersUseCase,
     CreateUserUseCase,
     RemoveUserUseCase,
-    SelectSeasonUseCase,
     EnsureDefaultAdminUseCase,
-    GetAvatarUploadUrlUseCase,
-    ConfirmAvatarUploadUseCase,
-    GetAvatarUrlUseCase,
-    UpdateProfileUseCase,
   ],
   exports: [UsersRepository],
 })

@@ -16,28 +16,26 @@ export class RemoveUserUseCase {
   @Transactional()
   async execute(id: string, requestingUserId: string): Promise<void> {
     const user = await this.repository.findById(id);
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
+    if (!user) throw new NotFoundException('Usuário não encontrado');
 
-    if (id === requestingUserId) {
+    if (id === requestingUserId)
       throw new ConflictException(
         'Você não pode excluir o próprio usuário logado',
       );
-    }
 
-    try {
-      await this.repository.delete(id);
-    } catch (error) {
+    await this.deleteOrThrow(id);
+  }
+
+  private async deleteOrThrow(id: string): Promise<void> {
+    await this.repository.delete(id).catch((error: unknown) => {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === FOREIGN_KEY_VIOLATION
-      ) {
+      )
         throw new ConflictException(
           'Usuário tem elenco ou transferências vinculadas e não pode ser excluído',
         );
-      }
       throw error;
-    }
+    });
   }
 }

@@ -6,7 +6,7 @@ import { UsersRepository } from '../users.repository';
 export class ListUsersUseCase {
   constructor(private readonly repository: UsersRepository) {}
 
-  execute(): Promise<Array<Pick<User, 'id' | 'name' | 'role'>>> {
+  execute(): Promise<Array<Pick<User, 'id' | 'name' | 'role' | 'avatarPath'>>> {
     return this.repository.findMany();
   }
 }

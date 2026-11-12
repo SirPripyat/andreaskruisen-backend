@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CreateUserSchema } from '../dto/create-user.schema';
+import { hashPin } from '../../commons/utils';
+import { CreateUserSchema } from '../dto/request/create-user.schema';
 import { UsersRepository } from '../users.repository';
-import { hashPin } from '../utils';
 
 @Injectable()
 export class EnsureDefaultAdminUseCase {
@@ -31,8 +31,7 @@ export class EnsureDefaultAdminUseCase {
       return;
     }
 
-    if (user.role !== 'ADMIN') {
+    if (user.role !== 'ADMIN')
       await this.repository.updateRole(user.id, 'ADMIN');
-    }
   }
 }
