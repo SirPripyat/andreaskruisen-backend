@@ -76,7 +76,7 @@ model Nationality {
   // busca por nome ignorar acento (ver migration add_name_search_unaccent).
   // Nunca é setada pela aplicação — o banco recalcula sozinho a cada
   // escrita em `name`.
-  nameSearch String?
+  nameSearch String? @default(dbgenerated("lower(immutable_unaccent(name))"))
 
   players Player[]
   leagues League[]
@@ -89,7 +89,7 @@ model League {
   countryId String?      @db.Uuid
   country   Nationality? @relation(fields: [countryId], references: [id])
 
-  nameSearch String?
+  nameSearch String? @default(dbgenerated("lower(immutable_unaccent(name))"))
 
   teams Team[]
 }
@@ -98,7 +98,7 @@ model Team {
   id   String @id @default(uuid()) @db.Uuid
   name String
 
-  nameSearch String?
+  nameSearch String? @default(dbgenerated("lower(immutable_unaccent(name))"))
   // Só exibição: o SoFIFA varia a resolução da imagem do escudo entre
   // execuções do scraper (ex.: .../90.png numa leva, .../60.png na
   // seguinte), então não é estável o suficiente pra ser chave de upsert
@@ -150,7 +150,7 @@ model Player {
   eaId          Int           @unique
   name          String
   // Gerada pelo Postgres (lower(unaccent(name))); ver nota em Nationality.nameSearch.
-  nameSearch    String?
+  nameSearch    String? @default(dbgenerated("lower(immutable_unaccent(name))"))
   photoUrl      String
   birthdate     DateTime
   preferredFoot PreferredFoot
