@@ -1,8 +1,11 @@
 import {
   Formation,
+  League,
   PositionCode,
   PreferredFoot,
   Squad,
+  Team,
+  User,
 } from 'generated/prisma/client';
 
 export type RosterPlayer = {
@@ -23,6 +26,12 @@ export type LineupOverview = {
   bench: RosterPlayer[];
 };
 
+export type LineupSlotAssignment = {
+  teamId: string;
+  isStarter: boolean;
+  lineupPosition: PositionCode | null;
+};
+
 export type RosterBySector = {
   goalkeepers: RosterPlayer[];
   defenders: RosterPlayer[];
@@ -31,11 +40,8 @@ export type RosterBySector = {
 };
 
 export type SquadWithRelations = Squad & {
-  user: { id: string; name: string };
-  team: {
-    id: string;
-    name: string;
-    crestUrl: string;
-    league: { id: string; name: string };
+  user: Pick<User, 'id' | 'name'>;
+  team: Pick<Team, 'id' | 'name' | 'crestUrl'> & {
+    league: Pick<League, 'id' | 'name'>;
   };
 };

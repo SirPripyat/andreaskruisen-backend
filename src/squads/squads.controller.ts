@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -17,19 +18,25 @@ import {
 import {
   AssignSquad,
   AssignSquadSchema,
+  ChangeSquadFormation,
+  ChangeSquadFormationSchema,
   ChooseSquad,
   ChooseSquadSchema,
+  SwapLineupStarter,
+  SwapLineupStarterSchema,
 } from './dto';
 import {
   AssignSquadUseCase,
+  ChangeSquadFormationUseCase,
   ChooseSquadUseCase,
   GetMySquadUseCase,
   GetSquadLineupUseCase,
   ListSquadRosterUseCase,
   ListSquadsUseCase,
+  SwapLineupStarterUseCase,
 } from './use-cases';
 
-@Controller()
+@Controller('squads')
 export class SquadsController {
   constructor(
     private readonly listSquadsUseCase: ListSquadsUseCase,
@@ -38,15 +45,17 @@ export class SquadsController {
     private readonly listSquadRosterUseCase: ListSquadRosterUseCase,
     private readonly getSquadLineupUseCase: GetSquadLineupUseCase,
     private readonly getMySquadUseCase: GetMySquadUseCase,
+    private readonly swapLineupStarterUseCase: SwapLineupStarterUseCase,
+    private readonly changeSquadFormationUseCase: ChangeSquadFormationUseCase,
   ) {}
 
-  @Get('squads')
+  @Get()
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   listForSeason(@Req() request: SeasonScopedRequest) {
     return this.listSquadsUseCase.execute(request.seasonId);
   }
 
-  @Post('squads')
+  @Post()
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   choose(
     @Req() request: SeasonScopedRequest,
@@ -59,13 +68,13 @@ export class SquadsController {
     );
   }
 
-  @Get('squads/me')
+  @Get('/me')
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   getMine(@Req() request: SeasonScopedRequest) {
     return this.getMySquadUseCase.execute(request.user.id, request.seasonId);
   }
 
-  @Get('squads/:teamId/players')
+  @Get('/:teamId/players')
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   listRoster(
     @Req() request: SeasonScopedRequest,
@@ -74,7 +83,7 @@ export class SquadsController {
     return this.listSquadRosterUseCase.execute(request.seasonId, teamId);
   }
 
-  @Get('squads/:teamId/lineup')
+  @Get('/:teamId/lineup')
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   getLineup(
     @Req() request: SeasonScopedRequest,
@@ -83,7 +92,39 @@ export class SquadsController {
     return this.getSquadLineupUseCase.execute(request.seasonId, teamId);
   }
 
-  @Post('seasons/:seasonId/squads/assign')
+  @Patch('/:teamId/lineup')
+  @UseGuards(SessionAuthGuard, SeasonContextGuard)
+  swapLineupStarter(
+    @Req() request: SeasonScopedRequest,
+    @Param('teamId') teamId: string,
+    @Body(new ZodValidationPipe(SwapLineupStarterSchema))
+    dto: SwapLineupStarter,
+  ) {
+    return this.swapLineupStarterUseCase.execute(
+      request.seasonId,
+      request.user,
+      teamId,
+      dto,
+    );
+  }
+
+  @Patch('/:teamId/lineup/formation')
+  @UseGuards(SessionAuthGuard, SeasonContextGuard)
+  changeFormation(
+    @Req() request: SeasonScopedRequest,
+    @Param('teamId') teamId: string,
+    @Body(new ZodValidationPipe(ChangeSquadFormationSchema))
+    dto: ChangeSquadFormation,
+  ) {
+    return this.changeSquadFormationUseCase.execute(
+      request.seasonId,
+      request.user,
+      teamId,
+      dto,
+    );
+  }
+
+  @Post('/:seasonId/squads/assign')
   @UseGuards(SessionAuthGuard, AdminGuard)
   assign(
     @Param('seasonId') seasonId: string,

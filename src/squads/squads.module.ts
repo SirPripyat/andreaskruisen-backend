@@ -5,11 +5,13 @@ import { SquadsController } from './squads.controller';
 import { SquadsRepository } from './squads.repository';
 import {
   AssignSquadUseCase,
+  ChangeSquadFormationUseCase,
   ChooseSquadUseCase,
   GetMySquadUseCase,
   GetSquadLineupUseCase,
   ListSquadRosterUseCase,
   ListSquadsUseCase,
+  SwapLineupStarterUseCase,
 } from './use-cases';
 
 @Module({
@@ -23,6 +25,8 @@ import {
     ListSquadRosterUseCase,
     GetSquadLineupUseCase,
     GetMySquadUseCase,
+    SwapLineupStarterUseCase,
+    ChangeSquadFormationUseCase,
   ],
   exports: [SquadsRepository],
 })

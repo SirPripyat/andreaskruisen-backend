@@ -44,6 +44,10 @@ export class SeasonsService {
     return season;
   }
 
+  async findOne(id: string): Promise<Season> {
+    return this.findOrThrow(id);
+  }
+
   async update(id: string, dto: UpdateSeason): Promise<Season> {
     await this.findOrThrow(id);
 

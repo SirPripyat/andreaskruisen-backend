@@ -37,7 +37,7 @@ export type TeamWithRatings = {
   name: string;
   crestUrl: string;
   formation: string | null;
-  league: { id: string; name: string };
+  league: { id: string; name: string; logoUrl: string };
   averageOverallRating: number | null;
   averageDefenseRating: number | null;
   averageMidfieldRating: number | null;
@@ -67,6 +67,7 @@ export type TeamRow = {
   formation: string | null;
   leagueId: string;
   leagueName: string;
+  leagueLogo: string;
   averageOverallRating: number | null;
   averageDefenseRating: number | null;
   averageMidfieldRating: number | null;

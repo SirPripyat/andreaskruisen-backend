@@ -7,6 +7,7 @@ import {
   PrismaClient,
   Team,
 } from '../../generated/prisma/client';
+import { normalizeSearchTerm } from '../commons/normalize-search-term';
 import { PaginatedResult, PaginationQuery } from '../commons/pagination';
 import {
   LineupSlotInput,
@@ -48,29 +49,27 @@ export class TeamsRepository {
   ) {}
 
   async findPaginated(
-    filter: { name?: string; leagueId?: string; withoutFormation?: boolean },
+    filter: { name?: string; leagueId?: string },
     sort: TeamsSort,
     pagination: PaginationQuery,
   ): Promise<PaginatedResult<TeamWithRatings>> {
     const total = await this.txHost.tx.team.count({
       where: {
         ...(filter.name
-          ? { name: { contains: filter.name, mode: 'insensitive' } }
+          ? { nameSearch: { contains: normalizeSearchTerm(filter.name) } }
           : {}),
         ...(filter.leagueId ? { leagueId: filter.leagueId } : {}),
-        ...(filter.withoutFormation ? { formation: null } : {}),
       },
     });
 
     const nameFilter = filter.name
-      ? Prisma.sql`AND t.name ILIKE ${`%${filter.name}%`}`
+      ? Prisma.sql`AND t."nameSearch" ILIKE ${`%${normalizeSearchTerm(filter.name)}%`}`
       : Prisma.empty;
+
     const leagueFilter = filter.leagueId
       ? Prisma.sql`AND l.id = ${filter.leagueId}::uuid`
       : Prisma.empty;
-    const withoutFormationFilter = filter.withoutFormation
-      ? Prisma.sql`AND t.formation IS NULL`
-      : Prisma.empty;
+
     const skip = (pagination.page - 1) * pagination.pageSize;
     const orderColumn = Prisma.raw(TEAM_SORT_COLUMN[sort.sortBy]);
     const orderDirection = Prisma.raw(sort.sortOrder);
@@ -83,6 +82,7 @@ export class TeamsRepository {
         t.formation,
         l.id AS "leagueId",
         l.name AS "leagueName",
+        l."logoUrl" AS "leagueLogo",
         ROUND(AVG(p."latestOverallRating")::numeric, 1)::float AS "averageOverallRating",
         ROUND(AVG(CASE WHEN pp.position IN ${DEFENSE_POSITIONS} THEN p."latestOverallRating" END)::numeric, 1)::float AS "averageDefenseRating",
         ROUND(AVG(CASE WHEN pp.position IN ${MIDFIELD_POSITIONS} THEN p."latestOverallRating" END)::numeric, 1)::float AS "averageMidfieldRating",
@@ -91,7 +91,7 @@ export class TeamsRepository {
       JOIN "League" l ON l.id = t."leagueId"
       LEFT JOIN "Player" p ON p."teamId" = t.id AND ${ONLY_STARTERS_OR_WHOLE_SQUAD}
       LEFT JOIN "PlayerPosition" pp ON pp."playerId" = p.id AND pp."isPrimary" = true
-      WHERE true ${nameFilter} ${leagueFilter} ${withoutFormationFilter}
+      WHERE true ${nameFilter} ${leagueFilter}
       GROUP BY t.id, t.name, t."crestUrl", t.formation, l.id, l.name
       ORDER BY ${orderColumn} ${orderDirection} NULLS LAST, t.name ASC
       LIMIT ${pagination.pageSize} OFFSET ${skip}
@@ -103,7 +103,11 @@ export class TeamsRepository {
         name: row.name,
         crestUrl: row.crestUrl,
         formation: row.formation,
-        league: { id: row.leagueId, name: row.leagueName },
+        league: {
+          id: row.leagueId,
+          name: row.leagueName,
+          logoUrl: row.leagueLogo,
+        },
         averageOverallRating: row.averageOverallRating,
         averageDefenseRating: row.averageDefenseRating,
         averageMidfieldRating: row.averageMidfieldRating,
@@ -125,6 +129,7 @@ export class TeamsRepository {
         t.formation,
         l.id AS "leagueId",
         l.name AS "leagueName",
+        l."logoUrl" AS "leagueLogo",
         ROUND(AVG(p."latestOverallRating")::numeric, 1)::float AS "averageOverallRating",
         ROUND(AVG(CASE WHEN pp.position IN ${DEFENSE_POSITIONS} THEN p."latestOverallRating" END)::numeric, 1)::float AS "averageDefenseRating",
         ROUND(AVG(CASE WHEN pp.position IN ${MIDFIELD_POSITIONS} THEN p."latestOverallRating" END)::numeric, 1)::float AS "averageMidfieldRating",
@@ -147,7 +152,11 @@ export class TeamsRepository {
       name: row.name,
       crestUrl: row.crestUrl,
       formation: row.formation,
-      league: { id: row.leagueId, name: row.leagueName },
+      league: {
+        id: row.leagueId,
+        name: row.leagueName,
+        logoUrl: row.leagueLogo,
+      },
       averageOverallRating: row.averageOverallRating,
       averageDefenseRating: row.averageDefenseRating,
       averageMidfieldRating: row.averageMidfieldRating,
@@ -159,6 +168,10 @@ export class TeamsRepository {
     await this.txHost.tx.team.update({ where: { id }, data });
   }
 
+  // update: {} de propósito — crestUrl aqui vem do JSON de jogadores do
+  // scraper, qualidade inferior ao catálogo curado do import de escudos
+  // (import-team-crests). Sobrescrever a cada import de jogadores destruía
+  // o escudo já carregado; crestUrl só é setado na criação do time.
   upsertByNameAndLeague(data: {
     name: string;
     leagueId: string;
@@ -167,7 +180,7 @@ export class TeamsRepository {
     return this.txHost.tx.team.upsert({
       where: { name_leagueId: { name: data.name, leagueId: data.leagueId } },
       create: data,
-      update: { crestUrl: data.crestUrl, leagueId: data.leagueId },
+      update: {},
     });
   }
 

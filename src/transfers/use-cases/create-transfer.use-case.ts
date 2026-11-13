@@ -10,9 +10,9 @@ import { Squad } from '../../../generated/prisma/client';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
 import { SquadsRepository } from '../../squads/squads.repository';
 import { HasActiveTournamentUseCase } from '../../tournaments/use-cases';
-import { CreateTransfer } from '../dto';
+import { CreateTransferRequestDTO, TransferResponseDTO } from '../dto';
 import { TransfersRepository } from '../transfers.repository';
-import { TransferAssignment, TransferWithRelations } from '../types';
+import { TransferAssignment } from '../types';
 
 @Injectable()
 export class CreateTransferUseCase {
@@ -27,8 +27,8 @@ export class CreateTransferUseCase {
   async execute(
     seasonId: string,
     userId: string,
-    dto: CreateTransfer,
-  ): Promise<TransferWithRelations> {
+    dto: CreateTransferRequestDTO,
+  ): Promise<TransferResponseDTO> {
     await this.ensureSeasonExists(seasonId);
     await this.ensureNoActiveTournament(seasonId);
 

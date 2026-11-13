@@ -7,4 +7,5 @@ export * from './lineup-position-mapper.utils';
 export * from './overall.utils';
 export * from './positions.utils';
 export * from './preferred-foot.utils';
+export * from './rating-categories.utils';
 export * from './stats-label-mapper.utils';

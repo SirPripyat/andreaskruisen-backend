@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { PositionCode, PrismaClient } from '../../generated/prisma/client';
-import { TransferAssignment, TransferWithRelations } from './types';
+import { TransferResponseDTO } from './dto/response';
+import { TransferAssignment } from './types';
 
 const TRANSFER_INCLUDE = {
   requestedBy: { select: { id: true, name: true } },
@@ -38,9 +39,8 @@ export class TransfersRepository {
         team: { select: { id: true, name: true, crestUrl: true } },
       },
     });
-    if (!assignment) {
-      return null;
-    }
+
+    if (!assignment) return null;
 
     const primary =
       assignment.player.positions.find((position) => position.isPrimary) ??
@@ -57,24 +57,19 @@ export class TransfersRepository {
     };
   }
 
-  // Atualiza a "foto" de cada jogador pro time do outro (ver comentário no
-  // model PlayerTeamAssignment) e registra o log da troca na mesma transação.
-  // Titular/banco não é um atributo que o jogador carrega consigo: depois da
-  // troca, recalcula quem é titular em cada posição afetada, em cada time,
-  // com base no elenco atual (ver recomputeStartersForPosition) — assim
-  // nenhum time acumula titulares de mais nem fica sem cobrir uma posição.
   async swap(
     seasonId: string,
     outgoing: TransferAssignment,
     incoming: TransferAssignment,
     requestedByUserId: string,
-  ): Promise<TransferWithRelations> {
+  ): Promise<TransferResponseDTO> {
     await this.txHost.tx.playerTeamAssignment.update({
       where: {
         seasonId_playerId: { seasonId, playerId: outgoing.player.id },
       },
       data: { teamId: incoming.team.id },
     });
+
     await this.txHost.tx.playerTeamAssignment.update({
       where: {
         seasonId_playerId: { seasonId, playerId: incoming.player.id },
@@ -82,21 +77,32 @@ export class TransfersRepository {
       data: { teamId: outgoing.team.id },
     });
 
-    // As duas posições envolvidas (podem ser a mesma) são as únicas cujo
-    // conjunto de candidatos mudou em cada time — todo o resto do elenco
-    // continua igual, então recalcular só elas é suficiente e correto.
     const affectedPositions = [
       ...new Set([outgoing.position, incoming.position]),
     ];
+
     for (const teamId of [outgoing.team.id, incoming.team.id]) {
+      const squad = await this.txHost.tx.squad.findUnique({
+        where: { seasonId_teamId: { seasonId, teamId } },
+        select: { hasManualLineup: true },
+      });
+
+      if (squad?.hasManualLineup) {
+        const arrivedPlayerId =
+          teamId === outgoing.team.id ? incoming.player.id : outgoing.player.id;
+        await this.txHost.tx.playerTeamAssignment.update({
+          where: {
+            seasonId_playerId: { seasonId, playerId: arrivedPlayerId },
+          },
+          data: { isStarter: false, lineupPosition: null },
+        });
+        continue;
+      }
+
       for (const position of affectedPositions) {
         await this.recomputeStartersForPosition(seasonId, teamId, position);
       }
-      // O elenco pode não ter, numa posição, jogador suficiente cuja posição
-      // PRINCIPAL bata exatamente com o slot da formação (ela admite
-      // preenchimento por outra posição — ver comentário no TeamLineupSlot).
-      // Sem isso, o recálculo por posição isolado pode deixar o time abaixo
-      // dos 11 titulares, violando o invariante.
+
       await this.topUpStarters(seasonId, teamId);
     }
 
@@ -113,12 +119,6 @@ export class TransfersRepository {
     });
   }
 
-  // Titulares de uma posição = os N melhores (maior overall) do elenco
-  // atual do time nessa posição, onde N é quantos slots dessa posição o
-  // time tem na formação real (TeamLineupSlot, ver schema) — não quem
-  // ocupava o slot antes. Reaplicado após toda troca que afete a posição
-  // (ver swap), então um time nunca acumula titulares de mais numa posição
-  // nem fica sem cobrir uma: o melhor disponível sempre assume a vaga.
   private async recomputeStartersForPosition(
     seasonId: string,
     teamId: string,
@@ -147,22 +147,17 @@ export class TransfersRepository {
     if (starterIds.length > 0) {
       await this.txHost.tx.playerTeamAssignment.updateMany({
         where: { seasonId, teamId, playerId: { in: starterIds } },
-        data: { isStarter: true },
+        data: { isStarter: true, lineupPosition: position },
       });
     }
     if (benchIds.length > 0) {
       await this.txHost.tx.playerTeamAssignment.updateMany({
         where: { seasonId, teamId, playerId: { in: benchIds } },
-        data: { isStarter: false },
+        data: { isStarter: false, lineupPosition: null },
       });
     }
   }
 
-  // Rede de segurança do invariante "sempre 11 titulares": se o recálculo
-  // por posição deixou o time com menos titulares do que sua formação real
-  // exige no total, promove os melhores reservas por overall (de qualquer
-  // posição) até fechar a conta — mesma ideia de fallback já usada na
-  // importação da escalação real (ver comentário no TeamLineupSlot).
   private async topUpStarters(seasonId: string, teamId: string): Promise<void> {
     const [requiredTotal, currentStarters, bench] = await Promise.all([
       this.txHost.tx.teamLineupSlot.count({ where: { teamId } }),
@@ -171,7 +166,14 @@ export class TransfersRepository {
       }),
       this.txHost.tx.playerTeamAssignment.findMany({
         where: { seasonId, teamId, isStarter: false },
-        select: { playerId: true },
+        select: {
+          playerId: true,
+          player: {
+            select: {
+              positions: { select: { position: true, isPrimary: true } },
+            },
+          },
+        },
         orderBy: { player: { latestOverallRating: 'desc' } },
       }),
     ]);
@@ -181,18 +183,23 @@ export class TransfersRepository {
       return;
     }
 
-    const promotedIds = bench
-      .slice(0, shortfall)
-      .map((candidate) => candidate.playerId);
-    if (promotedIds.length > 0) {
-      await this.txHost.tx.playerTeamAssignment.updateMany({
-        where: { seasonId, teamId, playerId: { in: promotedIds } },
-        data: { isStarter: true },
-      });
-    }
+    const promoted = bench.slice(0, shortfall);
+
+    await Promise.all(
+      promoted.map(({ playerId, player }) => {
+        const primary =
+          player.positions.find((candidate) => candidate.isPrimary) ??
+          player.positions[0];
+
+        return this.txHost.tx.playerTeamAssignment.update({
+          where: { seasonId_playerId: { seasonId, playerId } },
+          data: { isStarter: true, lineupPosition: primary?.position ?? 'ATA' },
+        });
+      }),
+    );
   }
 
-  findBySeason(seasonId: string): Promise<TransferWithRelations[]> {
+  findBySeason(seasonId: string): Promise<TransferResponseDTO[]> {
     return this.txHost.tx.transfer.findMany({
       where: { seasonId },
       orderBy: { createdAt: 'desc' },

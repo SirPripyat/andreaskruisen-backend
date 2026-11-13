@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 const SeasonSquadSchema = z.object({
-  userId: z.string().uuid(),
-  teamId: z.string().uuid(),
+  userId: z.uuid(),
+  teamId: z.uuid(),
 });
 
 export const CreateSeasonSchema = z

@@ -8,7 +8,7 @@ export const CreateTournamentSchema = z
     maxTeams: z.number().int(),
     // Elenco completo do torneio: precisa estar aqui porque as partidas da
     // primeira fase já são geradas na criação (ver CreateTournamentUseCase).
-    teamIds: z.array(z.string().uuid()),
+    teamIds: z.array(z.uuid()),
   })
   .refine((data) => isValidMaxTeams(data.format, data.maxTeams), {
     message: 'Número de times inválido para esse formato de torneio',

@@ -38,6 +38,11 @@ export class SeasonsController {
     return this.seasonsService.getActive();
   }
 
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.seasonsService.findOne(id);
+  }
+
   @Patch(':id')
   update(
     @Param('id') id: string,

@@ -7,7 +7,7 @@ import { z } from 'zod';
 // uso no domínio: o zod os ignora por não fazerem parte do schema abaixo.
 export const ScraperTeamCrestSchema = z.object({
   name: z.string().min(1),
-  logo: z.string().url(),
+  logo: z.url(),
   gender: z.string().min(1),
   leagues: z.array(z.string().min(1)).min(1),
 });

@@ -5,31 +5,32 @@ import {
   SeasonContextGuard,
   SeasonScopedRequest,
 } from '../seasons/season-context.guard';
-import { CreateTransfer, CreateTransferSchema } from './dto';
-import { CreateTransferUseCase, ListTransfersUseCase } from './use-cases';
+import {
+  CreateTransferRequestDTO,
+  CreateTransferSchema,
+  TransferPlayerMovementResponseDTO,
+  TransferResponseDTO,
+} from './dto';
+import { TransfersFacade } from './transfers.facade';
 
 @Controller('transfers')
 @UseGuards(SessionAuthGuard, SeasonContextGuard)
 export class TransfersController {
-  constructor(
-    private readonly createTransferUseCase: CreateTransferUseCase,
-    private readonly listTransfersUseCase: ListTransfersUseCase,
-  ) {}
+  constructor(private readonly transfersFacade: TransfersFacade) {}
 
   @Post()
   create(
     @Req() request: SeasonScopedRequest,
-    @Body(new ZodValidationPipe(CreateTransferSchema)) dto: CreateTransfer,
-  ) {
-    return this.createTransferUseCase.execute(
-      request.seasonId,
-      request.user.id,
-      dto,
-    );
+    @Body(new ZodValidationPipe(CreateTransferSchema))
+    dto: CreateTransferRequestDTO,
+  ): Promise<TransferResponseDTO> {
+    return this.transfersFacade.create(request.seasonId, request.user.id, dto);
   }
 
   @Get()
-  findBySeason(@Req() request: SeasonScopedRequest) {
-    return this.listTransfersUseCase.execute(request.seasonId);
+  findBySeason(
+    @Req() request: SeasonScopedRequest,
+  ): Promise<TransferPlayerMovementResponseDTO[]> {
+    return this.transfersFacade.findBySeason(request.seasonId);
   }
 }

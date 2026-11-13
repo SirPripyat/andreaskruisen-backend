@@ -1,7 +1,7 @@
 import { PositionCode } from '../../../generated/prisma/client';
 import { RosterPlayer } from '../types';
 
-const POSITION_DISPLAY_ORDER = new Map<PositionCode, number>(
+export const POSITION_DISPLAY_ORDER = new Map<PositionCode, number>(
   [
     'GOL',
     'ZAG',

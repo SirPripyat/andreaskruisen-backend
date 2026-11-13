@@ -1,17 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { Player, PrismaClient } from '../../generated/prisma/client';
+import {
+  Player,
+  PositionCode,
+  Prisma,
+  PrismaClient,
+} from '../../generated/prisma/client';
+import { normalizeSearchTerm } from '../commons/normalize-search-term';
 import { PaginationQuery, paginate } from '../commons/pagination';
 import {
   PLAYER_ORDER_BY_FIELD,
   PlayerImportSnapshot,
   PlayerPositionInput,
   PlayerRatingInput,
+  PlayersFilter,
   PlayersSort,
   PlayerTeamDimension,
+  SkillRatingRanges,
   UpsertPlayerData,
 } from './types';
+import { ageRangeToBirthdateRange } from './utils';
 
 @Injectable()
 export class PlayersRepository {
@@ -41,14 +50,17 @@ export class PlayersRepository {
     });
   }
 
-  findPaginated(
-    filter: { name?: string },
+  async findPaginated(
+    filter: PlayersFilter,
     sort: PlayersSort,
     pagination: PaginationQuery,
   ) {
-    const where = filter.name
-      ? { name: { contains: filter.name, mode: 'insensitive' as const } }
-      : {};
+    const playerWhere = await this.buildPlayerWhere(filter);
+    const where: Prisma.PlayerWhereInput = {
+      ...playerWhere,
+      ...(filter.clubId ? { teamId: filter.clubId } : {}),
+      ...(filter.leagueId ? { team: { leagueId: filter.leagueId } } : {}),
+    };
     const orderBy = {
       [PLAYER_ORDER_BY_FIELD[sort.sortBy]]: sort.sortOrder,
     };
@@ -72,21 +84,52 @@ export class PlayersRepository {
     );
   }
 
-  findPaginatedForSeason(
+  // Candidatos à similaridade: mesma restrição de "foto" da temporada que
+  // findPaginatedForSeason, mas filtrando por posição primária (grupo
+  // tático) em vez de paginação/filtros livres.
+  findCandidatesForSimilarityInSeason(
     seasonId: string,
-    filter: { name?: string },
+    excludePlayerId: string,
+    primaryPositions: readonly PositionCode[],
+  ) {
+    return this.txHost.tx.playerTeamAssignment.findMany({
+      where: {
+        seasonId,
+        playerId: { not: excludePlayerId },
+        player: {
+          positions: {
+            some: {
+              isPrimary: true,
+              position: { in: [...primaryPositions] },
+            },
+          },
+        },
+      },
+      include: {
+        team: true,
+        player: {
+          include: {
+            nationality: true,
+            positions: true,
+            ratings: { orderBy: { capturedAt: 'desc' }, take: 1 },
+          },
+        },
+      },
+    });
+  }
+
+  async findPaginatedForSeason(
+    seasonId: string,
+    filter: PlayersFilter,
     sort: PlayersSort,
     pagination: PaginationQuery,
   ) {
-    const where = {
+    const playerWhere = await this.buildPlayerWhere(filter);
+    const where: Prisma.PlayerTeamAssignmentWhereInput = {
       seasonId,
-      ...(filter.name
-        ? {
-            player: {
-              name: { contains: filter.name, mode: 'insensitive' as const },
-            },
-          }
-        : {}),
+      ...(filter.clubId ? { teamId: filter.clubId } : {}),
+      ...(filter.leagueId ? { team: { leagueId: filter.leagueId } } : {}),
+      player: playerWhere,
     };
     const orderBy = {
       player: { [PLAYER_ORDER_BY_FIELD[sort.sortBy]]: sort.sortOrder },
@@ -113,6 +156,91 @@ export class PlayersRepository {
         }),
       pagination,
     );
+  }
+
+  // Monta a parte do filtro que vive no próprio Player (nome, país,
+  // posições, perna boa, idade, overall e habilidades) — comum aos dois
+  // métodos acima, que só diferem em como aninham isso (direto vs. sob
+  // `player:`, já que o time exibido na temporada é o da PlayerTeamAssignment,
+  // não o Player.teamId).
+  private async buildPlayerWhere(
+    filter: PlayersFilter,
+  ): Promise<Prisma.PlayerWhereInput> {
+    const { birthdateMin, birthdateMax } = ageRangeToBirthdateRange(
+      filter.ageMin,
+      filter.ageMax,
+    );
+    const matchedIds = filter.skillRatingRanges
+      ? await this.findLatestRatingPlayerIds(filter.skillRatingRanges)
+      : null;
+
+    return {
+      ...(filter.name
+        ? { nameSearch: { contains: normalizeSearchTerm(filter.name) } }
+        : {}),
+      ...(filter.nationalityIds?.length
+        ? { nationalityId: { in: filter.nationalityIds } }
+        : {}),
+      ...(filter.positions?.length
+        ? { positions: { some: { position: { in: filter.positions } } } }
+        : {}),
+      ...(filter.preferredFoot ? { preferredFoot: filter.preferredFoot } : {}),
+      ...(filter.overallMin !== undefined || filter.overallMax !== undefined
+        ? {
+            latestOverallRating: {
+              gte: filter.overallMin,
+              lte: filter.overallMax,
+            },
+          }
+        : {}),
+      ...(birthdateMin || birthdateMax
+        ? { birthdate: { gt: birthdateMin, lte: birthdateMax } }
+        : {}),
+      ...(matchedIds !== null ? { id: { in: matchedIds } } : {}),
+    };
+  }
+
+  // PlayerRating é um histórico (uma linha nova só quando algum atributo
+  // muda — ver comentário no schema), então filtrar um range direto nele
+  // com "some" bateria em qualquer captura antiga, não necessariamente no
+  // valor atual do jogador. Isola a captura mais recente por jogador numa
+  // subquery (DISTINCT ON) antes de aplicar o range. Os nomes de coluna
+  // interpolados vêm só de SKILL_RATING_FIELDS (nunca de input do usuário),
+  // então a interpolação via Prisma.raw aqui é segura.
+  private async findLatestRatingPlayerIds(
+    ranges: SkillRatingRanges,
+  ): Promise<string[]> {
+    const conditions = Object.entries(ranges).flatMap(([field, range]) => {
+      const column = Prisma.raw(`"${field}"`);
+      const parts: Prisma.Sql[] = [];
+
+      if (range?.min !== undefined) {
+        parts.push(Prisma.sql`${column} >= ${range.min}`);
+      }
+      if (range?.max !== undefined) {
+        parts.push(Prisma.sql`${column} <= ${range.max}`);
+      }
+
+      return parts;
+    });
+
+    if (conditions.length === 0) {
+      return [];
+    }
+
+    const rows = await this.txHost.tx.$queryRaw<{ playerId: string }[]>(
+      Prisma.sql`
+        SELECT lr."playerId" AS "playerId"
+        FROM (
+          SELECT DISTINCT ON ("playerId") *
+          FROM "PlayerRating"
+          ORDER BY "playerId", "capturedAt" DESC
+        ) lr
+        WHERE ${Prisma.join(conditions, ' AND ')}
+      `,
+    );
+
+    return rows.map((row) => row.playerId);
   }
 
   upsertByEaId(data: UpsertPlayerData): Promise<Player> {

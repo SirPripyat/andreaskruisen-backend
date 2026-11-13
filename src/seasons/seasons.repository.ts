@@ -86,7 +86,7 @@ export class SeasonsRepository {
       select: {
         id: true,
         teamId: true,
-        lineupSlots: { select: { id: true }, take: 1 },
+        lineupSlots: { select: { position: true }, take: 1 },
       },
     });
 
@@ -98,6 +98,7 @@ export class SeasonsRepository {
           playerId: player.id,
           teamId: player.teamId,
           isStarter: player.lineupSlots.length > 0,
+          lineupPosition: player.lineupSlots[0]?.position,
         })),
       });
     }

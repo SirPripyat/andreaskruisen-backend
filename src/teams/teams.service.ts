@@ -7,7 +7,6 @@ import {
 import { Prisma } from '../../generated/prisma/client';
 import { PaginatedResult } from '../commons/pagination';
 import { FORMATION_DISPLAY_TO_ENUM } from '../import/utils/formation-mapper.utils';
-import { SeasonsRepository } from '../seasons/seasons.repository';
 import { TournamentsRepository } from '../tournaments/tournaments.repository';
 import { TeamTitle } from '../tournaments/types';
 import {
@@ -36,7 +35,6 @@ export class TeamsService {
   constructor(
     private readonly teamsRepository: TeamsRepository,
     private readonly tournamentsRepository: TournamentsRepository,
-    private readonly seasonsRepository: SeasonsRepository,
     private readonly resolveGoalLeadersUseCase: ResolveGoalLeadersUseCase,
     private readonly getTitlesForTeamUseCase: GetTitlesForTeamUseCase,
   ) {}
@@ -46,16 +44,15 @@ export class TeamsService {
       {
         name: query.name,
         leagueId: query.leagueId,
-        withoutFormation: query.withoutFormation,
       },
       { sortBy: query.sortBy, sortOrder: query.sortOrder },
       query,
     );
   }
 
-  async getOne(id: string): Promise<TeamDetail> {
+  async getOne(id: string, seasonId: string): Promise<TeamDetail> {
     const team = await this.findOrThrow(id);
-    const stats = await this.getStats(id);
+    const stats = await this.getStats(id, seasonId);
     return { ...team, ...stats };
   }
 
@@ -64,7 +61,11 @@ export class TeamsService {
     return this.getTitlesForTeamUseCase.execute(id);
   }
 
-  async update(id: string, dto: UpdateTeam): Promise<TeamDetail> {
+  async update(
+    id: string,
+    dto: UpdateTeam,
+    seasonId: string,
+  ): Promise<TeamDetail> {
     await this.findOrThrow(id);
 
     const data: UpdateTeamData = {
@@ -92,7 +93,7 @@ export class TeamsService {
       throw error;
     }
 
-    return this.getOne(id);
+    return this.getOne(id, seasonId);
   }
 
   private async findOrThrow(id: string): Promise<TeamWithRatings> {
@@ -103,28 +104,19 @@ export class TeamsService {
     return team;
   }
 
-  // Dono e campanha são da temporada ativa (ownership e "campanha da
-  // temporada" só fazem sentido pra uma temporada por vez); últimos jogos,
-  // artilheiros, assistências e retrospecto por adversário são o histórico
-  // completo do clube, em qualquer temporada.
-  private async getStats(teamId: string): Promise<TeamStats> {
-    const [matches, activeSeason] = await Promise.all([
-      this.teamsRepository.findPlayedMatchesForTeam(teamId),
-      this.seasonsRepository.findActive(),
-    ]);
+  // Dono e campanha são da temporada efetiva do usuário (ownership e
+  // "campanha da temporada" só fazem sentido pra uma temporada por vez);
+  // últimos jogos, artilheiros, assistências e retrospecto por adversário
+  // são o histórico completo do clube, em qualquer temporada.
+  private async getStats(teamId: string, seasonId: string): Promise<TeamStats> {
+    const matches = await this.teamsRepository.findPlayedMatchesForTeam(teamId);
 
-    const owner = activeSeason
-      ? ((
-          await this.tournamentsRepository.findOwnersByTeamIds(
-            [teamId],
-            activeSeason.id,
-          )
-        ).get(teamId) ?? null)
-      : null;
+    const owner =
+      (
+        await this.tournamentsRepository.findOwnersByTeamIds([teamId], seasonId)
+      ).get(teamId) ?? null;
 
-    const seasonCampaign = activeSeason
-      ? computeSeasonCampaign(matches, activeSeason.id)
-      : null;
+    const seasonCampaign = computeSeasonCampaign(matches, seasonId);
 
     const { biggestVictim, biggestTormentor } = computeHeadToHead(matches);
 

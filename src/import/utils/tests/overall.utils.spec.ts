@@ -70,6 +70,41 @@ describe('mapOverall', () => {
     expect(rating.crossing).toBe(78);
     expect(rating.gkReflexes).toBe(9);
   });
+
+  it('calcula pac/sho/pas/dri/def/phy quando o scraper não os envia', () => {
+    const rating = mapOverall(buildPlayer());
+
+    // acceleration=67, sprintSpeed=71 → média 69
+    expect(rating.pac).toBe(69);
+    expect(rating.sho).toBeDefined();
+    expect(rating.pas).toBeDefined();
+    expect(rating.dri).toBeDefined();
+    expect(rating.def).toBeDefined();
+    expect(rating.phy).toBeDefined();
+  });
+
+  it('preserva pac/sho/pas/dri/def/phy quando o scraper já os envia', () => {
+    const rating = mapOverall(
+      buildPlayer({
+        stats: {
+          ...MINIMAL_STATS,
+          pac: 99,
+          sho: 99,
+          pas: 99,
+          dri: 99,
+          def: 99,
+          phy: 99,
+        },
+      }),
+    );
+
+    expect(rating.pac).toBe(99);
+    expect(rating.sho).toBe(99);
+    expect(rating.pas).toBe(99);
+    expect(rating.dri).toBe(99);
+    expect(rating.def).toBe(99);
+    expect(rating.phy).toBe(99);
+  });
 });
 
 describe('overallsEqual', () => {

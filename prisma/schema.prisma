@@ -72,12 +72,24 @@ model Nationality {
   name    String @unique
   flagUrl String
 
+  // Coluna gerada pelo Postgres (lower(unaccent(name))), mantida só pra
+  // busca por nome ignorar acento (ver migration add_name_search_unaccent).
+  // Nunca é setada pela aplicação — o banco recalcula sozinho a cada
+  // escrita em `name`.
+  nameSearch String?
+
   players Player[]
+  leagues League[]
 }
 
 model League {
-  id   String @id @default(uuid()) @db.Uuid
-  name String @unique
+  id        String       @id @default(uuid()) @db.Uuid
+  name      String       @unique
+  logoUrl   String?
+  countryId String?      @db.Uuid
+  country   Nationality? @relation(fields: [countryId], references: [id])
+
+  nameSearch String?
 
   teams Team[]
 }
@@ -85,11 +97,13 @@ model League {
 model Team {
   id   String @id @default(uuid()) @db.Uuid
   name String
+
+  nameSearch String?
   // Só exibição: o SoFIFA varia a resolução da imagem do escudo entre
   // execuções do scraper (ex.: .../90.png numa leva, .../60.png na
   // seguinte), então não é estável o suficiente pra ser chave de upsert
   // (já causou Team duplicado - ver @@unique([name, leagueId]) abaixo).
-  crestUrl String
+  crestUrl   String
 
   // Formação padrão do time real, vinda do JSON de formações do scraper
   // (arquivo separado do de jogadores). Nula até a primeira importação.
@@ -135,6 +149,8 @@ model Player {
   // id do jogador no scraper (SoFIFA/EA), usado como chave de upsert na importação.
   eaId          Int           @unique
   name          String
+  // Gerada pelo Postgres (lower(unaccent(name))); ver nota em Nationality.nameSearch.
+  nameSearch    String?
   photoUrl      String
   birthdate     DateTime
   preferredFoot PreferredFoot
@@ -158,6 +174,7 @@ model Player {
   transfersOut      Transfer[]             @relation("TransferOutgoingPlayer")
   transfersIn       Transfer[]             @relation("TransferIncomingPlayer")
   lineupSlots       TeamLineupSlot[]
+  favoritedBy       FavoritePlayer[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -283,6 +300,7 @@ model User {
   sessions           Session[]
   squads             Squad[]
   transfersRequested Transfer[]
+  favoritePlayers    FavoritePlayer[]
 
   avatarPath String?
 }
@@ -315,6 +333,7 @@ model Season {
   tournaments     Tournament[]
   transfers       Transfer[]
   selectedByUsers User[]
+  favoritePlayers FavoritePlayer[]
 }
 
 // O elenco de um participante numa temporada: o time real que ele escolheu
@@ -331,8 +350,42 @@ model Squad {
 
   createdAt DateTime @default(now())
 
+  // Marcada quando o técnico edita a escalação/banco manualmente (ver
+  // SwapLineupStarterUseCase). A partir daí, TransfersRepository.swap para
+  // de recalcular titular/banco por overall pra esse time: quem entra numa
+  // troca sempre nasce no banco, e o técnico decide quem promove.
+  hasManualLineup Boolean @default(false)
+
+  // Formação usada pelo técnico nessa temporada, editável (ver
+  // ChangeSquadFormationUseCase). Nula até a primeira troca manual: até lá,
+  // a exibição cai pro Team.formation (formação real do time, vinda do
+  // scraper) — ver SquadsRepository.findLineupOverview.
+  formation Formation?
+
   @@unique([seasonId, userId])
   @@unique([seasonId, teamId])
+}
+
+// Lista pessoal de jogadores "favoritados" por um participante, dentro de
+// uma temporada (ex.: alvos de troca que ele quer acompanhar). Uma linha
+// por combinação user+season+player; nada a mais que isso — exclusão é
+// definitiva (sem soft delete), já que é só uma lista de atalho, não um
+// registro contábil como o ledger de moedas.
+model FavoritePlayer {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id])
+
+  seasonId String @db.Uuid
+  season   Season @relation(fields: [seasonId], references: [id])
+
+  playerId String @db.Uuid
+  player   Player @relation(fields: [playerId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, seasonId, playerId])
 }
 
 enum TournamentFormat {
@@ -430,8 +483,8 @@ model Match {
   // advanceKnockoutRound e determineChampionTeamId).
   penaltyHomeScore    Int?
   penaltyAwayScore    Int?
-  penaltyWinnerTeamId String?   @db.Uuid
-  penaltyWinnerTeam   Team?     @relation("MatchPenaltyWinner", fields: [penaltyWinnerTeamId], references: [id])
+  penaltyWinnerTeamId String? @db.Uuid
+  penaltyWinnerTeam   Team?   @relation("MatchPenaltyWinner", fields: [penaltyWinnerTeamId], references: [id])
 
   goals Goal[]
 
@@ -470,13 +523,13 @@ model Goal {
 // (Transferência) alteram essa foto (teamId) e também isStarter, nunca o
 // Player.teamId.
 model PlayerTeamAssignment {
-  id       String @id @default(uuid()) @db.Uuid
-  seasonId String @db.Uuid
-  season   Season @relation(fields: [seasonId], references: [id])
-  playerId String @db.Uuid
-  player   Player @relation(fields: [playerId], references: [id])
-  teamId   String @db.Uuid
-  team     Team   @relation(fields: [teamId], references: [id])
+  id        String  @id @default(uuid()) @db.Uuid
+  seasonId  String  @db.Uuid
+  season    Season  @relation(fields: [seasonId], references: [id])
+  playerId  String  @db.Uuid
+  player    Player  @relation(fields: [playerId], references: [id])
+  teamId    String  @db.Uuid
+  team      Team    @relation(fields: [teamId], references: [id])
   // Titular (true) ou banco (false) do elenco DESSE time nessa temporada.
   // Inicializado a partir do TeamLineupSlot real (SoFIFA) do jogador quando
   // a temporada começa. Numa troca, é o SLOT que troca de dono, não o
@@ -485,6 +538,13 @@ model PlayerTeamAssignment {
   // elenco sempre tem exatamente 11 titulares, independente de quantas
   // trocas aconteçam.
   isStarter Boolean @default(false)
+
+  // Posição do slot da formação que esse titular ocupa (null quando no
+  // banco). Pertence ao SLOT, não ao jogador: numa troca ou reposicionamento
+  // (ver SwapLineupStarterUseCase) ou numa troca de formação (ver
+  // ChangeSquadFormationUseCase), é este campo que se move entre jogadores —
+  // a posição natural do jogador (PlayerPosition) nunca muda.
+  lineupPosition PositionCode?
 
   @@unique([seasonId, playerId])
   @@index([seasonId, teamId])

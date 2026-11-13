@@ -5,8 +5,8 @@ import { z } from 'zod';
 // depende de saber o time de cada jogador).
 const GoalSchema = z
   .object({
-    scorerId: z.string().uuid(),
-    assistId: z.string().uuid().optional(),
+    scorerId: z.uuid(),
+    assistId: z.uuid().optional(),
   })
   .refine((goal) => goal.assistId !== goal.scorerId, {
     message: 'O artilheiro não pode ser o assistente do próprio gol',

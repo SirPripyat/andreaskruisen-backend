@@ -10,7 +10,7 @@ export const UpdateTeamSchema = z
   .object({
     name: z.string().trim().min(1).optional(),
     crestUrl: z.string().trim().min(1).optional(),
-    leagueId: z.string().uuid().optional(),
+    leagueId: z.uuid().optional(),
     formation: z.enum(KNOWN_FORMATIONS).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
+import { TransferPlayerMovementResponseDTO, TransferResponseDTO } from '../dto';
 import { TransfersRepository } from '../transfers.repository';
-import { TransferPlayerMovement, TransferWithRelations } from '../types';
 
 @Injectable()
 export class ListTransfersUseCase {
@@ -10,19 +10,19 @@ export class ListTransfersUseCase {
     private readonly seasonsRepository: SeasonsRepository,
   ) {}
 
-  async execute(seasonId: string): Promise<TransferPlayerMovement[]> {
+  async execute(
+    seasonId: string,
+  ): Promise<TransferPlayerMovementResponseDTO[]> {
     const season = await this.seasonsRepository.findById(seasonId);
-    if (!season) {
-      throw new NotFoundException('Temporada não encontrada');
-    }
+    if (!season) throw new NotFoundException('Temporada não encontrada');
 
     const transfers = await this.transfersRepository.findBySeason(seasonId);
     return transfers.flatMap((transfer) => this.toPlayerMovements(transfer));
   }
 
   private toPlayerMovements(
-    transfer: TransferWithRelations,
-  ): [TransferPlayerMovement, TransferPlayerMovement] {
+    transfer: TransferResponseDTO,
+  ): [TransferPlayerMovementResponseDTO, TransferPlayerMovementResponseDTO] {
     return [
       {
         transferId: transfer.id,

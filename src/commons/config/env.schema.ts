@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const EnvSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL é obrigatório'),
-  FRONTEND_URL: z.string().url('FRONTEND_URL precisa ser uma URL válida'),
+  FRONTEND_URL: z.url('FRONTEND_URL precisa ser uma URL válida'),
   PORT: z.coerce.number().int().positive().default(3000),
   SALT_ROUND: z.coerce.number().int().positive(),
   DEFAULT_USER_NAME: z.string().min(1),

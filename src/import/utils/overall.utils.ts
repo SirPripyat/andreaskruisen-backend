@@ -1,4 +1,5 @@
 import { ScraperPlayer } from '../dto';
+import { computeRatingCategories } from './rating-categories.utils';
 
 const OPTIONAL_RATING_FIELD_NAMES = [
   'pac',
@@ -63,12 +64,25 @@ type RequiredRatingFieldName = Exclude<
 export type NormalizedRating = Record<RequiredRatingFieldName, number> &
   Partial<Record<(typeof OPTIONAL_RATING_FIELD_NAMES)[number], number>>;
 
-export const mapOverall = (player: ScraperPlayer): NormalizedRating => ({
-  overallRating: player.overallRating,
-  skillMoves: player.skillMoves,
-  weakFootAbility: player.weakFootAbility,
-  ...player.stats,
-});
+// pac/sho/pas/dri/def/phy: quando o scraper não manda (ver comentário em
+// ScraperStatsSchema), calcula a partir dos atributos detalhados em vez de
+// deixar nulo — nunca sobrescreve um valor que o scraper tenha enviado.
+export const mapOverall = (player: ScraperPlayer): NormalizedRating => {
+  const computed = computeRatingCategories(player.stats);
+
+  return {
+    overallRating: player.overallRating,
+    skillMoves: player.skillMoves,
+    weakFootAbility: player.weakFootAbility,
+    ...player.stats,
+    pac: player.stats.pac ?? computed.pac,
+    sho: player.stats.sho ?? computed.sho,
+    pas: player.stats.pas ?? computed.pas,
+    dri: player.stats.dri ?? computed.dri,
+    def: player.stats.def ?? computed.def,
+    phy: player.stats.phy ?? computed.phy,
+  };
+};
 
 export const overallsEqual = (
   a: NormalizedRating,

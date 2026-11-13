@@ -7,12 +7,20 @@ import {
   SeasonScopedRequest,
 } from '../seasons/season-context.guard';
 import { ListPlayersQuery, ListPlayersSchema } from './dto/list-players.schema';
+import {
+  SimilarPlayersQuery,
+  SimilarPlayersSchema,
+} from './dto/similar-players.schema';
 import { PlayersService } from './players.service';
+import { GetSimilarPlayersUseCase } from './use-cases';
 
 @Controller('players')
 @UseGuards(SessionAuthGuard)
 export class PlayersController {
-  constructor(private readonly playersService: PlayersService) {}
+  constructor(
+    private readonly playersService: PlayersService,
+    private readonly getSimilarPlayersUseCase: GetSimilarPlayersUseCase,
+  ) {}
 
   @Get()
   @UseGuards(AdminGuard)
@@ -35,5 +43,20 @@ export class PlayersController {
   @UseGuards(SeasonContextGuard)
   async getOne(@Req() request: SeasonScopedRequest, @Param('id') id: string) {
     return this.playersService.getOne(request.seasonId, id);
+  }
+
+  @Get(':id/similar')
+  @UseGuards(SeasonContextGuard)
+  async getSimilar(
+    @Req() request: SeasonScopedRequest,
+    @Param('id') id: string,
+    @Query(new ZodValidationPipe(SimilarPlayersSchema))
+    query: SimilarPlayersQuery,
+  ) {
+    return this.getSimilarPlayersUseCase.execute(
+      request.seasonId,
+      id,
+      query.limit,
+    );
   }
 }
