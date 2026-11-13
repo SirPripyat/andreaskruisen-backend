@@ -3,8 +3,8 @@ import { AdminGuard } from '../auth/admin.guard';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import {
+  RequiredSeasonScopedRequest,
   SeasonContextGuard,
-  SeasonScopedRequest,
 } from '../seasons/season-context.guard';
 import {
   GetSimilarPlayersRequestDTO,
@@ -31,23 +31,30 @@ export class PlayersController {
   @Get('season')
   @UseGuards(SeasonContextGuard)
   listForSeason(
-    @Req() request: SeasonScopedRequest,
+    @Req() request: RequiredSeasonScopedRequest,
     @Query(new ZodValidationPipe(ListPlayersSchema))
     query: ListPlayersRequestDTO,
   ) {
-    return this.facade.listForSeason(request.seasonId, request.user.id, query);
+    return this.facade.listForSeason(
+      request.seasonId,
+      request.user.id,
+      query,
+    );
   }
 
   @Get(':id')
   @UseGuards(SeasonContextGuard)
-  getOne(@Req() request: SeasonScopedRequest, @Param('id') id: string) {
+  getOne(
+    @Req() request: RequiredSeasonScopedRequest,
+    @Param('id') id: string,
+  ) {
     return this.facade.getOne(request.seasonId, request.user.id, id);
   }
 
   @Get(':id/similar')
   @UseGuards(SeasonContextGuard)
   getSimilar(
-    @Req() request: SeasonScopedRequest,
+    @Req() request: RequiredSeasonScopedRequest,
     @Param('id') id: string,
     @Query(new ZodValidationPipe(GetSimilarPlayersSchema))
     query: GetSimilarPlayersRequestDTO,

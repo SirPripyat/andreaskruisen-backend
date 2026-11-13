@@ -9,10 +9,12 @@ export class GetMeUseCase {
 
   async execute(
     user: AuthenticatedUser,
-    seasonId: string,
+    seasonId: string | null,
   ): Promise<GetMeResponseDTO> {
-    const teamId = await this.meRepository.findSquadTeamId(user.id, seasonId);
+    const teamId = seasonId
+      ? await this.meRepository.findSquadTeamId(user.id, seasonId)
+      : null;
 
-    return { ...user, teamId };
+    return { ...user, seasonId, teamId };
   }
 }

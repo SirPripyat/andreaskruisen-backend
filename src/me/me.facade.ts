@@ -33,7 +33,10 @@ export class MeFacade {
     private readonly getDashboardUseCase: GetDashboardUseCase,
   ) {}
 
-  getMe(user: AuthenticatedUser, seasonId: string): Promise<GetMeResponseDTO> {
+  getMe(
+    user: AuthenticatedUser,
+    seasonId: string | null,
+  ): Promise<GetMeResponseDTO> {
     return this.getMeUseCase.execute(user, seasonId);
   }
 

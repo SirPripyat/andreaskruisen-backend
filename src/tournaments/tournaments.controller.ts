@@ -14,8 +14,8 @@ import { AdminGuard } from '../auth/admin.guard';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import {
+  RequiredSeasonScopedRequest,
   SeasonContextGuard,
-  SeasonScopedRequest,
 } from '../seasons/season-context.guard';
 import {
   CreateTournament,
@@ -59,7 +59,7 @@ export class TournamentsController {
   @Post()
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   create(
-    @Req() request: SeasonScopedRequest,
+    @Req() request: RequiredSeasonScopedRequest,
     @Body(new ZodValidationPipe(CreateTournamentSchema))
     dto: CreateTournament,
   ) {
@@ -68,7 +68,7 @@ export class TournamentsController {
 
   @Get()
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
-  findBySeason(@Req() request: SeasonScopedRequest) {
+  findBySeason(@Req() request: RequiredSeasonScopedRequest) {
     return this.listTournamentsUseCase.execute(request.seasonId);
   }
 

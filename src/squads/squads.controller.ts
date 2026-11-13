@@ -12,8 +12,8 @@ import { AdminGuard } from '../auth/admin.guard';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import {
+  RequiredSeasonScopedRequest,
   SeasonContextGuard,
-  SeasonScopedRequest,
 } from '../seasons/season-context.guard';
 import {
   AssignSquadRequestDTO,
@@ -33,14 +33,14 @@ export class SquadsController {
 
   @Get()
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
-  listForSeason(@Req() request: SeasonScopedRequest) {
+  listForSeason(@Req() request: RequiredSeasonScopedRequest) {
     return this.facade.listForSeason(request.seasonId);
   }
 
   @Post()
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   choose(
-    @Req() request: SeasonScopedRequest,
+    @Req() request: RequiredSeasonScopedRequest,
     @Body(new ZodValidationPipe(ChooseSquadSchema))
     dto: ChooseSquadRequestDTO,
   ) {
@@ -49,14 +49,14 @@ export class SquadsController {
 
   @Get('/me')
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
-  getMine(@Req() request: SeasonScopedRequest) {
+  getMine(@Req() request: RequiredSeasonScopedRequest) {
     return this.facade.getMine(request.user.id, request.seasonId);
   }
 
   @Get('/:teamId/players')
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   listRoster(
-    @Req() request: SeasonScopedRequest,
+    @Req() request: RequiredSeasonScopedRequest,
     @Param('teamId') teamId: string,
   ) {
     return this.facade.listRoster(request.seasonId, teamId);
@@ -65,7 +65,7 @@ export class SquadsController {
   @Get('/:teamId/lineup')
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   getLineup(
-    @Req() request: SeasonScopedRequest,
+    @Req() request: RequiredSeasonScopedRequest,
     @Param('teamId') teamId: string,
   ) {
     return this.facade.getLineup(request.seasonId, teamId);
@@ -74,7 +74,7 @@ export class SquadsController {
   @Patch('/:teamId/lineup')
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   swapLineupStarter(
-    @Req() request: SeasonScopedRequest,
+    @Req() request: RequiredSeasonScopedRequest,
     @Param('teamId') teamId: string,
     @Body(new ZodValidationPipe(SwapLineupStarterSchema))
     dto: SwapLineupStarterRequestDTO,
@@ -90,7 +90,7 @@ export class SquadsController {
   @Patch('/:teamId/lineup/formation')
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   changeFormation(
-    @Req() request: SeasonScopedRequest,
+    @Req() request: RequiredSeasonScopedRequest,
     @Param('teamId') teamId: string,
     @Body(new ZodValidationPipe(ChangeSquadFormationSchema))
     dto: ChangeSquadFormationRequestDTO,

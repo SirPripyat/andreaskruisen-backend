@@ -2,8 +2,8 @@ import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import {
+  RequiredSeasonScopedRequest,
   SeasonContextGuard,
-  SeasonScopedRequest,
 } from '../seasons/season-context.guard';
 import {
   CreateTransferRequestDTO,
@@ -20,16 +20,20 @@ export class TransfersController {
 
   @Post()
   create(
-    @Req() request: SeasonScopedRequest,
+    @Req() request: RequiredSeasonScopedRequest,
     @Body(new ZodValidationPipe(CreateTransferSchema))
     dto: CreateTransferRequestDTO,
   ): Promise<TransferResponseDTO> {
-    return this.transfersFacade.create(request.seasonId, request.user.id, dto);
+    return this.transfersFacade.create(
+      request.seasonId,
+      request.user.id,
+      dto,
+    );
   }
 
   @Get()
   findBySeason(
-    @Req() request: SeasonScopedRequest,
+    @Req() request: RequiredSeasonScopedRequest,
   ): Promise<TransferPlayerMovementResponseDTO[]> {
     return this.transfersFacade.findBySeason(request.seasonId);
   }

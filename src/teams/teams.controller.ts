@@ -12,8 +12,8 @@ import { AdminGuard } from '../auth/admin.guard';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import {
+  RequiredSeasonScopedRequest,
   SeasonContextGuard,
-  SeasonScopedRequest,
 } from '../seasons/season-context.guard';
 import { ListTeamsQuery, ListTeamsSchema } from './dto/list-teams.schema';
 import { UpdateTeam, UpdateTeamSchema } from './dto/update-team.schema';
@@ -34,7 +34,10 @@ export class TeamsController {
 
   @Get(':id')
   @UseGuards(SeasonContextGuard)
-  async getOne(@Param('id') id: string, @Req() request: SeasonScopedRequest) {
+  async getOne(
+    @Param('id') id: string,
+    @Req() request: RequiredSeasonScopedRequest,
+  ) {
     return this.teamsService.getOne(id, request.seasonId);
   }
 
@@ -48,7 +51,7 @@ export class TeamsController {
   async update(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(UpdateTeamSchema)) dto: UpdateTeam,
-    @Req() request: SeasonScopedRequest,
+    @Req() request: RequiredSeasonScopedRequest,
   ) {
     return this.teamsService.update(id, dto, request.seasonId);
   }

@@ -10,8 +10,8 @@ import {
 } from '@nestjs/common';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import {
+  RequiredSeasonScopedRequest,
   SeasonContextGuard,
-  SeasonScopedRequest,
 } from '../seasons/season-context.guard';
 import { FavoritesService } from './favorites.service';
 
@@ -21,14 +21,14 @@ export class FavoritesController {
   constructor(private readonly favoritesService: FavoritesService) {}
 
   @Get()
-  list(@Req() request: SeasonScopedRequest) {
+  list(@Req() request: RequiredSeasonScopedRequest) {
     return this.favoritesService.list(request.user.id, request.seasonId);
   }
 
   @Post(':playerId')
   @HttpCode(204)
   add(
-    @Req() request: SeasonScopedRequest,
+    @Req() request: RequiredSeasonScopedRequest,
     @Param('playerId') playerId: string,
   ) {
     return this.favoritesService.add(
@@ -41,7 +41,7 @@ export class FavoritesController {
   @Delete(':playerId')
   @HttpCode(204)
   remove(
-    @Req() request: SeasonScopedRequest,
+    @Req() request: RequiredSeasonScopedRequest,
     @Param('playerId') playerId: string,
   ) {
     return this.favoritesService.remove(
