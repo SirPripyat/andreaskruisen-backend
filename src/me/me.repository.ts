@@ -66,4 +66,16 @@ export class MeRepository {
 
     return avatarPath;
   }
+
+  async findSquadTeamId(
+    userId: string,
+    seasonId: string,
+  ): Promise<string | null> {
+    const user = await this.txHost.tx.user.findUnique({
+      where: { id: userId },
+      select: { squads: { where: { seasonId }, select: { teamId: true } } },
+    });
+
+    return user?.squads[0]?.teamId ?? null;
+  }
 }

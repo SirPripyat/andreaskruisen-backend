@@ -6,57 +6,52 @@ import {
   SeasonContextGuard,
   SeasonScopedRequest,
 } from '../seasons/season-context.guard';
-import { ListPlayersQuery, ListPlayersSchema } from './dto/list-players.schema';
 import {
-  SimilarPlayersQuery,
-  SimilarPlayersSchema,
-} from './dto/similar-players.schema';
-import { PlayersService } from './players.service';
-import { GetSimilarPlayersUseCase } from './use-cases';
+  GetSimilarPlayersRequestDTO,
+  GetSimilarPlayersSchema,
+  ListPlayersRequestDTO,
+  ListPlayersSchema,
+} from './dto';
+import { PlayersFacade } from './players.facade';
 
 @Controller('players')
 @UseGuards(SessionAuthGuard)
 export class PlayersController {
-  constructor(
-    private readonly playersService: PlayersService,
-    private readonly getSimilarPlayersUseCase: GetSimilarPlayersUseCase,
-  ) {}
+  constructor(private readonly facade: PlayersFacade) {}
 
   @Get()
   @UseGuards(AdminGuard)
-  async list(
-    @Query(new ZodValidationPipe(ListPlayersSchema)) query: ListPlayersQuery,
+  list(
+    @Query(new ZodValidationPipe(ListPlayersSchema))
+    query: ListPlayersRequestDTO,
   ) {
-    return this.playersService.list(query);
+    return this.facade.list(query);
   }
 
   @Get('season')
   @UseGuards(SeasonContextGuard)
-  async listForSeason(
+  listForSeason(
     @Req() request: SeasonScopedRequest,
-    @Query(new ZodValidationPipe(ListPlayersSchema)) query: ListPlayersQuery,
+    @Query(new ZodValidationPipe(ListPlayersSchema))
+    query: ListPlayersRequestDTO,
   ) {
-    return this.playersService.listForSeason(request.seasonId, query);
+    return this.facade.listForSeason(request.seasonId, request.user.id, query);
   }
 
   @Get(':id')
   @UseGuards(SeasonContextGuard)
-  async getOne(@Req() request: SeasonScopedRequest, @Param('id') id: string) {
-    return this.playersService.getOne(request.seasonId, id);
+  getOne(@Req() request: SeasonScopedRequest, @Param('id') id: string) {
+    return this.facade.getOne(request.seasonId, request.user.id, id);
   }
 
   @Get(':id/similar')
   @UseGuards(SeasonContextGuard)
-  async getSimilar(
+  getSimilar(
     @Req() request: SeasonScopedRequest,
     @Param('id') id: string,
-    @Query(new ZodValidationPipe(SimilarPlayersSchema))
-    query: SimilarPlayersQuery,
+    @Query(new ZodValidationPipe(GetSimilarPlayersSchema))
+    query: GetSimilarPlayersRequestDTO,
   ) {
-    return this.getSimilarPlayersUseCase.execute(
-      request.seasonId,
-      id,
-      query.limit,
-    );
+    return this.facade.getSimilar(request.seasonId, id, query.limit);
   }
 }

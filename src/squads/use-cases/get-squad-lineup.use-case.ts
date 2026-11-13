@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
+import { GetSquadLineupResponseDTO } from '../dto';
 import { SquadsRepository } from '../squads.repository';
-import { LineupOverview } from '../types';
 
 @Injectable()
 export class GetSquadLineupUseCase {
@@ -10,7 +10,10 @@ export class GetSquadLineupUseCase {
     private readonly seasonsRepository: SeasonsRepository,
   ) {}
 
-  async execute(seasonId: string, teamId: string): Promise<LineupOverview> {
+  async execute(
+    seasonId: string,
+    teamId: string,
+  ): Promise<GetSquadLineupResponseDTO> {
     const season = await this.seasonsRepository.findById(seasonId);
 
     if (!season) throw new NotFoundException('Temporada não encontrada');

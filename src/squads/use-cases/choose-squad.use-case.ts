@@ -4,9 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, Squad } from '../../../generated/prisma/client';
+import { Prisma } from '../../../generated/prisma/client';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
-import { ChooseSquad } from '../dto';
+import { ChooseSquadRequestDTO, ChooseSquadResponseDTO } from '../dto';
 import { SquadsRepository } from '../squads.repository';
 
 const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
@@ -22,8 +22,8 @@ export class ChooseSquadUseCase {
   async execute(
     userId: string,
     seasonId: string,
-    dto: ChooseSquad,
-  ): Promise<Squad> {
+    dto: ChooseSquadRequestDTO,
+  ): Promise<ChooseSquadResponseDTO> {
     const season = await this.seasonsRepository.findById(seasonId);
 
     if (!season) throw new NotFoundException('Temporada não encontrada');
@@ -43,7 +43,7 @@ export class ChooseSquadUseCase {
     seasonId: string,
     userId: string,
     teamId: string,
-  ): Promise<Squad> {
+  ): Promise<ChooseSquadResponseDTO> {
     return this.squadsRepository
       .create({ seasonId, userId, teamId })
       .catch((error) => {

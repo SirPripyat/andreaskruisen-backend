@@ -16,62 +16,41 @@ import {
   SeasonScopedRequest,
 } from '../seasons/season-context.guard';
 import {
-  AssignSquad,
+  AssignSquadRequestDTO,
   AssignSquadSchema,
-  ChangeSquadFormation,
+  ChangeSquadFormationRequestDTO,
   ChangeSquadFormationSchema,
-  ChooseSquad,
+  ChooseSquadRequestDTO,
   ChooseSquadSchema,
-  SwapLineupStarter,
+  SwapLineupStarterRequestDTO,
   SwapLineupStarterSchema,
 } from './dto';
-import {
-  AssignSquadUseCase,
-  ChangeSquadFormationUseCase,
-  ChooseSquadUseCase,
-  GetMySquadUseCase,
-  GetSquadLineupUseCase,
-  ListSquadRosterUseCase,
-  ListSquadsUseCase,
-  SwapLineupStarterUseCase,
-} from './use-cases';
+import { SquadsFacade } from './squads.facade';
 
 @Controller('squads')
 export class SquadsController {
-  constructor(
-    private readonly listSquadsUseCase: ListSquadsUseCase,
-    private readonly chooseSquadUseCase: ChooseSquadUseCase,
-    private readonly assignSquadUseCase: AssignSquadUseCase,
-    private readonly listSquadRosterUseCase: ListSquadRosterUseCase,
-    private readonly getSquadLineupUseCase: GetSquadLineupUseCase,
-    private readonly getMySquadUseCase: GetMySquadUseCase,
-    private readonly swapLineupStarterUseCase: SwapLineupStarterUseCase,
-    private readonly changeSquadFormationUseCase: ChangeSquadFormationUseCase,
-  ) {}
+  constructor(private readonly facade: SquadsFacade) {}
 
   @Get()
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   listForSeason(@Req() request: SeasonScopedRequest) {
-    return this.listSquadsUseCase.execute(request.seasonId);
+    return this.facade.listForSeason(request.seasonId);
   }
 
   @Post()
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   choose(
     @Req() request: SeasonScopedRequest,
-    @Body(new ZodValidationPipe(ChooseSquadSchema)) dto: ChooseSquad,
+    @Body(new ZodValidationPipe(ChooseSquadSchema))
+    dto: ChooseSquadRequestDTO,
   ) {
-    return this.chooseSquadUseCase.execute(
-      request.user.id,
-      request.seasonId,
-      dto,
-    );
+    return this.facade.choose(request.user.id, request.seasonId, dto);
   }
 
   @Get('/me')
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   getMine(@Req() request: SeasonScopedRequest) {
-    return this.getMySquadUseCase.execute(request.user.id, request.seasonId);
+    return this.facade.getMine(request.user.id, request.seasonId);
   }
 
   @Get('/:teamId/players')
@@ -80,7 +59,7 @@ export class SquadsController {
     @Req() request: SeasonScopedRequest,
     @Param('teamId') teamId: string,
   ) {
-    return this.listSquadRosterUseCase.execute(request.seasonId, teamId);
+    return this.facade.listRoster(request.seasonId, teamId);
   }
 
   @Get('/:teamId/lineup')
@@ -89,7 +68,7 @@ export class SquadsController {
     @Req() request: SeasonScopedRequest,
     @Param('teamId') teamId: string,
   ) {
-    return this.getSquadLineupUseCase.execute(request.seasonId, teamId);
+    return this.facade.getLineup(request.seasonId, teamId);
   }
 
   @Patch('/:teamId/lineup')
@@ -98,9 +77,9 @@ export class SquadsController {
     @Req() request: SeasonScopedRequest,
     @Param('teamId') teamId: string,
     @Body(new ZodValidationPipe(SwapLineupStarterSchema))
-    dto: SwapLineupStarter,
+    dto: SwapLineupStarterRequestDTO,
   ) {
-    return this.swapLineupStarterUseCase.execute(
+    return this.facade.swapLineupStarter(
       request.seasonId,
       request.user,
       teamId,
@@ -114,9 +93,9 @@ export class SquadsController {
     @Req() request: SeasonScopedRequest,
     @Param('teamId') teamId: string,
     @Body(new ZodValidationPipe(ChangeSquadFormationSchema))
-    dto: ChangeSquadFormation,
+    dto: ChangeSquadFormationRequestDTO,
   ) {
-    return this.changeSquadFormationUseCase.execute(
+    return this.facade.changeFormation(
       request.seasonId,
       request.user,
       teamId,
@@ -128,8 +107,9 @@ export class SquadsController {
   @UseGuards(SessionAuthGuard, AdminGuard)
   assign(
     @Param('seasonId') seasonId: string,
-    @Body(new ZodValidationPipe(AssignSquadSchema)) dto: AssignSquad,
+    @Body(new ZodValidationPipe(AssignSquadSchema))
+    dto: AssignSquadRequestDTO,
   ) {
-    return this.assignSquadUseCase.execute(seasonId, dto);
+    return this.facade.assign(seasonId, dto);
   }
 }

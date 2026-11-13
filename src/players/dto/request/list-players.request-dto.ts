@@ -1,7 +1,7 @@
+import { createSortSchema, PaginationSchema } from 'src/commons/pagination';
+import { csvArray } from 'src/commons/schemas';
+import { SKILL_RATING_FIELDS } from 'src/players/types';
 import { z } from 'zod';
-import { createSortSchema, PaginationSchema } from '../../commons/pagination';
-import { csvArray } from '../../commons/schemas';
-import { SKILL_RATING_FIELDS } from '../types';
 
 const PLAYER_SORT_FIELDS = ['name', 'overallRating'] as const;
 
@@ -64,4 +64,4 @@ export const ListPlayersSchema = PaginationSchema.extend({
     },
   );
 
-export type ListPlayersQuery = z.infer<typeof ListPlayersSchema>;
+export type ListPlayersRequestDTO = z.infer<typeof ListPlayersSchema>;

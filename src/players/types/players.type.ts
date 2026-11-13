@@ -128,6 +128,8 @@ export type PlayerListItem = {
   latestRating: { overallRating: number; capturedAt: Date } | null;
 };
 
+export type PlayerSearchItem = PlayerListItem & { isFavorite: boolean };
+
 export type PlayerRatingHistoryItem = Omit<PlayerRating, 'id' | 'playerId'>;
 
 export type PlayerStats = {
@@ -154,4 +156,5 @@ export type PlayerDetail = {
   positions: { position: string; isPrimary: boolean }[];
   latestRating: PlayerRatingHistoryItem | null;
   stats: PlayerStats;
+  isFavorite: boolean;
 };

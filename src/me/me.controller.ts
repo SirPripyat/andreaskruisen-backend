@@ -7,16 +7,20 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { AuthenticatedUser } from 'src/auth/auth.service';
 import {
   AuthenticatedRequest,
   SessionAuthGuard,
 } from 'src/auth/session-auth.guard';
 import { ZodValidationPipe } from 'src/commons/pipes/zod-validation.pipe';
 import {
+  SeasonContextGuard,
+  SeasonScopedRequest,
+} from 'src/seasons/season-context.guard';
+import {
   ActiveSeasonResponseDTO,
   AvatarUploadUrlResponseDTO,
   AvatarUrlResponseDTO,
+  GetMeResponseDTO,
   SelectSeasonRequestDTO,
   SelectSeasonResponseDTO,
   SelectSeasonSchema,
@@ -34,8 +38,9 @@ export class MeController {
   constructor(private readonly facade: MeFacade) {}
 
   @Get()
-  getMe(@Req() request: AuthenticatedRequest): AuthenticatedUser {
-    return request.user;
+  @UseGuards(SeasonContextGuard)
+  getMe(@Req() request: SeasonScopedRequest): Promise<GetMeResponseDTO> {
+    return this.facade.getMe(request.user, request.seasonId);
   }
 
   @Patch()
@@ -81,5 +86,10 @@ export class MeController {
     @Req() request: AuthenticatedRequest,
   ): Promise<AvatarUrlResponseDTO> {
     return this.facade.getAvatarUrl(request.user.id);
+  }
+
+  @Get('dashboard')
+  getDashboard(@Req() request: AuthenticatedRequest) {
+    return this.facade.getDashboard(request.user.id);
   }
 }

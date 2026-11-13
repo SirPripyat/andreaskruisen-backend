@@ -1,17 +1,19 @@
-import { ListPlayersQuery } from '../dto/list-players.schema';
+import { ListPlayersRequestDTO } from '../dto';
 import {
   PlayersFilter,
   SKILL_RATING_FIELDS,
   SkillRatingRanges,
 } from '../types';
 
-export const buildPlayersFilter = (query: ListPlayersQuery): PlayersFilter => {
+export const buildPlayersFilter = (
+  query: ListPlayersRequestDTO,
+): PlayersFilter => {
   const skillRatingRanges = SKILL_RATING_FIELDS.reduce<SkillRatingRanges>(
     (ranges, field) => {
-      const min = query[`${field}Min` as keyof ListPlayersQuery] as
+      const min = query[`${field}Min` as keyof ListPlayersRequestDTO] as
         | number
         | undefined;
-      const max = query[`${field}Max` as keyof ListPlayersQuery] as
+      const max = query[`${field}Max` as keyof ListPlayersRequestDTO] as
         | number
         | undefined;
 

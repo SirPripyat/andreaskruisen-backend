@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Squad } from '../../../generated/prisma/client';
+import { GetMySquadResponseDTO } from '../dto';
 import { SquadsRepository } from '../squads.repository';
-import { RosterPlayer } from '../types';
 
 @Injectable()
 export class GetMySquadUseCase {
@@ -10,7 +9,7 @@ export class GetMySquadUseCase {
   async execute(
     userId: string,
     seasonId: string,
-  ): Promise<{ squad: Squad; players: RosterPlayer[] }> {
+  ): Promise<GetMySquadResponseDTO> {
     const squad = await this.squadsRepository.findByUserAndSeason(
       userId,
       seasonId,

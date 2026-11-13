@@ -13,4 +13,6 @@ export const SwapLineupStarterSchema = z
     path: ['benchInId'],
   });
 
-export type SwapLineupStarter = z.infer<typeof SwapLineupStarterSchema>;
+export type SwapLineupStarterRequestDTO = z.infer<
+  typeof SwapLineupStarterSchema
+>;

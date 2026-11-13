@@ -1,2 +1,2 @@
-export * from './list-players.schema';
-export * from './similar-players.schema';
+export * from './request';
+export * from './response';

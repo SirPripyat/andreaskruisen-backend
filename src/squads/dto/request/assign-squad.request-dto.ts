@@ -5,4 +5,4 @@ export const AssignSquadSchema = z.object({
   teamId: z.uuid(),
 });
 
-export type AssignSquad = z.infer<typeof AssignSquadSchema>;
+export type AssignSquadRequestDTO = z.infer<typeof AssignSquadSchema>;

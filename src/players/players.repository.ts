@@ -34,7 +34,7 @@ export class PlayersRepository {
   // (PlayerTeamAssignment), não o Player.teamId real. seasonAssignments
   // vazio = jogador não faz parte dessa temporada (ex.: importado depois
   // dela ter começado, nunca "fotografado" — ver seedPlayerAssignmentsFromRealTeams).
-  findByIdForSeason(seasonId: string, id: string) {
+  findByIdForSeason(seasonId: string, userId: string | undefined, id: string) {
     return this.txHost.tx.player.findUnique({
       where: { id },
       include: {
@@ -45,6 +45,7 @@ export class PlayersRepository {
           where: { seasonId },
           include: { team: true },
         },
+        favoritedBy: { where: { userId, seasonId }, select: { id: true } },
         _count: { select: { goalsScored: true, goalsAssisted: true } },
       },
     });
@@ -120,6 +121,7 @@ export class PlayersRepository {
 
   async findPaginatedForSeason(
     seasonId: string,
+    userId: string,
     filter: PlayersFilter,
     sort: PlayersSort,
     pagination: PaginationQuery,
@@ -150,6 +152,10 @@ export class PlayersRepository {
                 nationality: true,
                 positions: true,
                 ratings: { orderBy: { capturedAt: 'desc' }, take: 1 },
+                favoritedBy: {
+                  where: { userId, seasonId },
+                  select: { id: true },
+                },
               },
             },
           },

@@ -4,4 +4,4 @@ export const ChooseSquadSchema = z.object({
   teamId: z.uuid(),
 });
 
-export type ChooseSquad = z.infer<typeof ChooseSquadSchema>;
+export type ChooseSquadRequestDTO = z.infer<typeof ChooseSquadSchema>;

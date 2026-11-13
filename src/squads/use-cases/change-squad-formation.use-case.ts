@@ -4,9 +4,11 @@ import { AuthenticatedUser } from '../../auth/auth.service';
 import { FORMATION_DISPLAY_TO_ENUM } from '../../import/utils/formation-mapper.utils';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
 import { FORMATION_SLOT_TEMPLATES } from '../constants/formation-slot-templates.constants';
-import { ChangeSquadFormation } from '../dto';
+import {
+  ChangeSquadFormationRequestDTO,
+  ChangeSquadFormationResponseDTO,
+} from '../dto';
 import { SquadsRepository } from '../squads.repository';
-import { LineupOverview } from '../types';
 import { remapLineupPositions } from '../utils';
 import { assertCanManageLineup } from './assert-can-manage-lineup';
 
@@ -22,8 +24,8 @@ export class ChangeSquadFormationUseCase {
     seasonId: string,
     user: Pick<AuthenticatedUser, 'id' | 'role'>,
     teamId: string,
-    dto: ChangeSquadFormation,
-  ): Promise<LineupOverview> {
+    dto: ChangeSquadFormationRequestDTO,
+  ): Promise<ChangeSquadFormationResponseDTO> {
     const season = await this.seasonsRepository.findById(seasonId);
     if (!season) throw new NotFoundException('Temporada não encontrada');
 

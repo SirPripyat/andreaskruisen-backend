@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { GetSimilarPlayersResponseDTO } from '../dto';
 import { PlayersRepository } from '../players.repository';
-import { SimilarPlayersResult } from '../types';
 import {
   computeSimilarity,
   GOALKEEPER_ATTRIBUTE_FIELDS,
@@ -18,9 +18,10 @@ export class GetSimilarPlayersUseCase {
     seasonId: string,
     id: string,
     limit: number,
-  ): Promise<SimilarPlayersResult> {
+  ): Promise<GetSimilarPlayersResponseDTO> {
     const reference = await this.playersRepository.findByIdForSeason(
       seasonId,
+      undefined,
       id,
     );
     const referenceAssignment = reference?.seasonAssignments[0];

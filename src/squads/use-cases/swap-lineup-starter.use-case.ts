@@ -2,9 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import { AuthenticatedUser } from '../../auth/auth.service';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
-import { SwapLineupStarter } from '../dto';
+import {
+  SwapLineupStarterRequestDTO,
+  SwapLineupStarterResponseDTO,
+} from '../dto';
 import { SquadsRepository } from '../squads.repository';
-import { LineupOverview, LineupSlotAssignment } from '../types';
+import { LineupSlotAssignment } from '../types';
 import { assertCanManageLineup } from './assert-can-manage-lineup';
 
 @Injectable()
@@ -19,8 +22,8 @@ export class SwapLineupStarterUseCase {
     seasonId: string,
     user: Pick<AuthenticatedUser, 'id' | 'role'>,
     teamId: string,
-    dto: SwapLineupStarter,
-  ): Promise<LineupOverview> {
+    dto: SwapLineupStarterRequestDTO,
+  ): Promise<SwapLineupStarterResponseDTO> {
     const season = await this.seasonsRepository.findById(seasonId);
     if (!season) throw new NotFoundException('Temporada não encontrada');
 
