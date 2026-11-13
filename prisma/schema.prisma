@@ -150,7 +150,7 @@ model Player {
   eaId          Int           @unique
   name          String
   // Gerada pelo Postgres (lower(unaccent(name))); ver nota em Nationality.nameSearch.
-  nameSearch    String? @default(dbgenerated("lower(immutable_unaccent(name))"))
+  nameSearch    String?       @default(dbgenerated("lower(immutable_unaccent(name))"))
   photoUrl      String
   birthdate     DateTime
   preferredFoot PreferredFoot
@@ -328,6 +328,12 @@ model Season {
   // SeasonsService.selectActive), dentro de uma transação.
   isActive  Boolean  @default(false)
 
+  // Nula até o saldo inicial de cada squad ser calculado (ver
+  // docs/regras-temporada/saldo-inicial.md) — ação separada da criação da
+  // temporada, porque squads podem ser escolhidos depois (SquadsFacade.choose).
+  // Marcada nesse momento pra essa ação não poder rodar duas vezes.
+  economyStartedAt DateTime?
+
   squads          Squad[]
   assignments     PlayerTeamAssignment[]
   tournaments     Tournament[]
@@ -362,8 +368,39 @@ model Squad {
   // scraper) — ver SquadsRepository.findLineupOverview.
   formation Formation?
 
+  coinTransactions CoinTransaction[]
+
   @@unique([seasonId, userId])
   @@unique([seasonId, teamId])
+}
+
+// Origem de um lançamento no ledger de moedas de um squad. TRANSFER, PRIZE_PHASE,
+// WIN e DRAW ainda não têm nenhum código escrevendo nelas — nascem aqui já
+// como enum fechado porque o ledger (saldo = soma das transações) não pode
+// ganhar um tipo novo sem passar por migration.
+enum CoinTransactionType {
+  INITIAL
+  TRANSFER
+  PRIZE_PHASE
+  WIN
+  DRAW
+  ADJUSTMENT
+}
+
+// Ledger append-only de moedas: o saldo de um squad é sempre a soma de
+// CoinTransaction.amount, nunca um campo editável (ver
+// docs/regras-temporada/saldo-inicial.md e v1-transferencias.md). Nenhuma
+// transação é editada ou apagada — correções entram como ADJUSTMENT.
+model CoinTransaction {
+  id      String              @id @default(uuid()) @db.Uuid
+  squadId String              @db.Uuid
+  squad   Squad               @relation(fields: [squadId], references: [id])
+  type    CoinTransactionType
+  amount  Int
+
+  createdAt DateTime @default(now())
+
+  @@index([squadId])
 }
 
 // Lista pessoal de jogadores "favoritados" por um participante, dentro de

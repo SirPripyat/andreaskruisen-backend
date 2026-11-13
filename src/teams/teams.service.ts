@@ -116,6 +116,11 @@ export class TeamsService {
         await this.tournamentsRepository.findOwnersByTeamIds([teamId], seasonId)
       ).get(teamId) ?? null;
 
+    const coins = await this.teamsRepository.findCoinsByTeamId(
+      teamId,
+      seasonId,
+    );
+
     const seasonCampaign = computeSeasonCampaign(matches, seasonId);
 
     const { biggestVictim, biggestTormentor } = computeHeadToHead(matches);
@@ -131,6 +136,7 @@ export class TeamsService {
 
     return {
       owner,
+      coins,
       seasonCampaign,
       lastMatches: toRecentMatches(matches, RECENT_MATCHES_LIMIT),
       topScorers,

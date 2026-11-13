@@ -50,6 +50,9 @@ export type TeamWithRatings = {
 // adversário (maior freguês/carrasco).
 export type TeamStats = {
   owner: TeamOwner | null;
+  // null = time sem squad nessa temporada (mesmo caso do owner null);
+  // 0 é um saldo real.
+  coins: number | null;
   // null = não há temporada ativa (não é "zero jogos"; ver
   // computeSeasonCampaign pro caso de zero jogos numa temporada que existe).
   seasonCampaign: SeasonCampaign | null;

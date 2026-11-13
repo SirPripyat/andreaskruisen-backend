@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { Prisma, PrismaClient, Season } from '../../generated/prisma/client';
+import { InitialBalance, SquadOveralls } from './utils/initial-balance.utils';
 
 const SEED_BATCH_SIZE = 5000;
 
@@ -60,6 +61,10 @@ export class SeasonsRepository {
     });
     await this.txHost.tx.tournament.deleteMany({ where: { seasonId: id } });
     await this.txHost.tx.transfer.deleteMany({ where: { seasonId: id } });
+    await this.txHost.tx.favoritePlayer.deleteMany({ where: { seasonId: id } });
+    await this.txHost.tx.coinTransaction.deleteMany({
+      where: { squad: { seasonId: id } },
+    });
     await this.txHost.tx.squad.deleteMany({ where: { seasonId: id } });
     await this.txHost.tx.playerTeamAssignment.deleteMany({
       where: { seasonId: id },
@@ -104,5 +109,55 @@ export class SeasonsRepository {
     }
 
     return players.length;
+  }
+
+  // Elenco completo de cada squad (titulares e banco), pra alimentar o
+  // cálculo do saldo inicial (ver docs/regras-temporada/saldo-inicial.md).
+  async findSquadsWithPlayerOveralls(
+    seasonId: string,
+  ): Promise<SquadOveralls[]> {
+    const [squads, assignments] = await Promise.all([
+      this.txHost.tx.squad.findMany({
+        where: { seasonId },
+        select: { id: true, teamId: true },
+      }),
+      this.txHost.tx.playerTeamAssignment.findMany({
+        where: { seasonId },
+        select: {
+          teamId: true,
+          player: { select: { latestOverallRating: true } },
+        },
+      }),
+    ]);
+
+    const overallsByTeamId = new Map<string, number[]>();
+    for (const assignment of assignments) {
+      const overalls = overallsByTeamId.get(assignment.teamId) ?? [];
+      overalls.push(assignment.player.latestOverallRating);
+      overallsByTeamId.set(assignment.teamId, overalls);
+    }
+
+    return squads.map((squad) => ({
+      squadId: squad.id,
+      playerOveralls: overallsByTeamId.get(squad.teamId) ?? [],
+    }));
+  }
+
+  async recordInitialBalances(
+    seasonId: string,
+    initialBalances: InitialBalance[],
+  ): Promise<Season> {
+    await this.txHost.tx.coinTransaction.createMany({
+      data: initialBalances.map((balance) => ({
+        squadId: balance.squadId,
+        type: 'INITIAL',
+        amount: balance.initialBalance,
+      })),
+    });
+
+    return this.txHost.tx.season.update({
+      where: { id: seasonId },
+      data: { economyStartedAt: new Date() },
+    });
   }
 }

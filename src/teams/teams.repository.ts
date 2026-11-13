@@ -305,6 +305,24 @@ export class TeamsRepository {
     });
   }
 
+  // Saldo de moedas do squad que controla esse time nessa temporada — soma
+  // do ledger (ver docs/regras-temporada/saldo-inicial.md). null quando o
+  // time não tem squad nessa temporada (igual ao owner: ver
+  // TournamentsRepository.findOwnersByTeamIds).
+  async findCoinsByTeamId(
+    teamId: string,
+    seasonId: string,
+  ): Promise<number | null> {
+    const squad = await this.txHost.tx.squad.findUnique({
+      where: { seasonId_teamId: { seasonId, teamId } },
+      select: { coinTransactions: { select: { amount: true } } },
+    });
+
+    if (!squad) return null;
+
+    return squad.coinTransactions.reduce((total, t) => total + t.amount, 0);
+  }
+
   async findTopScorersForTeam(
     teamId: string,
     limit: number,
