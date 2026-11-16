@@ -3,6 +3,7 @@ import {
   PositionCode,
   PreferredFoot,
   Prisma,
+  SofifaPositionCode,
 } from 'generated/prisma/client';
 import { SortOrder } from 'src/commons/pagination';
 
@@ -102,7 +103,7 @@ export type PlayerPositionInput = {
 
 export type PlayerImportSnapshot = {
   positions: PlayerPositionInput[];
-  latestRating: PlayerRating | null;
+  latestRating: PlayerRatingSnapshot | null;
 };
 
 export type PlayerTeamDimension = {
@@ -112,8 +113,28 @@ export type PlayerTeamDimension = {
 
 export type PlayerRatingInput = Omit<
   Prisma.PlayerRatingCreateInput,
-  'id' | 'playerId' | 'player'
+  'id' | 'playerId' | 'player' | 'specialities' | 'roles' | 'positionRatings'
 >;
+
+export type PlayerRatingRoleInput = {
+  position: PositionCode;
+  name: string;
+  level: number;
+};
+
+export type PlayerPositionRatingInput = {
+  position: SofifaPositionCode;
+  overall: number;
+  base: number;
+  bonus: number;
+  natural: boolean;
+};
+
+export type PlayerRatingSnapshot = PlayerRating & {
+  specialities: string[];
+  roles: PlayerRatingRoleInput[];
+  positionRatings: PlayerPositionRatingInput[];
+};
 
 export type PlayerListItem = {
   id: string;
@@ -130,7 +151,10 @@ export type PlayerListItem = {
 
 export type PlayerSearchItem = PlayerListItem & { isFavorite: boolean };
 
-export type PlayerRatingHistoryItem = Omit<PlayerRating, 'id' | 'playerId'>;
+export type PlayerRatingHistoryItem = Omit<
+  PlayerRatingSnapshot,
+  'id' | 'playerId'
+>;
 
 export type PlayerStats = {
   goalsScored: number;

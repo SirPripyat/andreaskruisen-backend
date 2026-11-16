@@ -4,8 +4,13 @@ import { LeaguesRepository } from '../../leagues/leagues.repository';
 import { NationalitiesRepository } from '../../nationalities/nationalities.repository';
 import { PlayersRepository } from '../../players/players.repository';
 import { PlayerImportSnapshot } from '../../players/types';
+import { SpecialitiesRepository } from '../../specialities/specialities.repository';
 import { TeamsRepository } from '../../teams/teams.repository';
-import { IMPORT_BATCH_SIZE, NATIONAL_TEAMS_LEAGUE } from '../constants';
+import {
+  BRASILEIRAO_LEAGUE,
+  IMPORT_BATCH_SIZE,
+  NATIONAL_TEAMS_LEAGUE,
+} from '../constants';
 import { ScraperPlayer, ScraperPlayerSchema } from '../dto';
 import { DimensionNotResolvedError, PlayerImportDataError } from '../errors';
 import {
@@ -15,11 +20,16 @@ import {
   TeamDimension,
 } from '../types';
 import {
+  arePositionRatingsEqual,
   arePositionsEqual,
+  areRolesEqual,
+  areSpecialitiesEqual,
   buildEaPlayerPhotoUrl,
   mapOverall,
+  mapPositionRatings,
   mapPositions,
   mapPreferredFoot,
+  mapRoles,
   overallsEqual,
   parseBirthdate,
   parseJsonBuffer,
@@ -38,6 +48,7 @@ export class ImportPlayersUseCase {
     private readonly teamsRepository: TeamsRepository,
     private readonly leaguesRepository: LeaguesRepository,
     private readonly nationalitiesRepository: NationalitiesRepository,
+    private readonly specialitiesRepository: SpecialitiesRepository,
   ) {}
 
   async execute(
@@ -93,12 +104,10 @@ export class ImportPlayersUseCase {
     capturedAt: Date,
   ): Promise<PlayerImportSummary> {
     const startedAt = Date.now();
-    const clubPlayers = players.filter(
-      (player) => player.league !== NATIONAL_TEAMS_LEAGUE,
-    );
+    const clubPlayers = players.filter((player) => this.isImportable(player));
     const skipped = players.length - clubPlayers.length;
 
-    const { nationalityIdByName, teamIdByNameAndLeague } =
+    const { nationalityIdByName, teamIdByNameAndLeague, specialityIdByName } =
       await this.upsertDimensions(clubPlayers);
     const snapshotsByEaId =
       await this.playersRepository.findImportSnapshotsByEaIds(
@@ -115,6 +124,7 @@ export class ImportPlayersUseCase {
           player,
           nationalityIdByName,
           teamIdByNameAndLeague,
+          specialityIdByName,
         );
         const result = await this.persistPlayer(
           prepared,
@@ -154,13 +164,31 @@ export class ImportPlayersUseCase {
     return { processed, ratingsInserted, skipped, failed };
   }
 
+  // Hook de extensão: ImportFcmPlayersUseCase aceita só a liga do Brasileirão
+  // (fonte exclusiva dela), enquanto este import do SoFIFA passa a excluí-la
+  // junto com as seleções.
+  protected isImportable(player: ScraperPlayer): boolean {
+    return (
+      player.league !== NATIONAL_TEAMS_LEAGUE &&
+      player.league !== BRASILEIRAO_LEAGUE
+    );
+  }
+
+  // Hook de extensão: ImportFcmPlayersUseCase usa a photoUrl do próprio JSON
+  // do mod (já correta), em vez de reconstruir a partir do eaId no CDN da EA.
+  protected resolvePhotoUrl(player: ScraperPlayer): string {
+    return buildEaPlayerPhotoUrl(player.id);
+  }
+
   private async upsertDimensions(players: ScraperPlayer[]): Promise<{
     nationalityIdByName: Map<string, string>;
     teamIdByNameAndLeague: Map<string, string>;
+    specialityIdByName: Map<string, string>;
   }> {
     const flagUrlByNationality = new Map<string, string>();
     const leagueNames = new Set<string>();
     const teamByNameAndLeague = new Map<string, TeamDimension>();
+    const specialityNames = new Set<string>();
 
     for (const player of players) {
       flagUrlByNationality.set(player.nationality, player.nationalityFlagUrl);
@@ -171,18 +199,21 @@ export class ImportPlayersUseCase {
         league: player.league,
         crestUrl: player.teamCrestUrl,
       });
+      for (const name of player.specialities) specialityNames.add(name);
     }
 
-    const [nationalityIdByName, leagueIdByName] = await Promise.all([
-      this.resolveNationalities(flagUrlByNationality),
-      this.resolveLeagues(leagueNames),
-    ]);
+    const [nationalityIdByName, leagueIdByName, specialityIdByName] =
+      await Promise.all([
+        this.resolveNationalities(flagUrlByNationality),
+        this.resolveLeagues(leagueNames),
+        this.resolveSpecialities(specialityNames),
+      ]);
     const teamIdByNameAndLeague = await this.resolveTeams(
       teamByNameAndLeague,
       leagueIdByName,
     );
 
-    return { nationalityIdByName, teamIdByNameAndLeague };
+    return { nationalityIdByName, teamIdByNameAndLeague, specialityIdByName };
   }
 
   private async resolveNationalities(
@@ -222,6 +253,23 @@ export class ImportPlayersUseCase {
     return leagueIdByName;
   }
 
+  private async resolveSpecialities(
+    specialityNames: Set<string>,
+  ): Promise<Map<string, string>> {
+    const specialityIdByName = new Map<string, string>();
+
+    await processInBatches(
+      Array.from(specialityNames),
+      IMPORT_BATCH_SIZE,
+      async (name) => {
+        const speciality = await this.specialitiesRepository.upsertByName(name);
+        specialityIdByName.set(name, speciality.id);
+      },
+    );
+
+    return specialityIdByName;
+  }
+
   private async resolveTeams(
     teamByNameAndLeague: Map<string, TeamDimension>,
     leagueIdByName: Map<string, string>,
@@ -254,12 +302,20 @@ export class ImportPlayersUseCase {
     player: ScraperPlayer,
     nationalityIdByName: Map<string, string>,
     teamIdByNameAndLeague: Map<string, string>,
+    specialityIdByName: Map<string, string>,
   ): PreparedPlayer {
     const nationalityId = nationalityIdByName.get(player.nationality);
     const teamId = teamIdByNameAndLeague.get(
       teamKey(player.team, player.league),
     );
-    if (nationalityId === undefined || teamId === undefined) {
+    const specialityIds = player.specialities.map((name) =>
+      specialityIdByName.get(name),
+    );
+    if (
+      nationalityId === undefined ||
+      teamId === undefined ||
+      specialityIds.some((id) => id === undefined)
+    ) {
       throw new DimensionNotResolvedError(
         `Dimensões não resolvidas para o jogador ${player.name} (eaId ${player.id})`,
       );
@@ -270,7 +326,7 @@ export class ImportPlayersUseCase {
         upsertData: {
           eaId: player.id,
           name: player.name,
-          photoUrl: buildEaPlayerPhotoUrl(player.id),
+          photoUrl: this.resolvePhotoUrl(player),
           birthdate: parseBirthdate(player.birthdate),
           preferredFoot: mapPreferredFoot(player.preferredFoot),
           nationalityId,
@@ -279,6 +335,10 @@ export class ImportPlayersUseCase {
         },
         positions: mapPositions(player),
         rating: mapOverall(player),
+        specialityIds: specialityIds as string[],
+        specialityNames: player.specialities,
+        roles: mapRoles(player),
+        positionRatings: mapPositionRatings(player),
       };
     } catch (error) {
       if (error instanceof PlayerImportDataError) throw error;
@@ -306,17 +366,30 @@ export class ImportPlayersUseCase {
       );
     }
 
+    const existingRating = existing?.latestRating;
     if (
-      existing?.latestRating &&
-      overallsEqual(existing.latestRating, prepared.rating)
+      existingRating &&
+      overallsEqual(existingRating, prepared.rating) &&
+      areSpecialitiesEqual(
+        existingRating.specialities,
+        prepared.specialityNames,
+      ) &&
+      areRolesEqual(existingRating.roles, prepared.roles) &&
+      arePositionRatingsEqual(
+        existingRating.positionRatings,
+        prepared.positionRatings,
+      )
     ) {
       return { ratingInserted: false };
     }
 
-    await this.playersRepository.createRating(dbPlayer.id, {
-      capturedAt,
-      ...prepared.rating,
-    });
+    await this.playersRepository.createRating(
+      dbPlayer.id,
+      { capturedAt, ...prepared.rating },
+      prepared.specialityIds,
+      prepared.roles,
+      prepared.positionRatings,
+    );
 
     return { ratingInserted: true };
   }

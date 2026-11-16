@@ -3,8 +3,10 @@ import { AuthModule } from '../auth/auth.module';
 import { LeaguesModule } from '../leagues/leagues.module';
 import { NationalitiesModule } from '../nationalities/nationalities.module';
 import { PlayersModule } from '../players/players.module';
+import { SpecialitiesModule } from '../specialities/specialities.module';
 import { TeamsModule } from '../teams/teams.module';
 import { ImportController } from './import.controller';
+import { ImportFcmPlayersUseCase } from './use-cases/import-fcm-players.use-case';
 import { ImportPlayersUseCase } from './use-cases/import-players.use-case';
 import { ImportTeamAliasesUseCase } from './use-cases/import-team-aliases.use-case';
 import { ImportTeamCrestsUseCase } from './use-cases/import-team-crests.use-case';
@@ -18,10 +20,12 @@ import { ImportTeamLineupsUseCase } from './use-cases/import-team-lineups.use-ca
     TeamsModule,
     LeaguesModule,
     NationalitiesModule,
+    SpecialitiesModule,
   ],
   controllers: [ImportController],
   providers: [
     ImportPlayersUseCase,
+    ImportFcmPlayersUseCase,
     ImportTeamFormationsUseCase,
     ImportTeamLineupsUseCase,
     ImportTeamCrestsUseCase,

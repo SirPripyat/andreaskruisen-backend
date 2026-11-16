@@ -56,6 +56,9 @@ const buildPlayer = (
   overallRating: 82,
   positionShort: 'MEI',
   alternatePositions: ['MC', 'VOL'],
+  specialities: [],
+  roles: [],
+  positionRatings: {},
   stats: MINIMAL_STATS,
   ...overrides,
 });

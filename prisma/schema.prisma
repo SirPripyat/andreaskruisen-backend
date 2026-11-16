@@ -30,6 +30,41 @@ enum PositionCode {
   ATA
 }
 
+// Grid de posições do SoFIFA usado só em PlayerPositionRating (overall do
+// jogador em cada posição do campo, pra medir versatilidade). Mais granular
+// que PositionCode (ex.: separa perna esquerda/direita de ala, meia e
+// ataque) e não deve ser confundido com ele: PositionCode continua sendo a
+// fonte de verdade pras regras de elenco/escalação.
+enum SofifaPositionCode {
+  ATE
+  ATA
+  ATD
+  PE
+  MAE
+  SA
+  MAD
+  PD
+  MEE
+  MEI
+  MED
+  ME
+  MCE
+  MC
+  MCD
+  MD
+  ADE
+  VE
+  VOL
+  VD
+  ADD
+  LE
+  ZGE
+  ZAG
+  ZGD
+  LD
+  GOL
+}
+
 // Catálogo fechado das formações que aparecem no JSON de formações do
 // scraper (ver src/import/formation-mapper.ts para o mapeamento entre o
 // texto em português do scraper e estes valores).
@@ -274,7 +309,64 @@ model PlayerRating {
   gkPositioning Int
   gkReflexes    Int
 
+  specialities    PlayerRatingSpeciality[]
+  roles           PlayerRatingRole[]
+  positionRatings PlayerPositionRating[]
+
   @@index([playerId, capturedAt])
+}
+
+// Catálogo fechado dos traços de jogador do SoFIFA (ex.: "Matador", "Chuta
+// de Longe"). Normalizado como Nationality/League/Team porque é resolvido
+// do mesmo jeito na importação (upsert por nome).
+model Speciality {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+
+  ratings PlayerRatingSpeciality[]
+}
+
+// Traços do jogador numa captura específica do scraper — versionado junto
+// com PlayerRating (não com Player) porque os traços dependem dos atributos
+// daquele build, assim como o overall.
+model PlayerRatingSpeciality {
+  id             String       @id @default(uuid()) @db.Uuid
+  playerRatingId String       @db.Uuid
+  playerRating   PlayerRating @relation(fields: [playerRatingId], references: [id])
+  specialityId   String       @db.Uuid
+  speciality     Speciality   @relation(fields: [specialityId], references: [id])
+
+  @@unique([playerRatingId, specialityId])
+}
+
+// Papéis táticos que o jogador desempenha numa posição (ex.: ATA/Centroavante
+// nível 2), na captura do scraper que gerou este PlayerRating. position usa
+// o PositionCode canônico (os valores observados no JSON cabem nele).
+model PlayerRatingRole {
+  id             String       @id @default(uuid()) @db.Uuid
+  playerRatingId String       @db.Uuid
+  playerRating   PlayerRating @relation(fields: [playerRatingId], references: [id])
+  position       PositionCode
+  name           String
+  level          Int
+
+  @@unique([playerRatingId, position, name])
+}
+
+// Overall do jogador em cada posição do grid do SoFIFA (ver SofifaPositionCode),
+// na captura do scraper que gerou este PlayerRating. Dado de versatilidade/
+// exibição, não usado nas regras de elenco (essas seguem em PlayerPosition).
+model PlayerPositionRating {
+  id             String             @id @default(uuid()) @db.Uuid
+  playerRatingId String             @db.Uuid
+  playerRating   PlayerRating       @relation(fields: [playerRatingId], references: [id])
+  position       SofifaPositionCode
+  overall        Int
+  base           Int
+  bonus          Int
+  natural        Boolean
+
+  @@unique([playerRatingId, position])
 }
 
 enum UserRole {

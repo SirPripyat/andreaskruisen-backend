@@ -24,8 +24,32 @@ export class GetPlayerUseCase {
     const latestRatingRow = player.ratings[0];
     let latestRating = null;
     if (latestRatingRow) {
-      const { id: _id, playerId: _playerId, ...rating } = latestRatingRow;
-      latestRating = rating;
+      const {
+        id: _id,
+        playerId: _playerId,
+        specialities,
+        roles,
+        positionRatings,
+        ...rating
+      } = latestRatingRow;
+      latestRating = {
+        ...rating,
+        specialities: specialities.map(({ speciality }) => speciality.name),
+        roles: roles.map(({ position, name, level }) => ({
+          position,
+          name,
+          level,
+        })),
+        positionRatings: positionRatings.map(
+          ({ position, overall, base, bonus, natural }) => ({
+            position,
+            overall,
+            base,
+            bonus,
+            natural,
+          }),
+        ),
+      };
     }
 
     return {

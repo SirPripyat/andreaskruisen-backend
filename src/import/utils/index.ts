@@ -5,6 +5,7 @@ export * from './formation-mapper.utils';
 export * from './json-file-parser.utils';
 export * from './lineup-position-mapper.utils';
 export * from './overall.utils';
+export * from './player-rating-details.utils';
 export * from './positions.utils';
 export * from './preferred-foot.utils';
 export * from './rating-categories.utils';

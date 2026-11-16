@@ -13,7 +13,9 @@ import {
   PLAYER_ORDER_BY_FIELD,
   PlayerImportSnapshot,
   PlayerPositionInput,
+  PlayerPositionRatingInput,
   PlayerRatingInput,
+  PlayerRatingRoleInput,
   PlayersFilter,
   PlayersSort,
   PlayerTeamDimension,
@@ -40,7 +42,15 @@ export class PlayersRepository {
       include: {
         nationality: true,
         positions: true,
-        ratings: { orderBy: { capturedAt: 'desc' }, take: 1 },
+        ratings: {
+          orderBy: { capturedAt: 'desc' },
+          take: 1,
+          include: {
+            specialities: { include: { speciality: true } },
+            roles: true,
+            positionRatings: true,
+          },
+        },
         seasonAssignments: {
           where: { seasonId },
           include: { team: true },
@@ -285,18 +295,53 @@ export class PlayersRepository {
       select: {
         eaId: true,
         positions: { select: { position: true, isPrimary: true } },
-        ratings: { orderBy: { capturedAt: 'desc' }, take: 1 },
+        ratings: {
+          orderBy: { capturedAt: 'desc' },
+          take: 1,
+          include: {
+            specialities: { include: { speciality: true } },
+            roles: true,
+            positionRatings: true,
+          },
+        },
       },
     });
 
     return new Map(
-      players.map((player) => [
-        player.eaId,
-        {
-          positions: player.positions,
-          latestRating: player.ratings[0] ?? null,
-        },
-      ]),
+      players.map((player) => {
+        const latestRatingRow = player.ratings[0];
+
+        return [
+          player.eaId,
+          {
+            positions: player.positions,
+            latestRating: latestRatingRow
+              ? {
+                  ...latestRatingRow,
+                  specialities: latestRatingRow.specialities.map(
+                    ({ speciality }) => speciality.name,
+                  ),
+                  roles: latestRatingRow.roles.map(
+                    ({ position, name, level }) => ({
+                      position,
+                      name,
+                      level,
+                    }),
+                  ),
+                  positionRatings: latestRatingRow.positionRatings.map(
+                    ({ position, overall, base, bonus, natural }) => ({
+                      position,
+                      overall,
+                      base,
+                      bonus,
+                      natural,
+                    }),
+                  ),
+                }
+              : null,
+          },
+        ];
+      }),
     );
   }
 
@@ -319,9 +364,20 @@ export class PlayersRepository {
   async createRating(
     playerId: string,
     rating: PlayerRatingInput,
+    specialityIds: string[],
+    roles: PlayerRatingRoleInput[],
+    positionRatings: PlayerPositionRatingInput[],
   ): Promise<void> {
     await this.txHost.tx.playerRating.create({
-      data: { playerId, ...rating },
+      data: {
+        playerId,
+        ...rating,
+        specialities: {
+          create: specialityIds.map((specialityId) => ({ specialityId })),
+        },
+        roles: { create: roles },
+        positionRatings: { create: positionRatings },
+      },
     });
   }
 }

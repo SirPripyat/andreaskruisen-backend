@@ -18,6 +18,7 @@ import { MAX_IMPORT_FILE_SIZE } from './constants';
 import { ImportPlayersDto, ImportPlayersSchema } from './dto';
 import { UploadedJsonFile } from './types';
 import {
+  ImportFcmPlayersUseCase,
   ImportPlayersUseCase,
   ImportTeamAliasesUseCase,
   ImportTeamCrestsUseCase,
@@ -35,6 +36,7 @@ const requiredJsonFilePipe = new ParseFilePipe({
 export class ImportController {
   constructor(
     private readonly importPlayersUseCase: ImportPlayersUseCase,
+    private readonly importFcmPlayersUseCase: ImportFcmPlayersUseCase,
     private readonly importTeamFormationsUseCase: ImportTeamFormationsUseCase,
     private readonly importTeamLineupsUseCase: ImportTeamLineupsUseCase,
     private readonly importTeamCrestsUseCase: ImportTeamCrestsUseCase,
@@ -51,6 +53,21 @@ export class ImportController {
     @Body(new ZodValidationPipe(ImportPlayersSchema)) dto: ImportPlayersDto,
   ) {
     return this.importPlayersUseCase.execute(
+      file.buffer,
+      dto.capturedAt ?? new Date(),
+    );
+  }
+
+  @Post('fcm-players')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_IMPORT_FILE_SIZE } }),
+  )
+  async importFcmPlayers(
+    @UploadedFile(requiredJsonFilePipe) file: UploadedJsonFile,
+    @Body(new ZodValidationPipe(ImportPlayersSchema)) dto: ImportPlayersDto,
+  ) {
+    return this.importFcmPlayersUseCase.execute(
       file.buffer,
       dto.capturedAt ?? new Date(),
     );

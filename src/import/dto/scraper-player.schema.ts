@@ -28,6 +28,57 @@ export const PositionCodeSchema = z.preprocess(
   ]),
 );
 
+// Grid de posições de positionRatings: mais granular que PositionCodeSchema
+// (separa perna esquerda/direita de ala, meia e ataque). Mesmo alias GL ->
+// GOL de PositionCodeSchema, pela mesma razão (goleiro consistente nos dois
+// catálogos).
+export const SofifaPositionCodeSchema = z.preprocess(
+  (raw) =>
+    typeof raw === 'string' ? (POSITION_CODE_ALIASES[raw] ?? raw) : raw,
+  z.enum([
+    'ATE',
+    'ATA',
+    'ATD',
+    'PE',
+    'MAE',
+    'SA',
+    'MAD',
+    'PD',
+    'MEE',
+    'MEI',
+    'MED',
+    'ME',
+    'MCE',
+    'MC',
+    'MCD',
+    'MD',
+    'ADE',
+    'VE',
+    'VOL',
+    'VD',
+    'ADD',
+    'LE',
+    'ZGE',
+    'ZAG',
+    'ZGD',
+    'LD',
+    'GOL',
+  ]),
+);
+
+export const ScraperPlayerRoleSchema = z.object({
+  position: PositionCodeSchema,
+  name: z.string().min(1),
+  level: z.number().int(),
+});
+
+export const ScraperPlayerPositionRatingSchema = z.object({
+  overall: z.number().int(),
+  base: z.number().int(),
+  bonus: z.number().int(),
+  natural: z.boolean(),
+});
+
 // pac/sho/pas/dri/def/phy (os agregados PAC/SHO/PAS/DRI/DEF/PHY) deixaram de
 // vir no JSON do scraper nessa leva de dados; ficam opcionais até o scraper
 // voltar a enviá-los (ver PlayerRating, também tornado opcional lá).
@@ -119,9 +170,26 @@ export const ScraperPlayerSchema = z.preprocess(
     overallRating: z.number().int(),
     positionShort: PositionCodeSchema,
     alternatePositions: z.array(PositionCodeSchema),
+    // Ausentes na fonte do FC Squad Mania (ver ImportFcmPlayersUseCase), que
+    // não traz esse nível de detalhe do SoFIFA — opcionais com default vazio
+    // em vez de obrigatórios, pra não derrubar esse import.
+    specialities: z.array(z.string().min(1)).optional().default([]),
+    roles: z.array(ScraperPlayerRoleSchema).optional().default([]),
+    positionRatings: z
+      .partialRecord(
+        SofifaPositionCodeSchema,
+        ScraperPlayerPositionRatingSchema,
+      )
+      .optional()
+      .default({}),
     stats: ScraperStatsSchema,
   }),
 );
 
 export type ScraperPlayer = z.infer<typeof ScraperPlayerSchema>;
 export type ScraperStats = z.infer<typeof ScraperStatsSchema>;
+export type ScraperPlayerRole = z.infer<typeof ScraperPlayerRoleSchema>;
+export type ScraperPlayerPositionRating = z.infer<
+  typeof ScraperPlayerPositionRatingSchema
+>;
+export type SofifaPositionCode = z.infer<typeof SofifaPositionCodeSchema>;
