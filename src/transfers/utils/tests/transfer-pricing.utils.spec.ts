@@ -1,4 +1,17 @@
-import { calculateTraditionalMarketTransferCost } from '../transfer-pricing.utils';
+import {
+  calculateTraditionalMarketTransferCost,
+  TransferPricingConfig,
+} from '../transfer-pricing.utils';
+
+const PRICING: TransferPricingConfig = {
+  coinsPerOverallPoint: 10,
+  progressiveFeeBands: [
+    { maxOverallDiff: 2, fee: 10 },
+    { maxOverallDiff: 5, fee: 20 },
+    { maxOverallDiff: 8, fee: 30 },
+    { maxOverallDiff: null, fee: 50 },
+  ],
+};
 
 describe('calculateTraditionalMarketTransferCost', () => {
   it.each([
@@ -15,11 +28,10 @@ describe('calculateTraditionalMarketTransferCost', () => {
     'sem cupom, %i -> %i custa %i moedas',
     (outgoingPlayerOverall, incomingPlayerOverall, expectedCost) => {
       expect(
-        calculateTraditionalMarketTransferCost({
-          outgoingPlayerOverall,
-          incomingPlayerOverall,
-          useCoupon: false,
-        }),
+        calculateTraditionalMarketTransferCost(
+          { outgoingPlayerOverall, incomingPlayerOverall, useCoupon: false },
+          PRICING,
+        ),
       ).toBe(expectedCost);
     },
   );
@@ -32,11 +44,10 @@ describe('calculateTraditionalMarketTransferCost', () => {
     'com cupom, %i -> %i custa %i moedas',
     (outgoingPlayerOverall, incomingPlayerOverall, expectedCost) => {
       expect(
-        calculateTraditionalMarketTransferCost({
-          outgoingPlayerOverall,
-          incomingPlayerOverall,
-          useCoupon: true,
-        }),
+        calculateTraditionalMarketTransferCost(
+          { outgoingPlayerOverall, incomingPlayerOverall, useCoupon: true },
+          PRICING,
+        ),
       ).toBe(expectedCost);
     },
   );

@@ -9,3 +9,4 @@ export * from './match-score.utils';
 export * from './shuffle.utils';
 export * from './tournament-champion.utils';
 export * from './tournament-format-rules.utils';
+export * from './tournament-prizes.utils';

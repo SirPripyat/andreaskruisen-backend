@@ -86,3 +86,42 @@ export const determineChampionTeamId = (
   }
   return groups[0][0].teamId;
 };
+
+// Vice-campeão, nas mesmas condições de determineChampionTeamId (prêmio de
+// título, ver tournament-prizes.utils.ts) — independe do torneio ser
+// GROUP_STAGE_KNOCKOUT, KNOCKOUT ou LEAGUE:
+// - KNOCKOUT: o lado que perdeu a final (no tempo normal ou nos pênaltis).
+// - LEAGUE: o 2º colocado da tabela.
+export const determineRunnerUpTeamId = (
+  input: ChampionInput,
+): string | null => {
+  if (!input.isLatestPhaseFullyPlayed) {
+    return null;
+  }
+
+  if (input.latestPhaseType === 'KNOCKOUT') {
+    if (input.knockoutMatches.length !== 1) {
+      return null;
+    }
+    const final = input.knockoutMatches[0];
+    const score = computeMatchScore(final);
+    if (score.homeGoals === score.awayGoals) {
+      return final.penaltyWinnerTeamId === final.homeTeamId
+        ? final.awayTeamId
+        : final.homeTeamId;
+    }
+    return score.homeGoals > score.awayGoals
+      ? final.awayTeamId
+      : final.homeTeamId;
+  }
+
+  if (input.format !== 'LEAGUE') {
+    return null;
+  }
+
+  const groups = Object.values(input.standingsByGroup);
+  if (groups.length !== 1 || groups[0].length < 2) {
+    return null;
+  }
+  return groups[0][1].teamId;
+};

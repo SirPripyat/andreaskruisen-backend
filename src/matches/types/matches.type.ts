@@ -1,4 +1,8 @@
-import { PhaseType, PositionCode } from '../../../generated/prisma/client';
+import {
+  PhaseType,
+  PositionCode,
+  TournamentFormat,
+} from '../../../generated/prisma/client';
 import { PaginatedResult } from '../../commons/pagination';
 import {
   MatchGoal,
@@ -14,6 +18,7 @@ export type MatchForGoals = {
   id: string;
   tournamentId: string;
   seasonId: string;
+  tournamentFormat: TournamentFormat;
   phaseId: string;
   phaseOrder: number;
   phaseType: PhaseType;

@@ -32,7 +32,7 @@ Nada da economia pode ser fixo no código. Hoje é "1 moeda por ponto de overall
 ## Stack e arquitetura
 
 - TypeScript, Node, **NestJS**, PostgreSQL.
-- ORM: Drizzle ou Prisma (ainda a decidir; confirmar antes de assumir).
+- ORM: **Prisma**.
 - Mensageria: **RabbitMQ** previsto, via `@nestjs/microservices`. Usos planejados: consumir eventos do scraper (ex.: `player.updated`) e processar fechamento de torneio e auditoria de forma assíncrona. Pode vir numa segunda etapa.
 - Docker (Dockerfile multi-stage) e `docker-compose` para rodar tudo localmente. Kubernetes (Deployment, Service, ConfigMap/Secret) é usado como laboratório local, com kind ou k3d. Não há necessidade de hospedar em cluster.
 - Objetivo de deploy: custo mínimo.
@@ -61,7 +61,5 @@ Nada da economia pode ser fixo no código. Hoje é "1 moeda por ponto de overall
 
 ## Pontos em aberto
 
-- ORM (Drizzle ou Prisma).
 - Autenticação: login por participante ou apenas administrador?
 - Onde fica o schema do banco compartilhado com o scraper (pacote próprio ou dentro deste repositório).
-- Valores exatos dos prêmios por fase, vitória e empate no primeiro ruleset.

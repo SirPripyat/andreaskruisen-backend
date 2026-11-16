@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { RulesetsModule } from '../rulesets/rulesets.module';
 import { SeasonsModule } from '../seasons/seasons.module';
 import { SquadsModule } from '../squads/squads.module';
 import { TournamentsModule } from '../tournaments/tournaments.module';
@@ -14,7 +15,13 @@ import {
 } from './use-cases';
 
 @Module({
-  imports: [AuthModule, SeasonsModule, SquadsModule, TournamentsModule],
+  imports: [
+    AuthModule,
+    SeasonsModule,
+    SquadsModule,
+    TournamentsModule,
+    RulesetsModule,
+  ],
   controllers: [TransfersController],
   providers: [
     TransfersRepository,

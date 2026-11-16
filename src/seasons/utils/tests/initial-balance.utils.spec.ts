@@ -1,6 +1,12 @@
+import { TransferPricingConfig } from '../../../transfers/utils/transfer-pricing.utils';
 import { calculateInitialBalances } from '../initial-balance.utils';
 
 const BASE_OVERALL = 79;
+
+const PRICING: TransferPricingConfig = {
+  coinsPerOverallPoint: 10,
+  progressiveFeeBands: [{ maxOverallDiff: null, fee: 0 }],
+};
 
 describe('calculateInitialBalances', () => {
   it('dá saldo 0 pro squad com o elenco mais forte e compensa os demais até o teto', () => {
@@ -10,6 +16,7 @@ describe('calculateInitialBalances', () => {
         { squadId: 'ajax', playerOveralls: [81, 79] }, // 79 não conta (não é > base); (2)*10 = 20
       ],
       BASE_OVERALL,
+      PRICING,
     );
 
     expect(result).toEqual([
@@ -25,6 +32,7 @@ describe('calculateInitialBalances', () => {
         { squadId: 'fraco', playerOveralls: [70, 75] }, // rawCost 0
       ],
       BASE_OVERALL,
+      PRICING,
     );
 
     expect(result).toEqual([
@@ -40,6 +48,7 @@ describe('calculateInitialBalances', () => {
         { squadId: 'b', playerOveralls: [79] },
       ],
       BASE_OVERALL,
+      PRICING,
     );
 
     expect(result).toEqual([
@@ -52,12 +61,13 @@ describe('calculateInitialBalances', () => {
     const result = calculateInitialBalances(
       [{ squadId: 'unico', playerOveralls: [90, 85] }],
       BASE_OVERALL,
+      PRICING,
     );
 
     expect(result).toEqual([{ squadId: 'unico', initialBalance: 0 }]);
   });
 
   it('retorna lista vazia quando não há squads', () => {
-    expect(calculateInitialBalances([], BASE_OVERALL)).toEqual([]);
+    expect(calculateInitialBalances([], BASE_OVERALL, PRICING)).toEqual([]);
   });
 });

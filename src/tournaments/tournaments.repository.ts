@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import {
+  CoinTransaction,
   PhaseType,
   Prisma,
   PrismaClient,
@@ -15,6 +16,7 @@ import {
   PlayerSummary,
   TeamOwner,
   TeamSummary,
+  TournamentPrizeType,
 } from './types';
 import {
   MATCH_SELECT_FOR_LIST,
@@ -298,5 +300,59 @@ export class TournamentsRepository {
     });
 
     return new Map(squads.map((squad) => [squad.teamId, squad.user]));
+  }
+
+  // teamId sem squad = time de CPU (ver comentário de TournamentTeam no
+  // schema) — some do mapa, não tem ledger pra premiar.
+  async findSquadIdsByTeamIds(
+    teamIds: string[],
+    seasonId: string,
+  ): Promise<Map<string, string>> {
+    const squads = await this.txHost.tx.squad.findMany({
+      where: { seasonId, teamId: { in: teamIds } },
+      select: { id: true, teamId: true },
+    });
+
+    return new Map(squads.map((squad) => [squad.teamId, squad.id]));
+  }
+
+  // Soma o que já foi lançado pra esse squad, desse tipo de prêmio,
+  // ligado a essa partida/fase — usado por AwardTournamentPrizeUseCase pra
+  // decidir se falta lançar algo (ver resolvePrizeDelta).
+  async getRecordedPrizeTotal(params: {
+    squadId: string;
+    type: TournamentPrizeType;
+    matchId?: string;
+    phaseId?: string;
+  }): Promise<number> {
+    const result = await this.txHost.tx.coinTransaction.aggregate({
+      where: {
+        squadId: params.squadId,
+        type: params.type,
+        matchId: params.matchId,
+        phaseId: params.phaseId,
+      },
+      _sum: { amount: true },
+    });
+
+    return result._sum.amount ?? 0;
+  }
+
+  createPrizeTransaction(params: {
+    squadId: string;
+    type: TournamentPrizeType;
+    amount: number;
+    matchId?: string;
+    phaseId?: string;
+  }): Promise<CoinTransaction> {
+    return this.txHost.tx.coinTransaction.create({
+      data: {
+        squadId: params.squadId,
+        type: params.type,
+        amount: params.amount,
+        matchId: params.matchId,
+        phaseId: params.phaseId,
+      },
+    });
   }
 }

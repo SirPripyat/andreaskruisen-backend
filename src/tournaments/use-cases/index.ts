@@ -1,4 +1,5 @@
 export * from './advance-phase.use-case';
+export * from './award-tournament-prize.use-case';
 export * from './build-group-standings.use-case';
 export * from './create-tournament.use-case';
 export * from './find-tournament-or-throw.use-case';

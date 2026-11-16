@@ -436,6 +436,32 @@ model Season {
   directNegotiations DirectNegotiation[]
   selectedByUsers    User[]
   favoritePlayers    FavoritePlayer[]
+  rulesets           Ruleset[]
+}
+
+// Regras de economia da temporada (ver CLAUDE.md, "princípio mais
+// importante: a economia é configurável") — nada de valor de prêmio/custo
+// fica fixo no código, fica aqui. Uma season pode ter mais de uma versão
+// ao longo do tempo (ex.: o grupo decide mudar um valor no meio da
+// temporada); a auditoria sempre deve usar a versão vigente na época de
+// cada operação (validFrom mais recente que não seja depois da operação),
+// nunca a versão atual — ver GetActiveRulesetUseCase.
+model Ruleset {
+  id       String @id @default(uuid()) @db.Uuid
+  seasonId String @db.Uuid
+  season   Season @relation(fields: [seasonId], references: [id])
+  version  Int
+
+  // Validado por RulesetPayloadSchema (zod) antes de gravar — nunca lido
+  // sem revalidar (o schema pode evoluir; não dá pra confiar que o que
+  // está salvo bate com o shape atual sem reparsear).
+  payload Json
+
+  validFrom DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([seasonId, version])
+  @@index([seasonId, validFrom])
 }
 
 // O elenco de um participante numa temporada: o time real que ele escolheu
@@ -474,24 +500,29 @@ model Squad {
   @@unique([seasonId, teamId])
 }
 
-// Origem de um lançamento no ledger de moedas de um squad. PRIZE_PHASE,
-// WIN e DRAW ainda não têm nenhum código escrevendo nelas — nascem aqui já
-// como enum fechado porque o ledger (saldo = soma das transações) não pode
-// ganhar um tipo novo sem passar por migration.
+// Origem de um lançamento no ledger de moedas de um squad.
 enum CoinTransactionType {
   INITIAL
   TRANSFER
   DIRECT_NEGOTIATION
+  // Avanço de fase (mata-mata) ou posição na fase de grupos/liga — ver
+  // tournament-prizes.utils.ts.
   PRIZE_PHASE
+  RANKING
   WIN
   DRAW
+  LOSS
+  CHAMPION
+  RUNNER_UP
   ADJUSTMENT
 }
 
 // Ledger append-only de moedas: o saldo de um squad é sempre a soma de
 // CoinTransaction.amount, nunca um campo editável (ver
 // docs/regras-temporada/saldo-inicial.md e v1-transferencias.md). Nenhuma
-// transação é editada ou apagada — correções entram como ADJUSTMENT.
+// transação é editada ou apagada — correções entram como uma nova
+// transação (do mesmo tipo quando é prêmio reconciliável — ver
+// tournament-prizes.utils.ts — ou ADJUSTMENT pra correções manuais).
 model CoinTransaction {
   id      String              @id @default(uuid()) @db.Uuid
   squadId String              @db.Uuid
@@ -511,10 +542,26 @@ model CoinTransaction {
   directNegotiationId String?            @db.Uuid
   directNegotiation   DirectNegotiation? @relation(fields: [directNegotiationId], references: [id])
 
+  // Só setado quando type = WIN/DRAW/LOSS, ou CHAMPION/RUNNER_UP decidido
+  // numa final de mata-mata: liga o lançamento à partida que o gerou. Não é
+  // @unique — até 2 squads por partida, mais o lançamento de correção se o
+  // placar for reaberto depois (mesmo type, com a diferença).
+  matchId String? @db.Uuid
+  match   Match?  @relation(fields: [matchId], references: [id])
+
+  // Só setado quando type = PRIZE_PHASE/RANKING, ou CHAMPION/RUNNER_UP
+  // decidido pela tabela de uma LEAGUE (sem final pra apontar): liga o
+  // lançamento à fase que o gerou. Não é @unique — todos os squads daquela
+  // fase recebem um lançamento, mais eventual correção.
+  phaseId String? @db.Uuid
+  phase   Phase?  @relation(fields: [phaseId], references: [id])
+
   createdAt DateTime @default(now())
 
   @@index([squadId])
   @@index([directNegotiationId])
+  @@index([matchId])
+  @@index([phaseId])
 }
 
 // Origem de um lançamento no ledger de cupons de isenção de taxa (ver
@@ -636,7 +683,8 @@ model Phase {
   order        Int
   name         String
 
-  matches Match[]
+  matches          Match[]
+  coinTransactions CoinTransaction[]
 
   @@unique([tournamentId, order])
 }
@@ -674,7 +722,8 @@ model Match {
   penaltyWinnerTeamId String? @db.Uuid
   penaltyWinnerTeam   Team?   @relation("MatchPenaltyWinner", fields: [penaltyWinnerTeamId], references: [id])
 
-  goals Goal[]
+  goals            Goal[]
+  coinTransactions CoinTransaction[]
 
   createdAt DateTime @default(now())
 

@@ -1,4 +1,7 @@
-import { calculateTraditionalMarketTransferCost } from '../../transfers/utils/transfer-pricing.utils';
+import {
+  calculateTraditionalMarketTransferCost,
+  TransferPricingConfig,
+} from '../../transfers/utils/transfer-pricing.utils';
 
 export type SquadOveralls = {
   squadId: string;
@@ -16,17 +19,21 @@ export type InitialBalance = {
 const calculateRawCost = (
   playerOveralls: number[],
   baseOverall: number,
+  pricing: TransferPricingConfig,
 ): number =>
   playerOveralls
     .filter((overall) => overall > baseOverall)
     .reduce(
       (total, overall) =>
         total +
-        calculateTraditionalMarketTransferCost({
-          outgoingPlayerOverall: baseOverall,
-          incomingPlayerOverall: overall,
-          useCoupon: true,
-        }),
+        calculateTraditionalMarketTransferCost(
+          {
+            outgoingPlayerOverall: baseOverall,
+            incomingPlayerOverall: overall,
+            useCoupon: true,
+          },
+          pricing,
+        ),
       0,
     );
 
@@ -36,10 +43,11 @@ const calculateRawCost = (
 export const calculateInitialBalances = (
   squads: SquadOveralls[],
   baseOverall: number,
+  pricing: TransferPricingConfig,
 ): InitialBalance[] => {
   const rawCosts = squads.map((squad) => ({
     squadId: squad.squadId,
-    rawCost: calculateRawCost(squad.playerOveralls, baseOverall),
+    rawCost: calculateRawCost(squad.playerOveralls, baseOverall, pricing),
   }));
 
   const ceiling = Math.max(0, ...rawCosts.map(({ rawCost }) => rawCost));

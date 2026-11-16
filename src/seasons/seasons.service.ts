@@ -7,6 +7,10 @@ import {
 import { Transactional } from '@nestjs-cls/transactional';
 import { Prisma, Season } from '../../generated/prisma/client';
 import { AuthenticatedUser } from '../auth/auth.service';
+import {
+  GetActiveRulesetUseCase,
+  SeedDefaultRulesetUseCase,
+} from '../rulesets/use-cases';
 import { CreateSeason } from './dto/create-season.schema';
 import { UpdateSeason } from './dto/update-season.schema';
 import { SeasonsRepository } from './seasons.repository';
@@ -15,14 +19,13 @@ import { calculateInitialBalances } from './utils/initial-balance.utils';
 const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
 const FOREIGN_KEY_VIOLATION = 'P2003';
 
-// Fixo por enquanto (ver docs/regras-temporada/saldo-inicial.md) — não está
-// ligado a nenhuma outra regra do projeto, como o limite de jogadores por
-// overall na composição do elenco.
-const INITIAL_BALANCE_BASE_OVERALL = 79;
-
 @Injectable()
 export class SeasonsService {
-  constructor(private readonly seasonsRepository: SeasonsRepository) {}
+  constructor(
+    private readonly seasonsRepository: SeasonsRepository,
+    private readonly seedDefaultRulesetUseCase: SeedDefaultRulesetUseCase,
+    private readonly getActiveRulesetUseCase: GetActiveRulesetUseCase,
+  ) {}
 
   @Transactional()
   async start(dto: CreateSeason): Promise<Season> {
@@ -113,11 +116,15 @@ export class SeasonsService {
       );
     }
 
+    await this.seedDefaultRulesetUseCase.execute(id);
+    const ruleset = await this.getActiveRulesetUseCase.execute(id);
+
     const squads =
       await this.seasonsRepository.findSquadsWithPlayerOveralls(id);
     const initialBalances = calculateInitialBalances(
       squads,
-      INITIAL_BALANCE_BASE_OVERALL,
+      ruleset.initialBalance.baseOverall,
+      ruleset.transferPricing,
     );
 
     return this.seasonsRepository.recordInitialBalances(id, initialBalances);

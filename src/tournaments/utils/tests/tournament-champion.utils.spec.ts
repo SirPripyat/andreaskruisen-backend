@@ -1,4 +1,7 @@
-import { determineChampionTeamId } from '../tournament-champion.utils';
+import {
+  determineChampionTeamId,
+  determineRunnerUpTeamId,
+} from '../tournament-champion.utils';
 
 describe('determineChampionTeamId', () => {
   it('retorna null se a fase atual ainda não terminou', () => {
@@ -128,5 +131,78 @@ describe('determineChampionTeamId', () => {
       });
       expect(championId).toBeNull();
     });
+  });
+});
+
+describe('determineRunnerUpTeamId', () => {
+  it('devolve o perdedor da final decidida no tempo normal', () => {
+    const runnerUpId = determineRunnerUpTeamId({
+      format: 'KNOCKOUT',
+      isLatestPhaseFullyPlayed: true,
+      latestPhaseType: 'KNOCKOUT',
+      knockoutMatches: [
+        {
+          homeTeamId: 't1',
+          awayTeamId: 't2',
+          goalScorerTeamIds: ['t1', 't1', 't2'],
+          penaltyWinnerTeamId: null,
+        },
+      ],
+    });
+    expect(runnerUpId).toBe('t2');
+  });
+
+  it('devolve o perdedor dos pênaltis quando a final empatou no tempo normal', () => {
+    const runnerUpId = determineRunnerUpTeamId({
+      format: 'KNOCKOUT',
+      isLatestPhaseFullyPlayed: true,
+      latestPhaseType: 'KNOCKOUT',
+      knockoutMatches: [
+        {
+          homeTeamId: 't1',
+          awayTeamId: 't2',
+          goalScorerTeamIds: ['t1', 't2'],
+          penaltyWinnerTeamId: 't2',
+        },
+      ],
+    });
+    expect(runnerUpId).toBe('t1');
+  });
+
+  it('devolve o 2º colocado da tabela quando o formato é LEAGUE', () => {
+    const runnerUpId = determineRunnerUpTeamId({
+      format: 'LEAGUE',
+      isLatestPhaseFullyPlayed: true,
+      latestPhaseType: 'GROUP',
+      standingsByGroup: { A: [{ teamId: 't1' }, { teamId: 't2' }] },
+    });
+    expect(runnerUpId).toBe('t2');
+  });
+
+  it('retorna null se a fase ainda não terminou', () => {
+    const runnerUpId = determineRunnerUpTeamId({
+      format: 'KNOCKOUT',
+      isLatestPhaseFullyPlayed: false,
+      latestPhaseType: 'KNOCKOUT',
+      knockoutMatches: [
+        {
+          homeTeamId: 't1',
+          awayTeamId: 't2',
+          goalScorerTeamIds: [],
+          penaltyWinnerTeamId: null,
+        },
+      ],
+    });
+    expect(runnerUpId).toBeNull();
+  });
+
+  it('retorna null se GROUP_STAGE_KNOCKOUT ainda está na fase de grupos', () => {
+    const runnerUpId = determineRunnerUpTeamId({
+      format: 'GROUP_STAGE_KNOCKOUT',
+      isLatestPhaseFullyPlayed: true,
+      latestPhaseType: 'GROUP',
+      standingsByGroup: { A: [{ teamId: 't1' }, { teamId: 't2' }] },
+    });
+    expect(runnerUpId).toBeNull();
   });
 });

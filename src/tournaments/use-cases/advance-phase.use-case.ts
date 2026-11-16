@@ -4,9 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
+import { Tournament } from '../../../generated/prisma/client';
+import { RulesetPrizeTable } from '../../rulesets/schemas';
+import { GetActiveRulesetUseCase } from '../../rulesets/use-cases';
 import { TournamentsRepository } from '../tournaments.repository';
 import { GeneratedKnockoutMatch, PhaseSummary } from '../types';
-import { computeMatchScore, knockoutRoundName } from '../utils';
+import { computeMatchScore, knockoutRoundName, rankingReward } from '../utils';
+import { AwardTournamentPrizeUseCase } from './award-tournament-prize.use-case';
 import { BuildGroupStandingsUseCase } from './build-group-standings.use-case';
 import { FindTournamentOrThrowUseCase } from './find-tournament-or-throw.use-case';
 
@@ -16,11 +20,14 @@ export class AdvancePhaseUseCase {
     private readonly tournamentsRepository: TournamentsRepository,
     private readonly findTournamentOrThrowUseCase: FindTournamentOrThrowUseCase,
     private readonly buildGroupStandingsUseCase: BuildGroupStandingsUseCase,
+    private readonly awardTournamentPrizeUseCase: AwardTournamentPrizeUseCase,
+    private readonly getActiveRulesetUseCase: GetActiveRulesetUseCase,
   ) {}
 
   @Transactional()
   async execute(tournamentId: string, phaseId: string): Promise<void> {
-    await this.findTournamentOrThrowUseCase.execute(tournamentId);
+    const tournament =
+      await this.findTournamentOrThrowUseCase.execute(tournamentId);
 
     const phase = await this.tournamentsRepository.findPhaseForTournament(
       tournamentId,
@@ -45,21 +52,24 @@ export class AdvancePhaseUseCase {
       throw new ConflictException('Ainda há partida sem resultado nesta fase');
     }
 
+    const { prizes } = await this.getActiveRulesetUseCase.execute(
+      tournament.seasonId,
+    );
+
     if (phase.type === 'GROUP') {
-      await this.advanceFromGroupStage(tournamentId, phase);
+      await this.advanceFromGroupStage(tournament, phase, prizes);
       return;
     }
 
-    await this.advanceKnockoutRound(tournamentId, phase);
+    await this.advanceKnockoutRound(tournament, phase, prizes);
   }
 
   private async advanceFromGroupStage(
-    tournamentId: string,
+    tournament: Tournament,
     phase: PhaseSummary,
+    prizes: RulesetPrizeTable,
   ): Promise<void> {
-    const tournament = await this.tournamentsRepository.findById(tournamentId);
-
-    if (tournament?.format !== 'GROUP_STAGE_KNOCKOUT')
+    if (tournament.format !== 'GROUP_STAGE_KNOCKOUT')
       throw new ConflictException('Este torneio não tem fase de mata-mata');
 
     const groupMatches = await this.tournamentsRepository.findGroupMatches(
@@ -74,17 +84,31 @@ export class AdvancePhaseUseCase {
     const firstPlaced = groupLabels.map((label) => standingsByGroup[label][0]);
     const secondPlaced = groupLabels.map((label) => standingsByGroup[label][1]);
 
+    await this.awardGroupPositionPrizes(
+      tournament.seasonId,
+      phase.id,
+      standingsByGroup,
+      prizes.groupPositionAmounts,
+    );
+    await this.awardPhaseAdvancePrizes(
+      tournament.seasonId,
+      phase.id,
+      [...firstPlaced, ...secondPlaced].map((standing) => standing.teamId),
+      prizes.phaseAdvance,
+    );
+
     const matches = firstPlaced.map((first, i) => ({
       homeTeamId: first.teamId,
       awayTeamId: secondPlaced[(i + 1) % secondPlaced.length].teamId,
     }));
 
-    await this.createNextKnockoutPhase(tournamentId, phase.order, matches);
+    await this.createNextKnockoutPhase(tournament.id, phase.order, matches);
   }
 
   private async advanceKnockoutRound(
-    tournamentId: string,
+    tournament: Tournament,
     phase: PhaseSummary,
+    prizes: RulesetPrizeTable,
   ): Promise<void> {
     const matches = await this.tournamentsRepository.findMatchesByPhase(
       phase.id,
@@ -119,6 +143,13 @@ export class AdvancePhaseUseCase {
       );
     }
 
+    await this.awardPhaseAdvancePrizes(
+      tournament.seasonId,
+      phase.id,
+      winnerTeamIds,
+      prizes.phaseAdvance,
+    );
+
     const nextMatches: GeneratedKnockoutMatch[] = [];
 
     for (let i = 0; i < winnerTeamIds.length; i += 2)
@@ -127,7 +158,62 @@ export class AdvancePhaseUseCase {
         awayTeamId: winnerTeamIds[i + 1],
       });
 
-    await this.createNextKnockoutPhase(tournamentId, phase.order, nextMatches);
+    await this.createNextKnockoutPhase(tournament.id, phase.order, nextMatches);
+  }
+
+  // Prêmio de posição final na fase de grupos (1º/2º/3º/4º.../ver
+  // rankingReward) — todo time do grupo, não só quem avança.
+  private async awardGroupPositionPrizes(
+    seasonId: string,
+    phaseId: string,
+    standingsByGroup: Record<string, { teamId: string; position: number }[]>,
+    groupPositionAmounts: number[],
+  ): Promise<void> {
+    const allStandings = Object.values(standingsByGroup).flat();
+    const squadIdByTeamId =
+      await this.tournamentsRepository.findSquadIdsByTeamIds(
+        allStandings.map((standing) => standing.teamId),
+        seasonId,
+      );
+
+    for (const standing of allStandings) {
+      const squadId = squadIdByTeamId.get(standing.teamId);
+      if (!squadId) continue;
+
+      await this.awardTournamentPrizeUseCase.execute({
+        squadId,
+        type: 'RANKING',
+        targetAmount: rankingReward(standing.position, groupPositionAmounts),
+        phaseId,
+      });
+    }
+  }
+
+  // Prêmio de avanço de fase (mata-mata) — só os times que avançam pra
+  // próxima fase (qualificados do grupo, ou vencedores da rodada atual).
+  private async awardPhaseAdvancePrizes(
+    seasonId: string,
+    phaseId: string,
+    advancingTeamIds: string[],
+    phaseAdvanceAmount: number,
+  ): Promise<void> {
+    const squadIdByTeamId =
+      await this.tournamentsRepository.findSquadIdsByTeamIds(
+        advancingTeamIds,
+        seasonId,
+      );
+
+    for (const teamId of advancingTeamIds) {
+      const squadId = squadIdByTeamId.get(teamId);
+      if (!squadId) continue;
+
+      await this.awardTournamentPrizeUseCase.execute({
+        squadId,
+        type: 'PRIZE_PHASE',
+        targetAmount: phaseAdvanceAmount,
+        phaseId,
+      });
+    }
   }
 
   private async createNextKnockoutPhase(

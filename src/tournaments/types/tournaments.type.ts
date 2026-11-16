@@ -54,3 +54,15 @@ export type TeamOwner = {
   id: string;
   name: string;
 };
+
+// Tipos de CoinTransaction reconciliáveis automaticamente por
+// AwardTournamentPrizeUseCase (ver tournament-prizes.utils.ts) — exclui
+// INITIAL/TRANSFER/DIRECT_NEGOTIATION/ADJUSTMENT, que não nascem daqui.
+export type TournamentPrizeType =
+  | 'WIN'
+  | 'DRAW'
+  | 'LOSS'
+  | 'RANKING'
+  | 'PRIZE_PHASE'
+  | 'CHAMPION'
+  | 'RUNNER_UP';

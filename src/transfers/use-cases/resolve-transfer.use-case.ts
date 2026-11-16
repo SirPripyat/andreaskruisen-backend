@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Squad } from '../../../generated/prisma/client';
+import { GetActiveRulesetUseCase } from '../../rulesets/use-cases';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
 import { SquadsRepository } from '../../squads/squads.repository';
 import { HasActiveTournamentUseCase } from '../../tournaments/use-cases';
@@ -35,6 +36,7 @@ export class ResolveTransferUseCase {
     private readonly seasonsRepository: SeasonsRepository,
     private readonly squadsRepository: SquadsRepository,
     private readonly hasActiveTournamentUseCase: HasActiveTournamentUseCase,
+    private readonly getActiveRulesetUseCase: GetActiveRulesetUseCase,
   ) {}
 
   async execute(
@@ -62,11 +64,17 @@ export class ResolveTransferUseCase {
     );
     this.ensureCouponAvailableIfRequested(dto.useCoupon, couponBalance);
 
-    const cost = calculateTraditionalMarketTransferCost({
-      outgoingPlayerOverall: outgoing.player.overall,
-      incomingPlayerOverall: incoming.player.overall,
-      useCoupon: dto.useCoupon,
-    });
+    const { transferPricing } =
+      await this.getActiveRulesetUseCase.execute(seasonId);
+
+    const cost = calculateTraditionalMarketTransferCost(
+      {
+        outgoingPlayerOverall: outgoing.player.overall,
+        incomingPlayerOverall: incoming.player.overall,
+        useCoupon: dto.useCoupon,
+      },
+      transferPricing,
+    );
 
     const balance = await this.transfersRepository.findSquadBalance(squad.id);
 
