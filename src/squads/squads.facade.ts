@@ -11,6 +11,8 @@ import {
   GetSquadLineupResponseDTO,
   ListSquadRosterResponseDTO,
   ListSquadsResponseDTO,
+  SetLineupStarterRequestDTO,
+  SetLineupStarterResponseDTO,
   SwapLineupStarterRequestDTO,
   SwapLineupStarterResponseDTO,
 } from './dto';
@@ -22,6 +24,7 @@ import {
   GetSquadLineupUseCase,
   ListSquadRosterUseCase,
   ListSquadsUseCase,
+  SetLineupStarterUseCase,
   SwapLineupStarterUseCase,
 } from './use-cases';
 
@@ -35,6 +38,7 @@ export class SquadsFacade {
     private readonly getSquadLineupUseCase: GetSquadLineupUseCase,
     private readonly getMySquadUseCase: GetMySquadUseCase,
     private readonly swapLineupStarterUseCase: SwapLineupStarterUseCase,
+    private readonly setLineupStarterUseCase: SetLineupStarterUseCase,
     private readonly changeSquadFormationUseCase: ChangeSquadFormationUseCase,
   ) {}
 
@@ -75,6 +79,22 @@ export class SquadsFacade {
     dto: SwapLineupStarterRequestDTO,
   ): Promise<SwapLineupStarterResponseDTO> {
     return this.swapLineupStarterUseCase.execute(seasonId, user, teamId, dto);
+  }
+
+  setLineupStarter(
+    seasonId: string,
+    user: Pick<AuthenticatedUser, 'id' | 'role'>,
+    teamId: string,
+    playerId: string,
+    dto: SetLineupStarterRequestDTO,
+  ): Promise<SetLineupStarterResponseDTO> {
+    return this.setLineupStarterUseCase.execute(
+      seasonId,
+      user,
+      teamId,
+      playerId,
+      dto,
+    );
   }
 
   changeFormation(

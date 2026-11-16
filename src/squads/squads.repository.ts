@@ -70,6 +70,45 @@ export class SquadsRepository {
     });
   }
 
+  // Igual a findAssignment, mas também traz a posição primária do jogador —
+  // usada por SetLineupStarterUseCase pra saber em qual posição colocar
+  // quem está sendo promovido a titular sem um par pra trocar (ver
+  // topUpStarters em TransfersRepository, que segue a mesma convenção).
+  async findAssignmentWithPrimaryPosition(
+    seasonId: string,
+    playerId: string,
+  ): Promise<
+    | (Pick<LineupSlotAssignment, 'teamId' | 'isStarter'> & {
+        primaryPosition: PositionCode | null;
+      })
+    | null
+  > {
+    const assignment = await this.txHost.tx.playerTeamAssignment.findUnique({
+      where: { seasonId_playerId: { seasonId, playerId } },
+      select: {
+        teamId: true,
+        isStarter: true,
+        player: {
+          select: {
+            positions: { select: { position: true, isPrimary: true } },
+          },
+        },
+      },
+    });
+
+    if (!assignment) return null;
+
+    const primary =
+      assignment.player.positions.find((position) => position.isPrimary) ??
+      assignment.player.positions[0];
+
+    return {
+      teamId: assignment.teamId,
+      isStarter: assignment.isStarter,
+      primaryPosition: primary?.position ?? null,
+    };
+  }
+
   // Troca o slot (titular/banco + posição da formação) de dois jogadores do
   // elenco entre si — cobre titular↔banco e titular↔titular com a mesma
   // regra (ver regra 2 da feature de escalação: a posição pertence ao slot,
@@ -100,8 +139,32 @@ export class SquadsRepository {
         lineupPosition: first.lineupPosition,
       },
     });
-    await this.txHost.tx.squad.update({
-      where: { seasonId_teamId: { seasonId, teamId } },
+    // updateMany (não update): time sem Squad nessa temporada (nenhum
+    // participante escolheu, só ADMIN mexe — ver assertCanManageLineup) não
+    // tem o que marcar aqui, e updateMany simplesmente não acha nada em vez
+    // de estourar.
+    await this.txHost.tx.squad.updateMany({
+      where: { seasonId, teamId },
+      data: { hasManualLineup: true },
+    });
+  }
+
+  // Promove um reserva a titular (ou manda um titular pro banco) sem um par
+  // pra trocar — necessário quando o elenco tem menos de 11 jogadores e não
+  // existe titular "sobrando" pra usar swapLineupSlots (ver SetLineupStarterUseCase).
+  async setLineupStarter(
+    seasonId: string,
+    teamId: string,
+    playerId: string,
+    isStarter: boolean,
+    lineupPosition: PositionCode | null,
+  ): Promise<void> {
+    await this.txHost.tx.playerTeamAssignment.update({
+      where: { seasonId_playerId: { seasonId, playerId } },
+      data: { isStarter, lineupPosition },
+    });
+    await this.txHost.tx.squad.updateMany({
+      where: { seasonId, teamId },
       data: { hasManualLineup: true },
     });
   }
@@ -176,6 +239,13 @@ export class SquadsRepository {
             latestOverallRating: true,
             nationality: { select: { id: true, name: true, flagUrl: true } },
             positions: { select: { position: true, isPrimary: true } },
+            ratings: {
+              orderBy: { capturedAt: 'desc' },
+              take: 1,
+              select: {
+                positionRatings: { select: { position: true, overall: true } },
+              },
+            },
           },
         },
       },
@@ -196,8 +266,31 @@ export class SquadsRepository {
         preferredFoot: player.preferredFoot,
         nationality: player.nationality,
         isStarter,
+        positionRatings: player.ratings[0]?.positionRatings ?? [],
       };
     });
+  }
+
+  // Formação efetiva do time nessa temporada: a do Squad (se o técnico já
+  // trocou) ou a original importada do Team — mesma regra usada em
+  // findLineupOverview, extraída pra reuso em SetLineupStarterUseCase (que
+  // precisa saber o template de posições antes de aceitar uma promoção).
+  async findEffectiveFormation(
+    seasonId: string,
+    teamId: string,
+  ): Promise<Formation | null> {
+    const [team, squad] = await Promise.all([
+      this.txHost.tx.team.findUnique({
+        where: { id: teamId },
+        select: { formation: true },
+      }),
+      this.txHost.tx.squad.findUnique({
+        where: { seasonId_teamId: { seasonId, teamId } },
+        select: { formation: true },
+      }),
+    ]);
+
+    return squad?.formation ?? team?.formation ?? null;
   }
 
   // Separa o elenco da temporada em titulares e banco, pra que o front não
@@ -213,15 +306,8 @@ export class SquadsRepository {
     seasonId: string,
     teamId: string,
   ): Promise<LineupOverview> {
-    const [team, squad, assignments] = await Promise.all([
-      this.txHost.tx.team.findUnique({
-        where: { id: teamId },
-        select: { formation: true },
-      }),
-      this.txHost.tx.squad.findUnique({
-        where: { seasonId_teamId: { seasonId, teamId } },
-        select: { formation: true },
-      }),
+    const [formation, assignments] = await Promise.all([
+      this.findEffectiveFormation(seasonId, teamId),
       this.txHost.tx.playerTeamAssignment.findMany({
         where: { seasonId, teamId },
         select: {
@@ -237,6 +323,15 @@ export class SquadsRepository {
               latestOverallRating: true,
               nationality: { select: { id: true, name: true, flagUrl: true } },
               positions: { select: { position: true, isPrimary: true } },
+              ratings: {
+                orderBy: { capturedAt: 'desc' },
+                take: 1,
+                select: {
+                  positionRatings: {
+                    select: { position: true, overall: true },
+                  },
+                },
+              },
             },
           },
         },
@@ -262,13 +357,14 @@ export class SquadsRepository {
         preferredFoot: player.preferredFoot,
         nationality: player.nationality,
         isStarter,
+        positionRatings: player.ratings[0]?.positionRatings ?? [],
       };
 
       (isStarter ? starters : bench).push(rosterPlayer);
     }
 
     return {
-      formation: squad?.formation ?? team?.formation ?? null,
+      formation,
       starters: sortByPosition(starters),
       bench: sortByPosition(limitBench(bench)),
     };

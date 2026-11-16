@@ -12,6 +12,7 @@ import {
   GetSquadLineupUseCase,
   ListSquadRosterUseCase,
   ListSquadsUseCase,
+  SetLineupStarterUseCase,
   SwapLineupStarterUseCase,
 } from './use-cases';
 
@@ -28,6 +29,7 @@ import {
     GetSquadLineupUseCase,
     GetMySquadUseCase,
     SwapLineupStarterUseCase,
+    SetLineupStarterUseCase,
     ChangeSquadFormationUseCase,
   ],
   exports: [SquadsRepository],

@@ -5,4 +5,5 @@ export * from './get-my-squad.use-case';
 export * from './get-squad-lineup.use-case';
 export * from './list-squad-roster.use-case';
 export * from './list-squads.use-case';
+export * from './set-lineup-starter.use-case';
 export * from './swap-lineup-starter.use-case';

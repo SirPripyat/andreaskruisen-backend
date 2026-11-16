@@ -31,9 +31,6 @@ export class SwapLineupStarterUseCase {
       teamId,
       seasonId,
     );
-    if (!squad)
-      throw new NotFoundException('Esse time não tem elenco nessa temporada');
-
     assertCanManageLineup(squad, user);
 
     const first = await this.getAssignmentOrThrow(

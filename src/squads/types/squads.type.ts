@@ -3,10 +3,16 @@ import {
   League,
   PositionCode,
   PreferredFoot,
+  SofifaPositionCode,
   Squad,
   Team,
   User,
 } from 'generated/prisma/client';
+
+export type RosterPlayerPositionRating = {
+  position: SofifaPositionCode;
+  overall: number;
+};
 
 export type RosterPlayer = {
   id: string;
@@ -18,6 +24,12 @@ export type RosterPlayer = {
   preferredFoot: PreferredFoot;
   nationality: { id: string; name: string; flagUrl: string };
   isStarter: boolean;
+  // Overall na posição que ocupa no momento (slot do campo pra titular,
+  // posição primária pro reserva) vem do front, calculado em cima disso —
+  // ver findLineupOverview/findRoster. Grid completo (27 posições do
+  // SoFIFA) porque PositionCode (12) é um subconjunto exato dela, então o
+  // front casa pelo código sem precisar de mapeamento.
+  positionRatings: RosterPlayerPositionRating[];
 };
 
 export type LineupOverview = {

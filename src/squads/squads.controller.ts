@@ -22,6 +22,8 @@ import {
   ChangeSquadFormationSchema,
   ChooseSquadRequestDTO,
   ChooseSquadSchema,
+  SetLineupStarterRequestDTO,
+  SetLineupStarterSchema,
   SwapLineupStarterRequestDTO,
   SwapLineupStarterSchema,
 } from './dto';
@@ -99,6 +101,26 @@ export class SquadsController {
       request.seasonId,
       request.user,
       teamId,
+      dto,
+    );
+  }
+
+  // Precisa vir depois de '/:teamId/lineup/formation' pro Nest não casar
+  // "formation" como se fosse o :playerId dessa rota.
+  @Patch('/:teamId/lineup/:playerId')
+  @UseGuards(SessionAuthGuard, SeasonContextGuard)
+  setLineupStarter(
+    @Req() request: RequiredSeasonScopedRequest,
+    @Param('teamId') teamId: string,
+    @Param('playerId') playerId: string,
+    @Body(new ZodValidationPipe(SetLineupStarterSchema))
+    dto: SetLineupStarterRequestDTO,
+  ) {
+    return this.facade.setLineupStarter(
+      request.seasonId,
+      request.user,
+      teamId,
+      playerId,
       dto,
     );
   }
