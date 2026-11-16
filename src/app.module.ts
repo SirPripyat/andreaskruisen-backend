@@ -16,6 +16,7 @@ import { LeaguesModule } from './leagues/leagues.module';
 import { MatchesModule } from './matches/matches.module';
 import { MeModule } from './me/me.module';
 import { NationalitiesModule } from './nationalities/nationalities.module';
+import { NegotiationsModule } from './negotiations/negotiations.module';
 import { PlayersModule } from './players/players.module';
 import { PrismaModule, PrismaService } from './prisma';
 import { SeasonsModule } from './seasons/seasons.module';
@@ -53,6 +54,7 @@ import { UsersModule } from './users/users.module';
     TournamentsModule,
     MatchesModule,
     TransfersModule,
+    NegotiationsModule,
     LeaguesModule,
     NationalitiesModule,
     ImportModule,

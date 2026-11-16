@@ -4,6 +4,7 @@ import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-pr
 import { PositionCode, PrismaClient } from '../../generated/prisma/client';
 import { TransferResponseDTO } from './dto/response';
 import { TransferAssignment } from './types';
+import { canGrantCoupon } from './utils/transfer-coupon.utils';
 
 const TRANSFER_INCLUDE = {
   requestedBy: { select: { id: true, name: true } },
@@ -11,7 +12,14 @@ const TRANSFER_INCLUDE = {
   outgoingTeam: { select: { id: true, name: true, crestUrl: true } },
   incomingPlayer: { select: { id: true, name: true, photoUrl: true } },
   incomingTeam: { select: { id: true, name: true, crestUrl: true } },
+  coinTransaction: { select: { amount: true } },
 } as const;
+
+// CoinTransaction.amount é negativo (saiu do saldo); cost é o valor
+// positivo que o front mostra. Usado só pra transferências já existentes
+// (findBySeason) — na criação (swap) o cost já é conhecido de antemão.
+const toCost = (coinTransaction: { amount: number } | null): number =>
+  -(coinTransaction?.amount ?? 0);
 
 @Injectable()
 export class TransfersRepository {
@@ -33,6 +41,7 @@ export class TransfersRepository {
             id: true,
             name: true,
             photoUrl: true,
+            latestOverallRating: true,
             positions: { select: { position: true, isPrimary: true } },
           },
         },
@@ -51,10 +60,46 @@ export class TransfersRepository {
         id: assignment.player.id,
         name: assignment.player.name,
         photoUrl: assignment.player.photoUrl,
+        overall: assignment.player.latestOverallRating,
       },
       team: assignment.team,
       position: primary?.position ?? 'ATA',
     };
+  }
+
+  // Soma do ledger do squad (ver docs/regras-temporada/saldo-inicial.md) —
+  // saldo nunca é um campo, é sempre recalculado a partir das transações.
+  async findSquadBalance(squadId: string): Promise<number> {
+    const result = await this.txHost.tx.coinTransaction.aggregate({
+      where: { squadId },
+      _sum: { amount: true },
+    });
+
+    return result._sum.amount ?? 0;
+  }
+
+  // Soma do ledger de cupons do squad (ver transfer-coupon.utils) — mesmo
+  // princípio do saldo de moedas: nunca um campo, sempre recalculado.
+  async findSquadCouponBalance(squadId: string): Promise<number> {
+    const result = await this.txHost.tx.couponTransaction.aggregate({
+      where: { squadId },
+      _sum: { amount: true },
+    });
+
+    return result._sum.amount ?? 0;
+  }
+
+  // Concede 1 cupom ao squad, respeitando o teto de acúmulo (seção 3 do
+  // regulamento) — se o squad já estiver no teto, o cupom é perdido e
+  // nenhuma transação é gravada.
+  async grantCoupon(squadId: string): Promise<void> {
+    const currentBalance = await this.findSquadCouponBalance(squadId);
+
+    if (!canGrantCoupon(currentBalance)) return;
+
+    await this.txHost.tx.couponTransaction.create({
+      data: { squadId, type: 'GRANTED', amount: 1 },
+    });
   }
 
   async swap(
@@ -62,6 +107,9 @@ export class TransfersRepository {
     outgoing: TransferAssignment,
     incoming: TransferAssignment,
     requestedByUserId: string,
+    payingSquadId: string,
+    cost: number,
+    useCoupon: boolean,
   ): Promise<TransferResponseDTO> {
     await this.txHost.tx.playerTeamAssignment.update({
       where: {
@@ -106,7 +154,7 @@ export class TransfersRepository {
       await this.topUpStarters(seasonId, teamId);
     }
 
-    return this.txHost.tx.transfer.create({
+    const transfer = await this.txHost.tx.transfer.create({
       data: {
         seasonId,
         requestedByUserId,
@@ -114,9 +162,36 @@ export class TransfersRepository {
         outgoingTeamId: outgoing.team.id,
         incomingPlayerId: incoming.player.id,
         incomingTeamId: incoming.team.id,
+        outgoingPlayerOverall: outgoing.player.overall,
+        incomingPlayerOverall: incoming.player.overall,
       },
       include: TRANSFER_INCLUDE,
     });
+
+    await this.txHost.tx.coinTransaction.create({
+      data: {
+        squadId: payingSquadId,
+        type: 'TRANSFER',
+        amount: -cost,
+        transferId: transfer.id,
+      },
+    });
+
+    if (useCoupon) {
+      await this.txHost.tx.couponTransaction.create({
+        data: {
+          squadId: payingSquadId,
+          type: 'USED',
+          amount: -1,
+          transferId: transfer.id,
+        },
+      });
+    }
+
+    // transfer.coinTransaction ainda é null aqui (foi lido antes da
+    // CoinTransaction existir) — usa o cost já calculado em vez de reler.
+    const { coinTransaction: _unused, ...transferData } = transfer;
+    return { ...transferData, cost };
   }
 
   private async recomputeStartersForPosition(
@@ -200,10 +275,17 @@ export class TransfersRepository {
   }
 
   findBySeason(seasonId: string): Promise<TransferResponseDTO[]> {
-    return this.txHost.tx.transfer.findMany({
-      where: { seasonId },
-      orderBy: { createdAt: 'desc' },
-      include: TRANSFER_INCLUDE,
-    });
+    return this.txHost.tx.transfer
+      .findMany({
+        where: { seasonId },
+        orderBy: { createdAt: 'desc' },
+        include: TRANSFER_INCLUDE,
+      })
+      .then((transfers) =>
+        transfers.map(({ coinTransaction, ...transfer }) => ({
+          ...transfer,
+          cost: toCost(coinTransaction),
+        })),
+      );
   }
 }

@@ -31,6 +31,7 @@ export class ListTransfersUseCase {
         toTeam: transfer.incomingTeam,
         requestedBy: transfer.requestedBy,
         date: transfer.createdAt,
+        cost: transfer.cost,
       },
       {
         transferId: transfer.id,
@@ -39,6 +40,7 @@ export class ListTransfersUseCase {
         toTeam: transfer.outgoingTeam,
         requestedBy: transfer.requestedBy,
         date: transfer.createdAt,
+        cost: transfer.cost,
       },
     ];
   }

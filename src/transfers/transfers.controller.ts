@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import {
@@ -8,6 +16,7 @@ import {
 import {
   CreateTransferRequestDTO,
   CreateTransferSchema,
+  QuoteTransferResponseDTO,
   TransferPlayerMovementResponseDTO,
   TransferResponseDTO,
 } from './dto';
@@ -24,11 +33,7 @@ export class TransfersController {
     @Body(new ZodValidationPipe(CreateTransferSchema))
     dto: CreateTransferRequestDTO,
   ): Promise<TransferResponseDTO> {
-    return this.transfersFacade.create(
-      request.seasonId,
-      request.user.id,
-      dto,
-    );
+    return this.transfersFacade.create(request.seasonId, request.user.id, dto);
   }
 
   @Get()
@@ -36,5 +41,14 @@ export class TransfersController {
     @Req() request: RequiredSeasonScopedRequest,
   ): Promise<TransferPlayerMovementResponseDTO[]> {
     return this.transfersFacade.findBySeason(request.seasonId);
+  }
+
+  @Get('quote')
+  quote(
+    @Req() request: RequiredSeasonScopedRequest,
+    @Query(new ZodValidationPipe(CreateTransferSchema))
+    dto: CreateTransferRequestDTO,
+  ): Promise<QuoteTransferResponseDTO> {
+    return this.transfersFacade.quote(request.seasonId, request.user.id, dto);
   }
 }

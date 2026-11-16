@@ -11,4 +11,5 @@ export type TransferPlayerMovementResponseDTO = {
   toTeam: TransferTeamSummaryResponseDTO;
   requestedBy: Pick<User, 'id' | 'name'>;
   date: Date;
+  cost: number;
 };

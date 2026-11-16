@@ -6,7 +6,12 @@ import { TournamentsModule } from '../tournaments/tournaments.module';
 import { TransfersController } from './transfers.controller';
 import { TransfersFacade } from './transfers.facade';
 import { TransfersRepository } from './transfers.repository';
-import { CreateTransferUseCase, ListTransfersUseCase } from './use-cases';
+import {
+  CreateTransferUseCase,
+  ListTransfersUseCase,
+  QuoteTransferUseCase,
+  ResolveTransferUseCase,
+} from './use-cases';
 
 @Module({
   imports: [AuthModule, SeasonsModule, SquadsModule, TournamentsModule],
@@ -16,6 +21,8 @@ import { CreateTransferUseCase, ListTransfersUseCase } from './use-cases';
     TransfersFacade,
     CreateTransferUseCase,
     ListTransfersUseCase,
+    QuoteTransferUseCase,
+    ResolveTransferUseCase,
   ],
 })
 export class TransfersModule {}

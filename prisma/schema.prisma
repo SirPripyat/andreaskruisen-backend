@@ -208,6 +208,8 @@ model Player {
   goalsAssisted     Goal[]                 @relation("GoalAssist")
   transfersOut      Transfer[]             @relation("TransferOutgoingPlayer")
   transfersIn       Transfer[]             @relation("TransferIncomingPlayer")
+  negotiationsOut   DirectNegotiation[]    @relation("DirectNegotiationOutgoingPlayer")
+  negotiationsIn    DirectNegotiation[]    @relation("DirectNegotiationIncomingPlayer")
   lineupSlots       TeamLineupSlot[]
   favoritedBy       FavoritePlayer[]
 
@@ -426,12 +428,13 @@ model Season {
   // Marcada nesse momento pra essa ação não poder rodar duas vezes.
   economyStartedAt DateTime?
 
-  squads          Squad[]
-  assignments     PlayerTeamAssignment[]
-  tournaments     Tournament[]
-  transfers       Transfer[]
-  selectedByUsers User[]
-  favoritePlayers FavoritePlayer[]
+  squads             Squad[]
+  assignments        PlayerTeamAssignment[]
+  tournaments        Tournament[]
+  transfers          Transfer[]
+  directNegotiations DirectNegotiation[]
+  selectedByUsers    User[]
+  favoritePlayers    FavoritePlayer[]
 }
 
 // O elenco de um participante numa temporada: o time real que ele escolheu
@@ -460,19 +463,24 @@ model Squad {
   // scraper) — ver SquadsRepository.findLineupOverview.
   formation Formation?
 
-  coinTransactions CoinTransaction[]
+  coinTransactions   CoinTransaction[]
+  couponTransactions CouponTransaction[]
+
+  proposedNegotiations DirectNegotiation[] @relation("DirectNegotiationProposingSquad")
+  receivedNegotiations DirectNegotiation[] @relation("DirectNegotiationTargetSquad")
 
   @@unique([seasonId, userId])
   @@unique([seasonId, teamId])
 }
 
-// Origem de um lançamento no ledger de moedas de um squad. TRANSFER, PRIZE_PHASE,
+// Origem de um lançamento no ledger de moedas de um squad. PRIZE_PHASE,
 // WIN e DRAW ainda não têm nenhum código escrevendo nelas — nascem aqui já
 // como enum fechado porque o ledger (saldo = soma das transações) não pode
 // ganhar um tipo novo sem passar por migration.
 enum CoinTransactionType {
   INITIAL
   TRANSFER
+  DIRECT_NEGOTIATION
   PRIZE_PHASE
   WIN
   DRAW
@@ -490,9 +498,59 @@ model CoinTransaction {
   type    CoinTransactionType
   amount  Int
 
+  // Só setado quando type = TRANSFER: liga o lançamento à transferência que
+  // o gerou, pra auditoria não precisar inferir pela combinação squadId +
+  // horário.
+  transferId String?   @unique @db.Uuid
+  transfer   Transfer? @relation(fields: [transferId], references: [id])
+
+  // Só setado quando type = DIRECT_NEGOTIATION: liga o lançamento à
+  // negociação que o gerou. Não é @unique — uma negociação com compensação
+  // em moedas gera 2 lançamentos (um pra cada squad, sinais opostos).
+  directNegotiationId String?            @db.Uuid
+  directNegotiation   DirectNegotiation? @relation(fields: [directNegotiationId], references: [id])
+
   createdAt DateTime @default(now())
 
   @@index([squadId])
+  @@index([directNegotiationId])
+}
+
+// Origem de um lançamento no ledger de cupons de isenção de taxa (ver
+// docs/regras-temporada/v1-transferencias.md, seção 3). GRANTED = concessão
+// (venda ou negociação direta), USED = consumo numa contratação do mercado
+// tradicional, ADJUSTMENT = correção manual.
+enum CouponTransactionType {
+  GRANTED
+  USED
+  ADJUSTMENT
+}
+
+// Ledger append-only de cupons de isenção de taxa: o saldo de cupons de um
+// squad é sempre a soma de CouponTransaction.amount, nunca um campo editável
+// — mesmo princípio do ledger de moedas (CoinTransaction) acima. Nenhuma
+// transação é editada ou apagada — correções entram como ADJUSTMENT.
+model CouponTransaction {
+  id      String                @id @default(uuid()) @db.Uuid
+  squadId String                @db.Uuid
+  squad   Squad                 @relation(fields: [squadId], references: [id])
+  type    CouponTransactionType
+  amount  Int
+
+  // Só setado quando type = USED: liga o lançamento à transferência cuja
+  // taxa progressiva foi isentada por este cupom.
+  transferId String?   @unique @db.Uuid
+  transfer   Transfer? @relation(fields: [transferId], references: [id])
+
+  // Só setado quando type = GRANTED a partir de uma negociação direta. Não
+  // é @unique — uma troca entre participantes concede cupom aos dois squads.
+  directNegotiationId String?            @db.Uuid
+  directNegotiation   DirectNegotiation? @relation(fields: [directNegotiationId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([squadId])
+  @@index([directNegotiationId])
 }
 
 // Lista pessoal de jogadores "favoritados" por um participante, dentro de
@@ -702,7 +760,69 @@ model Transfer {
   incomingTeamId   String @db.Uuid
   incomingTeam     Team   @relation("TransferIncomingTeam", fields: [incomingTeamId], references: [id])
 
+  // Overall dos dois jogadores no momento da troca (ver
+  // docs/regras-temporada/v1-transferencias.md) — snapshot, não aponta pro
+  // Player: se o scraper atualizar o overall depois, a auditoria continua
+  // recalculando o custo com o valor que valia na hora da transferência.
+  outgoingPlayerOverall Int
+  incomingPlayerOverall Int
+
+  coinTransaction   CoinTransaction?
+  couponTransaction CouponTransaction?
+
   createdAt DateTime @default(now())
 
   @@index([seasonId])
+}
+
+// Status de uma negociação direta entre dois participantes (ver
+// docs/regras-temporada/v1-transferencias.md, seção 2). PENDING até o
+// targetSquad decidir; nenhum efeito (ledger, PlayerTeamAssignment) é
+// aplicado antes de virar ACCEPTED.
+enum DirectNegotiationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+// Negociação livre entre dois participantes (compra direta por moedas,
+// troca sem moedas, ou troca com compensação em moedas) — sem taxa fixa
+// nem fórmula de preço, ao contrário de Transfer (mercado tradicional).
+// Precisa do aceite do targetSquad pra se efetivar (ver seção 2 do
+// regulamento); até lá fica PENDING e não move nenhum jogador nem moeda.
+model DirectNegotiation {
+  id       String @id @default(uuid()) @db.Uuid
+  seasonId String @db.Uuid
+  season   Season @relation(fields: [seasonId], references: [id])
+
+  proposingSquadId String @db.Uuid
+  proposingSquad   Squad  @relation("DirectNegotiationProposingSquad", fields: [proposingSquadId], references: [id])
+  targetSquadId    String @db.Uuid
+  targetSquad      Squad  @relation("DirectNegotiationTargetSquad", fields: [targetSquadId], references: [id])
+
+  // Jogador que sai do proposingSquad em direção ao targetSquad. Nulo numa
+  // compra direta (proposingSquad só paga moedas pelo incomingPlayer).
+  outgoingPlayerId String? @db.Uuid
+  outgoingPlayer   Player? @relation("DirectNegotiationOutgoingPlayer", fields: [outgoingPlayerId], references: [id])
+
+  // Jogador que sai do targetSquad em direção ao proposingSquad. Nulo numa
+  // venda (proposingSquad só entrega o outgoingPlayer por moedas).
+  incomingPlayerId String? @db.Uuid
+  incomingPlayer   Player? @relation("DirectNegotiationIncomingPlayer", fields: [incomingPlayerId], references: [id])
+
+  // Moedas pagas pelo proposingSquad ao targetSquad no aceite. Negativo
+  // significa que é o targetSquad quem paga o proposingSquad. Nulo/0 quando
+  // a negociação não envolve compensação financeira (troca pura).
+  coinAmount Int?
+
+  status DirectNegotiationStatus @default(PENDING)
+
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  coinTransactions   CoinTransaction[]
+  couponTransactions CouponTransaction[]
+
+  @@index([seasonId])
+  @@index([targetSquadId, status])
 }

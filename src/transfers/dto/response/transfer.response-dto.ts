@@ -21,4 +21,8 @@ export type TransferResponseDTO = Transfer & {
   outgoingTeam: TransferTeamSummaryResponseDTO;
   incomingPlayer: TransferPlayerSummaryResponseDTO;
   incomingTeam: TransferTeamSummaryResponseDTO;
+  // Valor da CoinTransaction ligada a essa transferência (ver
+  // TransfersRepository) — não recalculado a partir do overall, pra não
+  // divergir se a fórmula de preço mudar depois.
+  cost: number;
 };
