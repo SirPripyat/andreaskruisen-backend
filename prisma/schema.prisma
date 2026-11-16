@@ -201,17 +201,18 @@ model Player {
   // precisar de uma query correlacionada em PlayerRating (histórico 1:N).
   latestOverallRating Int
 
-  positions         PlayerPosition[]
-  ratings           PlayerRating[]
-  seasonAssignments PlayerTeamAssignment[]
-  goalsScored       Goal[]                 @relation("GoalScorer")
-  goalsAssisted     Goal[]                 @relation("GoalAssist")
-  transfersOut      Transfer[]             @relation("TransferOutgoingPlayer")
-  transfersIn       Transfer[]             @relation("TransferIncomingPlayer")
-  negotiationsOut   DirectNegotiation[]    @relation("DirectNegotiationOutgoingPlayer")
-  negotiationsIn    DirectNegotiation[]    @relation("DirectNegotiationIncomingPlayer")
-  lineupSlots       TeamLineupSlot[]
-  favoritedBy       FavoritePlayer[]
+  positions          PlayerPosition[]
+  ratings            PlayerRating[]
+  seasonAssignments  PlayerTeamAssignment[]
+  goalsScored        Goal[]                    @relation("GoalScorer")
+  goalsAssisted      Goal[]                    @relation("GoalAssist")
+  transfersOut       Transfer[]                @relation("TransferOutgoingPlayer")
+  transfersIn        Transfer[]                @relation("TransferIncomingPlayer")
+  negotiationsOut    DirectNegotiation[]       @relation("DirectNegotiationOutgoingPlayer")
+  negotiationsIn     DirectNegotiation[]       @relation("DirectNegotiationIncomingPlayer")
+  negotiationClauses DirectNegotiationClause[]
+  lineupSlots        TeamLineupSlot[]
+  favoritedBy        FavoritePlayer[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -822,7 +823,53 @@ model DirectNegotiation {
 
   coinTransactions   CoinTransaction[]
   couponTransactions CouponTransaction[]
+  clauses            DirectNegotiationClause[]
 
   @@index([seasonId])
   @@index([targetSquadId, status])
+}
+
+// Tipos de cláusula contratual básica do regulamento (ver
+// docs/regras-temporada/v1-transferencias.md, seção 4) — as "cláusulas
+// avançadas" (rescisão automática, intransferível, fidelidade) ainda não
+// foram validadas pelo grupo e ficam de fora por ora.
+enum DirectNegotiationClauseType {
+  LEI_DO_EX
+  DIREITO_DE_RECOMPRA
+  PREFERENCIA_DE_COMPRA
+  BONUS_POR_TITULO
+}
+
+// Cláusula contratual anexada a uma negociação direta. Sem fiscalização
+// automática (ver seção 5 do regulamento: descumprimento é resolvido entre
+// os participantes, fora do app) — isso aqui é só o registro do que foi
+// acordado, pra consulta e auditoria. Aceite é o mesmo da negociação como
+// um todo: a cláusula só existe atrelada a uma proposta, e vale a partir do
+// momento em que o targetSquad aceita a negociação (ver AcceptNegotiationUseCase).
+model DirectNegotiationClause {
+  id            String                      @id @default(uuid()) @db.Uuid
+  negotiationId String                      @db.Uuid
+  negotiation   DirectNegotiation           @relation(fields: [negotiationId], references: [id])
+  type          DirectNegotiationClauseType
+
+  // Jogador a que a cláusula se refere — sempre um dos dois jogadores
+  // envolvidos na negociação (ver validação em ProposeNegotiationUseCase).
+  playerId String @db.Uuid
+  player   Player @relation(fields: [playerId], references: [id])
+
+  // Preço da recompra (DIREITO_DE_RECOMPRA) ou valor do bônus
+  // (BONUS_POR_TITULO). Nulo nos outros tipos.
+  amount Int?
+
+  // Número de partidas que o jogador não pode enfrentar o ex-clube
+  // (LEI_DO_EX). Nulo nos outros tipos.
+  matchesCount Int?
+
+  // Condição livre não capturada nos campos acima (prazo, campeonato
+  // específico, etc.) — ver exemplos na seção 4 do regulamento.
+  terms String?
+
+  createdAt DateTime @default(now())
+
+  @@index([negotiationId])
 }

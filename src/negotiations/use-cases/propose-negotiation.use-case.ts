@@ -9,10 +9,13 @@ import { Squad } from '../../../generated/prisma/client';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
 import { SquadsRepository } from '../../squads/squads.repository';
 import { HasActiveTournamentUseCase } from '../../tournaments/use-cases';
-import { ProposeNegotiationRequestDTO } from '../dto';
+import {
+  NegotiationClauseInputDTO,
+  ProposeNegotiationRequestDTO,
+} from '../dto';
 import { NegotiationResponseDTO } from '../dto/response';
 import { NegotiationsRepository } from '../negotiations.repository';
-import { NegotiationAssignment } from '../types';
+import { NegotiationAssignment, NegotiationClauseInput } from '../types';
 
 @Injectable()
 export class ProposeNegotiationUseCase {
@@ -64,6 +67,8 @@ export class ProposeNegotiationUseCase {
         )
       : null;
 
+    const clauses = this.resolveClauses(dto.clauses, outgoing, incoming);
+
     return this.negotiationsRepository.create({
       seasonId,
       proposingSquadId: proposingSquad.id,
@@ -71,6 +76,33 @@ export class ProposeNegotiationUseCase {
       outgoingPlayerId: outgoing?.player.id ?? null,
       incomingPlayerId: incoming?.player.id ?? null,
       coinAmount: dto.coinAmount ?? null,
+      clauses,
+    });
+  }
+
+  // Cada cláusula precisa se referir a um dos dois jogadores já resolvidos
+  // da negociação (ver seção 4 do regulamento) — sem isso, não dá pra saber
+  // de qual time é o "ex-clube"/beneficiário da cláusula.
+  private resolveClauses(
+    clauses: NegotiationClauseInputDTO[],
+    outgoing: NegotiationAssignment | null,
+    incoming: NegotiationAssignment | null,
+  ): NegotiationClauseInput[] {
+    const negotiatedPlayerIds = [outgoing?.player.id, incoming?.player.id];
+
+    return clauses.map((clause) => {
+      if (!negotiatedPlayerIds.includes(clause.playerId))
+        throw new BadRequestException(
+          'A cláusula precisa se referir a um dos jogadores da negociação',
+        );
+
+      return {
+        type: clause.type,
+        playerId: clause.playerId,
+        amount: 'amount' in clause ? clause.amount : null,
+        matchesCount: 'matchesCount' in clause ? clause.matchesCount : null,
+        terms: clause.terms ?? null,
+      };
     });
   }
 

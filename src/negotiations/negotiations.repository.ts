@@ -8,7 +8,11 @@ import {
 } from '../../generated/prisma/client';
 import { canGrantCoupon } from '../transfers/utils/transfer-coupon.utils';
 import { NegotiationResponseDTO } from './dto/response';
-import { NegotiationAssignment, NegotiationWithTeams } from './types';
+import {
+  NegotiationAssignment,
+  NegotiationClauseInput,
+  NegotiationWithTeams,
+} from './types';
 import {
   resolveNegotiationCoinTransactions,
   resolveNegotiationCouponRecipients,
@@ -31,6 +35,17 @@ const NEGOTIATION_INCLUDE = {
   },
   outgoingPlayer: { select: { id: true, name: true, photoUrl: true } },
   incomingPlayer: { select: { id: true, name: true, photoUrl: true } },
+  clauses: {
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      type: true,
+      amount: true,
+      matchesCount: true,
+      terms: true,
+      player: { select: { id: true, name: true, photoUrl: true } },
+    },
+  },
 } as const;
 
 type NegotiationWithRelations = Prisma.DirectNegotiationGetPayload<{
@@ -127,9 +142,15 @@ export class NegotiationsRepository {
     outgoingPlayerId: string | null;
     incomingPlayerId: string | null;
     coinAmount: number | null;
+    clauses: NegotiationClauseInput[];
   }): Promise<NegotiationResponseDTO> {
+    const { clauses, ...negotiationData } = data;
+
     return this.txHost.tx.directNegotiation
-      .create({ data, include: NEGOTIATION_INCLUDE })
+      .create({
+        data: { ...negotiationData, clauses: { create: clauses } },
+        include: NEGOTIATION_INCLUDE,
+      })
       .then(toResponseDTO);
   }
 

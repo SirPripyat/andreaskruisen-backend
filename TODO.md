@@ -77,13 +77,31 @@ ou cair.
 - [ ] Cláusulas contratuais anexadas à negociação (seção 4) — fora de
       escopo nesta rodada, ver seção abaixo
 
-## Cláusulas contratuais (seção 4 + avançadas)
+## Cláusulas contratuais (seção 4) — concluído (versão básica, sem fiscalização)
 
-- [ ] Modelar cláusula como entidade própria (lei do ex, direito de
-      recompra, preferência de compra, bônus por título, compensações
-      especiais, rescisão automática, intransferível, fidelidade)
-- [ ] Validar aceite dos dois clubes antes de concluir a transferência com
-      cláusula
+Decisão: o sistema não fiscaliza cláusula sozinho, só registra o que foi
+acordado pra consulta/auditoria — descumprimento é resolvido entre os
+participantes, fora do app (ver seção 5). Por isso não há nenhuma
+integração com torneios/partidas/transferências futuras: a cláusula nasce
+e morre como dado anexado à negociação.
+
+- [x] Modelar cláusula como entidade própria — `DirectNegotiationClause`
+      (`negotiationId`, `type`, `playerId`, `amount`, `matchesCount`,
+      `terms`), cobrindo as 4 básicas (lei do ex, direito de recompra,
+      preferência de compra, bônus por título); "compensações especiais"
+      não é cláusula nova, é o que `outgoingPlayerId`/`incomingPlayerId`/
+      `coinAmount` da própria negociação já cobre
+- [x] Shape por tipo (ex.: `matchesCount` obrigatório em `LEI_DO_EX`,
+      `amount` obrigatório em `DIREITO_DE_RECOMPRA`/`BONUS_POR_TITULO`) —
+      `NegotiationClauseInputSchema` (discriminated union por `type`)
+- [x] Validar aceite dos dois clubes — já coberto pelo fluxo de
+      proposta+aceite da negociação (seção 2): a cláusula só existe
+      atrelada a uma proposta, e vale quando o targetSquad aceita a
+      negociação como um todo, sem aceite separado por cláusula
+- [ ] **Fora de escopo, não implementado:** cláusulas avançadas (rescisão
+      automática, intransferível, fidelidade) — ainda não validadas pelo
+      grupo; e qualquer fiscalização automática (bloquear partida/oferta,
+      auto-aplicar recompra) — decisão explícita de deixar isso manual
 
 ## Multas e descumprimento contratual (seção 5)
 
