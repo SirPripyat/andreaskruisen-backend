@@ -44,7 +44,7 @@ export type TeamWithRatings = {
   averageAttackRating: number | null;
 };
 
-// Resumo pra tela de gerenciamento de um time (ver TeamsService.getOne):
+// Resumo pra tela de gerenciamento de um time (ver GetTeamUseCase):
 // quem controla, campanha da temporada ativa, últimos jogos, artilheiros e
 // assistências do elenco atual, e o retrospecto histórico contra cada
 // adversário (maior freguês/carrasco).

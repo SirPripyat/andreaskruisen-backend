@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FORMATION_DISPLAY_TO_ENUM } from '../../import/utils/formation-mapper.utils';
+import { FORMATION_DISPLAY_TO_ENUM } from '../../../import/utils/formation-mapper.utils';
 
 const KNOWN_FORMATIONS = Object.keys(FORMATION_DISPLAY_TO_ENUM) as [
   string,
@@ -17,4 +17,4 @@ export const UpdateTeamSchema = z
     message: 'Informe ao menos um campo para atualizar',
   });
 
-export type UpdateTeam = z.infer<typeof UpdateTeamSchema>;
+export type UpdateTeamRequestDTO = z.infer<typeof UpdateTeamSchema>;

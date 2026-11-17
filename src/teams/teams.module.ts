@@ -3,13 +3,30 @@ import { AuthModule } from '../auth/auth.module';
 import { SeasonsModule } from '../seasons/seasons.module';
 import { TournamentsModule } from '../tournaments/tournaments.module';
 import { TeamsController } from './teams.controller';
+import { TeamsFacade } from './teams.facade';
 import { TeamsRepository } from './teams.repository';
-import { TeamsService } from './teams.service';
+import {
+  FindTeamOrThrowUseCase,
+  GetTeamStatsUseCase,
+  GetTeamTitlesUseCase,
+  GetTeamUseCase,
+  ListTeamsUseCase,
+  UpdateTeamUseCase,
+} from './use-cases';
 
 @Module({
   imports: [AuthModule, SeasonsModule, TournamentsModule],
   controllers: [TeamsController],
-  providers: [TeamsService, TeamsRepository],
+  providers: [
+    TeamsRepository,
+    TeamsFacade,
+    FindTeamOrThrowUseCase,
+    GetTeamStatsUseCase,
+    ListTeamsUseCase,
+    GetTeamUseCase,
+    GetTeamTitlesUseCase,
+    UpdateTeamUseCase,
+  ],
   exports: [TeamsRepository],
 })
 export class TeamsModule {}

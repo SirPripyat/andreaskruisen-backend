@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { createSortSchema, PaginationSchema } from '../../commons/pagination';
+import {
+  createSortSchema,
+  PaginationSchema,
+} from '../../../commons/pagination';
 
 // Mesmos nomes dos campos retornados na resposta (averageOverallRating etc.),
 // pra quem consome a API poder ordenar pela mesma chave que já recebeu.
@@ -16,4 +19,4 @@ export const ListTeamsSchema = PaginationSchema.extend({
   leagueId: z.uuid().optional(),
 }).extend(createSortSchema(TEAM_SORT_FIELDS, 'name').shape);
 
-export type ListTeamsQuery = z.infer<typeof ListTeamsSchema>;
+export type ListTeamsRequestDTO = z.infer<typeof ListTeamsSchema>;

@@ -15,21 +15,25 @@ import {
   RequiredSeasonScopedRequest,
   SeasonContextGuard,
 } from '../seasons/season-context.guard';
-import { ListTeamsQuery, ListTeamsSchema } from './dto/list-teams.schema';
-import { UpdateTeam, UpdateTeamSchema } from './dto/update-team.schema';
-import { TeamsService } from './teams.service';
+import {
+  ListTeamsRequestDTO,
+  ListTeamsSchema,
+  UpdateTeamRequestDTO,
+  UpdateTeamSchema,
+} from './dto';
+import { TeamsFacade } from './teams.facade';
 
 @Controller('teams')
 @UseGuards(SessionAuthGuard)
 export class TeamsController {
-  constructor(private readonly teamsService: TeamsService) {}
+  constructor(private readonly facade: TeamsFacade) {}
 
   @Get()
   @UseGuards(AdminGuard)
   async list(
-    @Query(new ZodValidationPipe(ListTeamsSchema)) query: ListTeamsQuery,
+    @Query(new ZodValidationPipe(ListTeamsSchema)) query: ListTeamsRequestDTO,
   ) {
-    return this.teamsService.list(query);
+    return this.facade.list(query);
   }
 
   @Get(':id')
@@ -38,21 +42,21 @@ export class TeamsController {
     @Param('id') id: string,
     @Req() request: RequiredSeasonScopedRequest,
   ) {
-    return this.teamsService.getOne(id, request.seasonId);
+    return this.facade.getOne(id, request.seasonId);
   }
 
   @Get(':id/titles')
   async getTitles(@Param('id') id: string) {
-    return this.teamsService.getTitles(id);
+    return this.facade.getTitles(id);
   }
 
   @Patch(':id')
   @UseGuards(AdminGuard, SeasonContextGuard)
   async update(
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(UpdateTeamSchema)) dto: UpdateTeam,
+    @Body(new ZodValidationPipe(UpdateTeamSchema)) dto: UpdateTeamRequestDTO,
     @Req() request: RequiredSeasonScopedRequest,
   ) {
-    return this.teamsService.update(id, dto, request.seasonId);
+    return this.facade.update(id, dto, request.seasonId);
   }
 }
