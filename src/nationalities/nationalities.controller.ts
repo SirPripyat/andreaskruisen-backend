@@ -11,33 +11,31 @@ import { AdminGuard } from '../auth/admin.guard';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import {
-  ListNationalitiesQuery,
+  ListNationalitiesRequestDTO,
   ListNationalitiesSchema,
-} from './dto/list-nationalities.schema';
-import {
-  UpdateNationality,
+  UpdateNationalityRequestDTO,
   UpdateNationalitySchema,
-} from './dto/update-nationality.schema';
-import { NationalitiesService } from './nationalities.service';
+} from './dto';
+import { NationalitiesFacade } from './nationalities.facade';
 
 @Controller('nationalities')
 @UseGuards(SessionAuthGuard, AdminGuard)
 export class NationalitiesController {
-  constructor(private readonly nationalitiesService: NationalitiesService) {}
+  constructor(private readonly facade: NationalitiesFacade) {}
 
   @Get()
   @UseGuards(AdminGuard)
   async list(
     @Query(new ZodValidationPipe(ListNationalitiesSchema))
-    query: ListNationalitiesQuery,
+    query: ListNationalitiesRequestDTO,
   ) {
-    return this.nationalitiesService.list(query);
+    return this.facade.list(query);
   }
 
   @Get(':id')
   @UseGuards(AdminGuard)
   async findOne(@Param('id') id: string) {
-    return this.nationalitiesService.findOne(id);
+    return this.facade.findOne(id);
   }
 
   @Patch(':id')
@@ -45,8 +43,8 @@ export class NationalitiesController {
   async update(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(UpdateNationalitySchema))
-    dto: UpdateNationality,
+    dto: UpdateNationalityRequestDTO,
   ) {
-    return this.nationalitiesService.update(id, dto);
+    return this.facade.update(id, dto);
   }
 }

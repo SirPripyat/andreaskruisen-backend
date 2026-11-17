@@ -9,4 +9,6 @@ export const UpdateNationalitySchema = z
     message: 'Informe ao menos um campo para atualizar',
   });
 
-export type UpdateNationality = z.infer<typeof UpdateNationalitySchema>;
+export type UpdateNationalityRequestDTO = z.infer<
+  typeof UpdateNationalitySchema
+>;
