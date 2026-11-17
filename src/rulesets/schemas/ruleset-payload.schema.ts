@@ -36,10 +36,17 @@ const InitialBalanceSchema = z.object({
   baseOverall: z.number().int().nonnegative(),
 });
 
+// Teto de acúmulo de cupons de isenção de taxa por squad (ver
+// transfer-coupon.utils.ts).
+const CouponSchema = z.object({
+  cap: z.number().int().nonnegative(),
+});
+
 export const RulesetPayloadSchema = z.object({
   prizes: RulesetPrizeTableSchema,
   transferPricing: TransferPricingSchema,
   initialBalance: InitialBalanceSchema,
+  coupon: CouponSchema,
 });
 
 export type RulesetPrizeTable = z.infer<typeof RulesetPrizeTableSchema>;
@@ -54,9 +61,11 @@ export type RulesetTransferPricing = {
 };
 
 export type RulesetInitialBalance = z.infer<typeof InitialBalanceSchema>;
+export type RulesetCoupon = z.infer<typeof CouponSchema>;
 
 export type RulesetPayload = {
   prizes: RulesetPrizeTable;
   transferPricing: RulesetTransferPricing;
   initialBalance: RulesetInitialBalance;
+  coupon: RulesetCoupon;
 };

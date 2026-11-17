@@ -211,6 +211,7 @@ export class NegotiationsRepository {
     outgoing: NegotiationAssignment | null;
     incoming: NegotiationAssignment | null;
     coinAmount: number | null;
+    couponCap: number;
   }): Promise<NegotiationResponseDTO> {
     const {
       seasonId,
@@ -222,6 +223,7 @@ export class NegotiationsRepository {
       outgoing,
       incoming,
       coinAmount,
+      couponCap,
     } = params;
 
     if (outgoing) {
@@ -272,7 +274,7 @@ export class NegotiationsRepository {
     });
 
     for (const squadId of couponRecipients) {
-      await this.grantCoupon(squadId, negotiationId);
+      await this.grantCoupon(squadId, negotiationId, couponCap);
     }
 
     return this.txHost.tx.directNegotiation
@@ -290,6 +292,7 @@ export class NegotiationsRepository {
   private async grantCoupon(
     squadId: string,
     negotiationId: string,
+    cap: number,
   ): Promise<void> {
     const result = await this.txHost.tx.couponTransaction.aggregate({
       where: { squadId },
@@ -297,7 +300,7 @@ export class NegotiationsRepository {
     });
     const currentBalance = result._sum.amount ?? 0;
 
-    if (!canGrantCoupon(currentBalance)) return;
+    if (!canGrantCoupon(currentBalance, cap)) return;
 
     await this.txHost.tx.couponTransaction.create({
       data: {

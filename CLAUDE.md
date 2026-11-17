@@ -63,4 +63,3 @@ Nada da economia pode ser fixo no código. Hoje é "1 moeda por ponto de overall
 
 - Onde fica o schema do banco compartilhado com o scraper (pacote próprio ou dentro deste repositório).
 - Regra de composição de elenco ("limite de X jogadores com determinado overall"): nunca foi implementada nem tem valores decididos — não está no ruleset ainda.
-- Cupom de isenção de taxa (`COUPON_CAP = 4` em `transfer-coupon.utils.ts`) ainda é constante fixa, não migrou pro ruleset como preço de transferência/saldo inicial/prêmios já migraram.

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import { Squad } from '../../../generated/prisma/client';
+import { GetActiveRulesetUseCase } from '../../rulesets/use-cases';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
 import { SquadsRepository } from '../../squads/squads.repository';
 import { HasActiveTournamentUseCase } from '../../tournaments/use-cases';
@@ -20,6 +21,7 @@ export class AcceptNegotiationUseCase {
     private readonly seasonsRepository: SeasonsRepository,
     private readonly squadsRepository: SquadsRepository,
     private readonly hasActiveTournamentUseCase: HasActiveTournamentUseCase,
+    private readonly getActiveRulesetUseCase: GetActiveRulesetUseCase,
   ) {}
 
   @Transactional()
@@ -79,6 +81,8 @@ export class AcceptNegotiationUseCase {
         );
     }
 
+    const { coupon } = await this.getActiveRulesetUseCase.execute(seasonId);
+
     return this.negotiationsRepository.accept({
       seasonId,
       negotiationId,
@@ -89,6 +93,7 @@ export class AcceptNegotiationUseCase {
       outgoing,
       incoming,
       coinAmount: negotiation.coinAmount,
+      couponCap: coupon.cap,
     });
   }
 

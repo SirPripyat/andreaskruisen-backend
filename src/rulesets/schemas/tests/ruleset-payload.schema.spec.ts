@@ -20,6 +20,9 @@ const VALID_PAYLOAD = {
   initialBalance: {
     baseOverall: 79,
   },
+  coupon: {
+    cap: 4,
+  },
 };
 
 describe('RulesetPayloadSchema', () => {
@@ -71,6 +74,14 @@ describe('RulesetPayloadSchema', () => {
     const result = RulesetPayloadSchema.safeParse({
       ...VALID_PAYLOAD,
       initialBalance: { baseOverall: -1 },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejeita coupon.cap negativo', () => {
+    const result = RulesetPayloadSchema.safeParse({
+      ...VALID_PAYLOAD,
+      coupon: { cap: -1 },
     });
     expect(result.success).toBe(false);
   });

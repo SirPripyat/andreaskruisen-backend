@@ -24,4 +24,7 @@ export const DEFAULT_RULESET_PAYLOAD: RulesetPayload = {
   initialBalance: {
     baseOverall: 79,
   },
+  coupon: {
+    cap: 4,
+  },
 };

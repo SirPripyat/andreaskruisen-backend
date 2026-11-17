@@ -92,10 +92,10 @@ export class TransfersRepository {
   // Concede 1 cupom ao squad, respeitando o teto de acúmulo (seção 3 do
   // regulamento) — se o squad já estiver no teto, o cupom é perdido e
   // nenhuma transação é gravada.
-  async grantCoupon(squadId: string): Promise<void> {
+  async grantCoupon(squadId: string, cap: number): Promise<void> {
     const currentBalance = await this.findSquadCouponBalance(squadId);
 
-    if (!canGrantCoupon(currentBalance)) return;
+    if (!canGrantCoupon(currentBalance, cap)) return;
 
     await this.txHost.tx.couponTransaction.create({
       data: { squadId, type: 'GRANTED', amount: 1 },
