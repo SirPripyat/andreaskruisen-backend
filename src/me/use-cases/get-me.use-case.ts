@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AuthenticatedUser } from 'src/auth/auth.service';
+import { AuthenticatedUser } from 'src/auth/types';
 import { GetMeResponseDTO } from '../dto';
 import { MeRepository } from '../me.repository';
 

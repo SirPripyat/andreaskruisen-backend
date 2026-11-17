@@ -1,6 +1,6 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Squad } from '../../../generated/prisma/client';
-import { AuthenticatedUser } from '../../auth/auth.service';
+import { AuthenticatedUser } from '../../auth/types';
 
 // ADMIN mexe na escalação de qualquer time, mesmo um que ainda não tem
 // Squad nessa temporada (time que nenhum participante escolheu — ver

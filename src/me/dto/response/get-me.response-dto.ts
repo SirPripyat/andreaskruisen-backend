@@ -1,4 +1,4 @@
-import { AuthenticatedUser } from 'src/auth/auth.service';
+import { AuthenticatedUser } from 'src/auth/types';
 
 export type GetMeResponseDTO = AuthenticatedUser & {
   seasonId: string | null;

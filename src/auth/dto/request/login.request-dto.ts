@@ -5,4 +5,4 @@ export const LoginSchema = z.object({
   pin: z.string().min(1),
 });
 
-export type Login = z.infer<typeof LoginSchema>;
+export type LoginRequestDTO = z.infer<typeof LoginSchema>;

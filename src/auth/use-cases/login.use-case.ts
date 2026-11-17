@@ -1,29 +1,22 @@
 import { randomBytes } from 'node:crypto';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { compare } from 'bcrypt';
-import { UserRole } from '../../generated/prisma/client';
-import { UsersRepository } from '../users/users.repository';
-import { Login } from './dto/login.schema';
-import { SessionsRepository } from './sessions.repository';
+import { UsersRepository } from '../../users/users.repository';
+import { LoginRequestDTO } from '../dto/request';
+import { SessionsRepository } from '../sessions.repository';
+import { AuthenticatedUser } from '../types';
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
 
-export type AuthenticatedUser = {
-  id: string;
-  name: string;
-  role: UserRole;
-  selectedSeasonId: string | null;
-};
-
 @Injectable()
-export class AuthService {
+export class LoginUseCase {
   constructor(
     private readonly usersRepository: UsersRepository,
     private readonly sessionsRepository: SessionsRepository,
   ) {}
 
-  async login(
-    dto: Login,
+  async execute(
+    dto: LoginRequestDTO,
   ): Promise<{ user: AuthenticatedUser; token: string; expiresAt: Date }> {
     const user = await this.usersRepository.findByName(dto.name);
 
@@ -45,18 +38,5 @@ export class AuthService {
       token,
       expiresAt,
     };
-  }
-
-  async logout(token: string): Promise<void> {
-    await this.sessionsRepository.deleteByToken(token);
-  }
-
-  async validateSession(token: string): Promise<AuthenticatedUser> {
-    const session = await this.sessionsRepository.findValidByToken(token);
-
-    if (!session)
-      throw new UnauthorizedException('Sessão inválida ou expirada');
-
-    return session.user;
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AuthenticatedUser } from '../../auth/auth.service';
+import { AuthenticatedUser } from '../../auth/types';
 import { SeasonsRepository } from '../seasons.repository';
 
 // Resolve a temporada "efetiva" de um usuário: a que ele escolheu
@@ -10,8 +10,7 @@ import { SeasonsRepository } from '../seasons.repository';
 // front-end mostrar a tela de seleção de temporada, não um erro.
 //
 // Fica fora da Facade de propósito: não é um endpoint, é infra consumida
-// direto pelo guard (igual AuthService.validateSession pro
-// SessionAuthGuard).
+// direto pelo guard (igual ValidateSessionUseCase pro SessionAuthGuard).
 @Injectable()
 export class GetEffectiveSeasonIdUseCase {
   constructor(private readonly seasonsRepository: SeasonsRepository) {}

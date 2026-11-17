@@ -2,14 +2,27 @@ import { forwardRef, Module } from '@nestjs/common';
 import { UsersModule } from '../users/users.module';
 import { AdminGuard } from './admin.guard';
 import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
+import { AuthFacade } from './auth.facade';
 import { SessionAuthGuard } from './session-auth.guard';
 import { SessionsRepository } from './sessions.repository';
+import {
+  LoginUseCase,
+  LogoutUseCase,
+  ValidateSessionUseCase,
+} from './use-cases';
 
 @Module({
   imports: [forwardRef(() => UsersModule)],
   controllers: [AuthController],
-  providers: [AuthService, SessionsRepository, SessionAuthGuard, AdminGuard],
-  exports: [AuthService, SessionAuthGuard, AdminGuard],
+  providers: [
+    SessionsRepository,
+    AuthFacade,
+    LoginUseCase,
+    LogoutUseCase,
+    ValidateSessionUseCase,
+    SessionAuthGuard,
+    AdminGuard,
+  ],
+  exports: [SessionAuthGuard, AdminGuard],
 })
 export class AuthModule {}

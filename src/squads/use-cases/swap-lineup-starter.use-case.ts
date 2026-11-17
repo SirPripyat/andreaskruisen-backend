@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { AuthenticatedUser } from '../../auth/auth.service';
+import { AuthenticatedUser } from '../../auth/types';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
 import {
   SwapLineupStarterRequestDTO,

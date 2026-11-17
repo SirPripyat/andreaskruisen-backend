@@ -5,7 +5,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AuthenticatedUser, AuthService } from './auth.service';
+import { AuthenticatedUser } from './types';
+import { ValidateSessionUseCase } from './use-cases/validate-session.use-case';
 
 export type AuthenticatedRequest = Request & {
   user: AuthenticatedUser;
@@ -26,7 +27,9 @@ const extractBearerToken = (
 
 @Injectable()
 export class SessionAuthGuard implements CanActivate {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly validateSessionUseCase: ValidateSessionUseCase,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -36,7 +39,7 @@ export class SessionAuthGuard implements CanActivate {
       throw new UnauthorizedException('Sessão não encontrada');
     }
 
-    request.user = await this.authService.validateSession(token);
+    request.user = await this.validateSessionUseCase.execute(token);
     request.token = token;
     return true;
   }

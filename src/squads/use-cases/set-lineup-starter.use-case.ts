@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import { PositionCode } from '../../../generated/prisma/client';
-import { AuthenticatedUser } from '../../auth/auth.service';
+import { AuthenticatedUser } from '../../auth/types';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
 import { FORMATION_SLOT_TEMPLATES } from '../constants/formation-slot-templates.constants';
 import {

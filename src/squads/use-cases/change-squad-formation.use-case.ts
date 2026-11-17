@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { AuthenticatedUser } from '../../auth/auth.service';
+import { AuthenticatedUser } from '../../auth/types';
 import { FORMATION_DISPLAY_TO_ENUM } from '../../import/utils/formation-mapper.utils';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
 import { FORMATION_SLOT_TEMPLATES } from '../constants/formation-slot-templates.constants';

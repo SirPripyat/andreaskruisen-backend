@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AuthenticatedUser } from '../auth/auth.service';
+import { AuthenticatedUser } from '../auth/types';
 import {
   ActiveSeasonResponseDTO,
   AvatarUploadUrlResponseDTO,
