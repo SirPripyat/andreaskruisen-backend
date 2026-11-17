@@ -1,6 +1,9 @@
-# TODO: migração para Facade + DTO (request/response)
+# TODO: migração para Facade + DTO (request/response) — concluído
 
-Padrão alvo (já aplicado em `leagues`, `me`, `players`, `squads`, `transfers`, `users`):
+Padrão alvo, aplicado em todos os módulos com controller/endpoint HTTP
+(`auth`, `favorites`, `import`, `leagues`, `matches`, `me`,
+`nationalities`, `players`, `seasons`, `squads`, `teams`, `tournaments`,
+`transfers`, `users`):
 
 ```
 Controller → Facade → Use-cases → Repository
@@ -11,18 +14,10 @@ dto/
 
 `commons` e `storage` ficam fora da lista: não têm controller/endpoint HTTP.
 
-## Módulos pendentes
-
-- [ ] **auth** — `login`, `logout`, `me`
-- [ ] **favorites** — `list`, `add (:playerId)`, `remove (:playerId)`
-- [ ] **import** — `players`, `team-formations`, `team-lineups`, `team-crests`, `team-aliases`
-- [ ] **matches** — `getMatches`, `getMatchDetail`, `replaceMatchGoals`, `simulateMatch`
-- [ ] **nationalities** — `list`, `findOne`, `update`
-- [ ] **seasons** — `start`, `findAll`, `getActive`, `findOne`, `update`, `remove`, `select`
-- [ ] **teams** — `list`, `findOne`, `getTitles`, `update`
-- [ ] **tournaments** — `create`, `list`, `getOne`, `getSituation`, `getFixtures`, `advance (phases)`, `getTopScorers`, `getTopAssists`, `getDashboard`, `update`, `remove`
-
-Cada endpoint acima tende a virar um use-case próprio, seguindo o que foi feito em `players` (ex.: `list` → `ListXUseCase`, `getOne` → `GetXUseCase`).
+Casos especiais, de propósito fora da Facade (infra consumida direto por
+guard, não por um endpoint): `ValidateSessionUseCase` (auth, usado por
+`SessionAuthGuard`) e `GetEffectiveSeasonIdUseCase` (seasons, usado por
+`SeasonContextGuard`).
 
 # TODO: regulamento de transferências v1
 
