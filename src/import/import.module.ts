@@ -6,6 +6,7 @@ import { PlayersModule } from '../players/players.module';
 import { SpecialitiesModule } from '../specialities/specialities.module';
 import { TeamsModule } from '../teams/teams.module';
 import { ImportController } from './import.controller';
+import { ImportFacade } from './import.facade';
 import { ImportFcmPlayersUseCase } from './use-cases/import-fcm-players.use-case';
 import { ImportPlayersUseCase } from './use-cases/import-players.use-case';
 import { ImportTeamAliasesUseCase } from './use-cases/import-team-aliases.use-case';
@@ -24,6 +25,7 @@ import { ImportTeamLineupsUseCase } from './use-cases/import-team-lineups.use-ca
   ],
   controllers: [ImportController],
   providers: [
+    ImportFacade,
     ImportPlayersUseCase,
     ImportFcmPlayersUseCase,
     ImportTeamFormationsUseCase,

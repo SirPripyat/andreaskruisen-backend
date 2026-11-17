@@ -15,16 +15,9 @@ import { AdminGuard } from '../auth/admin.guard';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import { MAX_IMPORT_FILE_SIZE } from './constants';
-import { ImportPlayersDto, ImportPlayersSchema } from './dto';
+import { ImportPlayersRequestDTO, ImportPlayersSchema } from './dto';
+import { ImportFacade } from './import.facade';
 import { UploadedJsonFile } from './types';
-import {
-  ImportFcmPlayersUseCase,
-  ImportPlayersUseCase,
-  ImportTeamAliasesUseCase,
-  ImportTeamCrestsUseCase,
-  ImportTeamFormationsUseCase,
-  ImportTeamLineupsUseCase,
-} from './use-cases';
 
 const requiredJsonFilePipe = new ParseFilePipe({
   exceptionFactory: () =>
@@ -34,14 +27,7 @@ const requiredJsonFilePipe = new ParseFilePipe({
 @Controller('import')
 @UseGuards(SessionAuthGuard, AdminGuard)
 export class ImportController {
-  constructor(
-    private readonly importPlayersUseCase: ImportPlayersUseCase,
-    private readonly importFcmPlayersUseCase: ImportFcmPlayersUseCase,
-    private readonly importTeamFormationsUseCase: ImportTeamFormationsUseCase,
-    private readonly importTeamLineupsUseCase: ImportTeamLineupsUseCase,
-    private readonly importTeamCrestsUseCase: ImportTeamCrestsUseCase,
-    private readonly importTeamAliasesUseCase: ImportTeamAliasesUseCase,
-  ) {}
+  constructor(private readonly facade: ImportFacade) {}
 
   @Post('players')
   @HttpCode(HttpStatus.OK)
@@ -50,12 +36,10 @@ export class ImportController {
   )
   async importPlayers(
     @UploadedFile(requiredJsonFilePipe) file: UploadedJsonFile,
-    @Body(new ZodValidationPipe(ImportPlayersSchema)) dto: ImportPlayersDto,
+    @Body(new ZodValidationPipe(ImportPlayersSchema))
+    dto: ImportPlayersRequestDTO,
   ) {
-    return this.importPlayersUseCase.execute(
-      file.buffer,
-      dto.capturedAt ?? new Date(),
-    );
+    return this.facade.importPlayers(file.buffer, dto.capturedAt ?? new Date());
   }
 
   @Post('fcm-players')
@@ -65,9 +49,10 @@ export class ImportController {
   )
   async importFcmPlayers(
     @UploadedFile(requiredJsonFilePipe) file: UploadedJsonFile,
-    @Body(new ZodValidationPipe(ImportPlayersSchema)) dto: ImportPlayersDto,
+    @Body(new ZodValidationPipe(ImportPlayersSchema))
+    dto: ImportPlayersRequestDTO,
   ) {
-    return this.importFcmPlayersUseCase.execute(
+    return this.facade.importFcmPlayers(
       file.buffer,
       dto.capturedAt ?? new Date(),
     );
@@ -81,7 +66,7 @@ export class ImportController {
   async importTeamFormations(
     @UploadedFile(requiredJsonFilePipe) file: UploadedJsonFile,
   ) {
-    return this.importTeamFormationsUseCase.execute(file.buffer);
+    return this.facade.importTeamFormations(file.buffer);
   }
 
   @Post('team-lineups')
@@ -92,7 +77,7 @@ export class ImportController {
   async importTeamLineups(
     @UploadedFile(requiredJsonFilePipe) file: UploadedJsonFile,
   ) {
-    return this.importTeamLineupsUseCase.execute(file.buffer);
+    return this.facade.importTeamLineups(file.buffer);
   }
 
   @Post('team-crests')
@@ -103,7 +88,7 @@ export class ImportController {
   async importTeamCrests(
     @UploadedFile(requiredJsonFilePipe) file: UploadedJsonFile,
   ) {
-    return this.importTeamCrestsUseCase.execute(file.buffer);
+    return this.facade.importTeamCrests(file.buffer);
   }
 
   @Post('team-aliases')
@@ -114,6 +99,6 @@ export class ImportController {
   async importTeamAliases(
     @UploadedFile(requiredJsonFilePipe) file: UploadedJsonFile,
   ) {
-    return this.importTeamAliasesUseCase.execute(file.buffer);
+    return this.facade.importTeamAliases(file.buffer);
   }
 }

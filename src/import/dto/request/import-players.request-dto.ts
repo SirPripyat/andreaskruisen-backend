@@ -6,4 +6,4 @@ export const ImportPlayersSchema = z.object({
   capturedAt: z.coerce.date().optional(),
 });
 
-export type ImportPlayersDto = z.infer<typeof ImportPlayersSchema>;
+export type ImportPlayersRequestDTO = z.infer<typeof ImportPlayersSchema>;
