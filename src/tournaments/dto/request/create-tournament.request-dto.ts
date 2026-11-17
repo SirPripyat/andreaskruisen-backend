@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isValidMaxTeams } from '../utils';
+import { isValidMaxTeams } from '../../utils';
 
 export const CreateTournamentSchema = z
   .object({
@@ -23,4 +23,4 @@ export const CreateTournamentSchema = z
     path: ['teamIds'],
   });
 
-export type CreateTournament = z.infer<typeof CreateTournamentSchema>;
+export type CreateTournamentRequestDTO = z.infer<typeof CreateTournamentSchema>;

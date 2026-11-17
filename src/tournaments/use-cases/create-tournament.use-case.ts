@@ -6,7 +6,7 @@ import {
 import { Transactional } from '@nestjs-cls/transactional';
 import { Prisma, Tournament } from '../../../generated/prisma/client';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
-import { CreateTournament } from '../dto';
+import { CreateTournamentRequestDTO } from '../dto/request';
 import { TournamentsRepository } from '../tournaments.repository';
 import { buildFirstPhase, shuffle } from '../utils';
 
@@ -20,7 +20,10 @@ export class CreateTournamentUseCase {
   ) {}
 
   @Transactional()
-  async execute(seasonId: string, dto: CreateTournament): Promise<Tournament> {
+  async execute(
+    seasonId: string,
+    dto: CreateTournamentRequestDTO,
+  ): Promise<Tournament> {
     const season = await this.seasonsRepository.findById(seasonId);
     if (!season) throw new NotFoundException('Temporada não encontrada');
 
@@ -51,7 +54,7 @@ export class CreateTournamentUseCase {
       });
   }
 
-  private async generatePhase(id: string, dto: CreateTournament) {
+  private async generatePhase(id: string, dto: CreateTournamentRequestDTO) {
     const shuffledTeamIds = shuffle(dto.teamIds);
 
     const firstPhase = buildFirstPhase(dto.format, shuffledTeamIds);

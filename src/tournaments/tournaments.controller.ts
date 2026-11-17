@@ -18,111 +18,87 @@ import {
   SeasonContextGuard,
 } from '../seasons/season-context.guard';
 import {
-  CreateTournament,
+  CreateTournamentRequestDTO,
   CreateTournamentSchema,
-  GetSituationQuery,
+  GetSituationRequestDTO,
   GetSituationSchema,
-  UpdateTournament,
+  UpdateTournamentRequestDTO,
   UpdateTournamentSchema,
 } from './dto';
-import {
-  AdvancePhaseUseCase,
-  CreateTournamentUseCase,
-  GetTopAssistsUseCase,
-  GetTopScorersUseCase,
-  GetTournamentDashboardUseCase,
-  GetTournamentFixturesUseCase,
-  GetTournamentSituationUseCase,
-  GetTournamentUseCase,
-  ListTournamentsUseCase,
-  RemoveTournamentUseCase,
-  UpdateTournamentUseCase,
-} from './use-cases';
+import { TournamentsFacade } from './tournaments.facade';
 
 @Controller('tournaments')
 @UseGuards(SessionAuthGuard)
 export class TournamentsController {
-  constructor(
-    private readonly createTournamentUseCase: CreateTournamentUseCase,
-    private readonly listTournamentsUseCase: ListTournamentsUseCase,
-    private readonly getTournamentUseCase: GetTournamentUseCase,
-    private readonly getTournamentSituationUseCase: GetTournamentSituationUseCase,
-    private readonly getTournamentFixturesUseCase: GetTournamentFixturesUseCase,
-    private readonly advancePhaseUseCase: AdvancePhaseUseCase,
-    private readonly getTopScorersUseCase: GetTopScorersUseCase,
-    private readonly getTopAssistsUseCase: GetTopAssistsUseCase,
-    private readonly getTournamentDashboardUseCase: GetTournamentDashboardUseCase,
-    private readonly updateTournamentUseCase: UpdateTournamentUseCase,
-    private readonly removeTournamentUseCase: RemoveTournamentUseCase,
-  ) {}
+  constructor(private readonly facade: TournamentsFacade) {}
 
   @Post()
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   create(
     @Req() request: RequiredSeasonScopedRequest,
     @Body(new ZodValidationPipe(CreateTournamentSchema))
-    dto: CreateTournament,
+    dto: CreateTournamentRequestDTO,
   ) {
-    return this.createTournamentUseCase.execute(request.seasonId, dto);
+    return this.facade.create(request.seasonId, dto);
   }
 
   @Get()
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   findBySeason(@Req() request: RequiredSeasonScopedRequest) {
-    return this.listTournamentsUseCase.execute(request.seasonId);
+    return this.facade.findBySeason(request.seasonId);
   }
 
   @Get(':id')
   getOne(@Param('id') id: string) {
-    return this.getTournamentUseCase.execute(id);
+    return this.facade.getOne(id);
   }
 
   @Get(':id/situation')
   getSituation(
     @Param('id') id: string,
     @Query(new ZodValidationPipe(GetSituationSchema))
-    query: GetSituationQuery,
+    query: GetSituationRequestDTO,
   ) {
-    return this.getTournamentSituationUseCase.execute(id, query);
+    return this.facade.getSituation(id, query);
   }
 
   @Get(':id/fixtures')
   getFixtures(@Param('id') id: string) {
-    return this.getTournamentFixturesUseCase.execute(id);
+    return this.facade.getFixtures(id);
   }
 
   @Post(':id/phases/:phaseId/advance')
   @UseGuards(SessionAuthGuard, AdminGuard)
   advancePhase(@Param('id') id: string, @Param('phaseId') phaseId: string) {
-    return this.advancePhaseUseCase.execute(id, phaseId);
+    return this.facade.advancePhase(id, phaseId);
   }
 
   @Get(':id/top-scorers')
   getTopScorers(@Param('id') id: string) {
-    return this.getTopScorersUseCase.execute(id);
+    return this.facade.getTopScorers(id);
   }
 
   @Get(':id/top-assists')
   getTopAssists(@Param('id') id: string) {
-    return this.getTopAssistsUseCase.execute(id);
+    return this.facade.getTopAssists(id);
   }
 
   @Get(':id/dashboard')
   getDashboard(@Param('id') id: string) {
-    return this.getTournamentDashboardUseCase.execute(id);
+    return this.facade.getDashboard(id);
   }
 
   @Patch(':id')
   update(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(UpdateTournamentSchema))
-    dto: UpdateTournament,
+    dto: UpdateTournamentRequestDTO,
   ) {
-    return this.updateTournamentUseCase.execute(id, dto);
+    return this.facade.update(id, dto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.removeTournamentUseCase.execute(id);
+    return this.facade.remove(id);
   }
 }

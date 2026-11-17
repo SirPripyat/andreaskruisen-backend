@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { GetSituationQuery } from '../dto/get-situation.schema';
+import { GetSituationRequestDTO } from '../dto/request';
 import { TournamentsRepository } from '../tournaments.repository';
 import { Matchup, StandingWithOwner, TournamentSituation } from '../types';
 import { BuildGroupStandingsUseCase } from './build-group-standings.use-case';
@@ -15,7 +15,7 @@ export class GetTournamentSituationUseCase {
 
   async execute(
     tournamentId: string,
-    query: GetSituationQuery,
+    query: GetSituationRequestDTO,
   ): Promise<TournamentSituation> {
     const [tournament, phase] = await Promise.all([
       this.findTournamentOrThrowUseCase.execute(tournamentId),

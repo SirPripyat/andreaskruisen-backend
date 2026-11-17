@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import { RulesetsModule } from '../rulesets/rulesets.module';
 import { SeasonsModule } from '../seasons/seasons.module';
 import { TournamentsController } from './tournaments.controller';
+import { TournamentsFacade } from './tournaments.facade';
 import { TournamentsRepository } from './tournaments.repository';
 import {
   AdvancePhaseUseCase,
@@ -30,6 +31,7 @@ import {
   controllers: [TournamentsController],
   providers: [
     TournamentsRepository,
+    TournamentsFacade,
     FindTournamentOrThrowUseCase,
     BuildGroupStandingsUseCase,
     ResolveGoalLeadersUseCase,

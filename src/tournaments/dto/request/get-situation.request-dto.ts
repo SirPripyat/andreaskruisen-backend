@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { booleanQueryParam } from '../../commons/query-boolean.schema';
+import { booleanQueryParam } from '../../../commons/query-boolean.schema';
 
 export const GetSituationSchema = z.object({
   // Quando true, esconde grupos/confrontos sem nenhum time com dono
@@ -10,4 +10,4 @@ export const GetSituationSchema = z.object({
   round: z.coerce.number().int().min(1).optional(),
 });
 
-export type GetSituationQuery = z.infer<typeof GetSituationSchema>;
+export type GetSituationRequestDTO = z.infer<typeof GetSituationSchema>;

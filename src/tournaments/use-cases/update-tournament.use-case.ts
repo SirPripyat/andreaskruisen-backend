@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Tournament } from '../../../generated/prisma/client';
-import { UpdateTournament } from '../dto';
+import { UpdateTournamentRequestDTO } from '../dto/request';
 import { TournamentsRepository } from '../tournaments.repository';
 import { FindTournamentOrThrowUseCase } from './find-tournament-or-throw.use-case';
 
@@ -13,7 +13,7 @@ export class UpdateTournamentUseCase {
 
   async execute(
     tournamentId: string,
-    dto: UpdateTournament,
+    dto: UpdateTournamentRequestDTO,
   ): Promise<Tournament> {
     await this.findTournamentOrThrowUseCase.execute(tournamentId);
 
