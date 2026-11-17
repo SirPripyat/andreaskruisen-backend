@@ -32,4 +32,6 @@ export const ReplaceMatchGoalsSchema = z.object({
   penalties: PenaltiesSchema.optional(),
 });
 
-export type ReplaceMatchGoals = z.infer<typeof ReplaceMatchGoalsSchema>;
+export type ReplaceMatchGoalsRequestDTO = z.infer<
+  typeof ReplaceMatchGoalsSchema
+>;

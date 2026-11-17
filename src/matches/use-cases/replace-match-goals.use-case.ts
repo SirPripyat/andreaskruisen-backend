@@ -20,7 +20,7 @@ import {
   matchResultRewardByTeam,
   rankingReward,
 } from '../../tournaments/utils';
-import { ReplaceMatchGoals } from '../dto/replace-match-goals.schema';
+import { ReplaceMatchGoalsRequestDTO } from '../dto/request';
 import { MatchesRepository } from '../matches.repository';
 import { Goal, MatchDetailResponse, MatchForGoals } from '../types';
 import { countGoalsByTeam } from '../utils';
@@ -40,7 +40,7 @@ export class ReplaceMatchGoalsUseCase {
   @Transactional()
   async execute(
     matchId: string,
-    dto: ReplaceMatchGoals,
+    dto: ReplaceMatchGoalsRequestDTO,
   ): Promise<MatchDetailResponse> {
     const match = await this.matchesRepository.findMatchForGoals(matchId);
     if (!match) throw new NotFoundException('Partida não encontrada');
@@ -322,7 +322,7 @@ export class ReplaceMatchGoalsUseCase {
     awayTeamId: string,
     homeGoals: number,
     awayGoals: number,
-    dtoPenalties: ReplaceMatchGoals['penalties'],
+    dtoPenalties: ReplaceMatchGoalsRequestDTO['penalties'],
   ) {
     const isDrawInKnockout =
       phaseType === 'KNOCKOUT' && homeGoals === awayGoals;

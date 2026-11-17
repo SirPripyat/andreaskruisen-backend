@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import { RulesetsModule } from '../rulesets/rulesets.module';
 import { TournamentsModule } from '../tournaments/tournaments.module';
 import { MatchesController } from './matches.controller';
+import { MatchesFacade } from './matches.facade';
 import { MatchesRepository } from './matches.repository';
 import {
   GetMatchDetailUseCase,
@@ -16,6 +17,7 @@ import {
   controllers: [MatchesController],
   providers: [
     MatchesRepository,
+    MatchesFacade,
     GetMatchDetailUseCase,
     ListTournamentMatchesUseCase,
     ReplaceMatchGoalsUseCase,

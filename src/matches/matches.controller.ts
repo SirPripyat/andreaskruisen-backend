@@ -11,51 +11,42 @@ import {
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import {
-  ListMatchesQuery,
+  ListMatchesRequestDTO,
   ListMatchesSchema,
-  ReplaceMatchGoals,
+  ReplaceMatchGoalsRequestDTO,
   ReplaceMatchGoalsSchema,
 } from './dto';
-import {
-  GetMatchDetailUseCase,
-  ListTournamentMatchesUseCase,
-  ReplaceMatchGoalsUseCase,
-  SimulateMatchUseCase,
-} from './use-cases';
+import { MatchesFacade } from './matches.facade';
 
 @Controller('matches')
 @UseGuards(SessionAuthGuard)
 export class MatchesController {
-  constructor(
-    private readonly listTournamentMatchesUseCase: ListTournamentMatchesUseCase,
-    private readonly getMatchDetailUseCase: GetMatchDetailUseCase,
-    private readonly replaceMatchGoalsUseCase: ReplaceMatchGoalsUseCase,
-    private readonly simulateMatchUseCase: SimulateMatchUseCase,
-  ) {}
+  constructor(private readonly facade: MatchesFacade) {}
 
   @Get()
   getMatches(
-    @Query(new ZodValidationPipe(ListMatchesSchema)) query: ListMatchesQuery,
+    @Query(new ZodValidationPipe(ListMatchesSchema))
+    query: ListMatchesRequestDTO,
   ) {
-    return this.listTournamentMatchesUseCase.execute(query);
+    return this.facade.getMatches(query);
   }
 
   @Get(':matchId')
   getMatchDetail(@Param('matchId') matchId: string) {
-    return this.getMatchDetailUseCase.execute(matchId);
+    return this.facade.getMatchDetail(matchId);
   }
 
   @Put(':matchId/goals')
   replaceMatchGoals(
     @Param('matchId') matchId: string,
     @Body(new ZodValidationPipe(ReplaceMatchGoalsSchema))
-    dto: ReplaceMatchGoals,
+    dto: ReplaceMatchGoalsRequestDTO,
   ) {
-    return this.replaceMatchGoalsUseCase.execute(matchId, dto);
+    return this.facade.replaceMatchGoals(matchId, dto);
   }
 
   @Post(':matchId/simulate')
   simulateMatch(@Param('matchId') matchId: string) {
-    return this.simulateMatchUseCase.execute(matchId);
+    return this.facade.simulateMatch(matchId);
   }
 }

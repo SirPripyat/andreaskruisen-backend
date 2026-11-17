@@ -1,2 +1,2 @@
-export * from './list-matches.schema';
-export * from './replace-match-goals.schema';
+export * from './request';
+export * from './response';

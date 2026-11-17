@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { TournamentsRepository } from '../../tournaments/tournaments.repository';
 import { FindTournamentOrThrowUseCase } from '../../tournaments/use-cases/find-tournament-or-throw.use-case';
 import { toMatchListItem } from '../../tournaments/utils';
-import { ListMatchesQuery } from '../dto/list-matches.schema';
+import { ListMatchesRequestDTO } from '../dto/request';
 import { MatchesRepository } from '../matches.repository';
 import { MatchesPage } from '../types';
 
@@ -14,7 +14,7 @@ export class ListTournamentMatchesUseCase {
     private readonly findTournamentOrThrowUseCase: FindTournamentOrThrowUseCase,
   ) {}
 
-  async execute(query: ListMatchesQuery): Promise<MatchesPage> {
+  async execute(query: ListMatchesRequestDTO): Promise<MatchesPage> {
     const { tournamentId } = query;
 
     const [tournament, phase] = await Promise.all([
