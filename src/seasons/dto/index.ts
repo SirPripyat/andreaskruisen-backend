@@ -1,2 +1,2 @@
-export * from './create-season.schema';
-export * from './update-season.schema';
+export * from './request';
+export * from './response';

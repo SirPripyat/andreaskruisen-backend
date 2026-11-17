@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { AuthenticatedRequest } from '../auth/session-auth.guard';
-import { SeasonsService } from './seasons.service';
+import { GetEffectiveSeasonIdUseCase } from './use-cases';
 
 // Usado pelo /me, que precisa tolerar null pra sinalizar ao front-end que a
 // tela de seleção de temporada deve aparecer.
@@ -17,11 +17,13 @@ export type RequiredSeasonScopedRequest = AuthenticatedRequest & {
 
 @Injectable()
 export class SeasonContextGuard implements CanActivate {
-  constructor(private readonly seasonsService: SeasonsService) {}
+  constructor(
+    private readonly getEffectiveSeasonIdUseCase: GetEffectiveSeasonIdUseCase,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<SeasonScopedRequest>();
-    request.seasonId = await this.seasonsService.getEffectiveSeasonId(
+    request.seasonId = await this.getEffectiveSeasonIdUseCase.execute(
       request.user,
     );
     return true;

@@ -8,4 +8,4 @@ export const UpdateSeasonSchema = z
     message: 'Informe ao menos um campo para atualizar',
   });
 
-export type UpdateSeason = z.infer<typeof UpdateSeasonSchema>;
+export type UpdateSeasonRequestDTO = z.infer<typeof UpdateSeasonSchema>;

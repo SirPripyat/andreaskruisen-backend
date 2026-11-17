@@ -9,7 +9,7 @@ export const CreateSeasonSchema = z
   .object({
     name: z.string().min(1),
     // Obrigatório: o saldo inicial de cada squad é calculado junto da
-    // criação da season (ver SeasonsService.start e
+    // criação da season (ver StartSeasonUseCase e
     // docs/regras-temporada/saldo-inicial.md), não existe mais um passo
     // separado pra escolher o time depois.
     squads: z.array(SeasonSquadSchema).min(1),
@@ -29,5 +29,5 @@ export const CreateSeasonSchema = z
     },
   );
 
-export type CreateSeason = z.infer<typeof CreateSeasonSchema>;
+export type CreateSeasonRequestDTO = z.infer<typeof CreateSeasonSchema>;
 export type CreateSeasonSquad = z.infer<typeof SeasonSquadSchema>;
