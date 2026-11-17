@@ -13,16 +13,16 @@ import {
   RequiredSeasonScopedRequest,
   SeasonContextGuard,
 } from '../seasons/season-context.guard';
-import { FavoritesService } from './favorites.service';
+import { FavoritesFacade } from './favorites.facade';
 
 @Controller('favorites')
 @UseGuards(SessionAuthGuard, SeasonContextGuard)
 export class FavoritesController {
-  constructor(private readonly favoritesService: FavoritesService) {}
+  constructor(private readonly facade: FavoritesFacade) {}
 
   @Get()
   list(@Req() request: RequiredSeasonScopedRequest) {
-    return this.favoritesService.list(request.user.id, request.seasonId);
+    return this.facade.list(request.user.id, request.seasonId);
   }
 
   @Post(':playerId')
@@ -31,11 +31,7 @@ export class FavoritesController {
     @Req() request: RequiredSeasonScopedRequest,
     @Param('playerId') playerId: string,
   ) {
-    return this.favoritesService.add(
-      request.user.id,
-      request.seasonId,
-      playerId,
-    );
+    return this.facade.add(request.user.id, request.seasonId, playerId);
   }
 
   @Delete(':playerId')
@@ -44,10 +40,6 @@ export class FavoritesController {
     @Req() request: RequiredSeasonScopedRequest,
     @Param('playerId') playerId: string,
   ) {
-    return this.favoritesService.remove(
-      request.user.id,
-      request.seasonId,
-      playerId,
-    );
+    return this.facade.remove(request.user.id, request.seasonId, playerId);
   }
 }

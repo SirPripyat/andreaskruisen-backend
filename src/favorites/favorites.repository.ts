@@ -13,7 +13,7 @@ export class FavoritesRepository {
   ) {}
 
   // Idempotente de propósito: favoritar quem já tá na lista não deve ser
-  // erro, é só um toggle (ver FavoritesService.add).
+  // erro, é só um toggle (ver AddFavoriteUseCase).
   add(
     userId: string,
     seasonId: string,
