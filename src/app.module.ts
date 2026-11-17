@@ -8,6 +8,7 @@ import { ClsModule } from 'nestjs-cls';
 import { PrismaClient } from '../generated/prisma/client';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './commons/config/env.schema';
 import { FavoritesModule } from './favorites/favorites.module';
@@ -60,6 +61,7 @@ import { UsersModule } from './users/users.module';
     ImportModule,
     StorageModule,
     MeModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
