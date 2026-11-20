@@ -27,6 +27,7 @@ export class StartSeasonUseCase {
   })
   async execute(dto: CreateSeasonRequestDTO): Promise<StartSeasonResponseDTO> {
     const season = await this.createSeason(dto.name);
+    await this.seasonsRepository.setActive(season.id);
     await this.seasonsRepository.seedPlayerAssignmentsFromRealTeams(season.id);
     await this.createSquads(season.id, dto.squads);
 
