@@ -31,6 +31,7 @@ export class AuditTransfersUseCase {
           outgoingPlayerOverall: transfer.outgoingPlayerOverall,
           incomingPlayerOverall: transfer.incomingPlayerOverall,
           useCoupon: transfer.useCoupon,
+          feeEnabled: transfer.feeEnabled,
         },
         transferPricing,
       );

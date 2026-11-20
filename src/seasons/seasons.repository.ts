@@ -60,10 +60,23 @@ export class SeasonsRepository {
       where: { tournament: { seasonId: id } },
     });
     await this.txHost.tx.tournament.deleteMany({ where: { seasonId: id } });
-    await this.txHost.tx.transfer.deleteMany({ where: { seasonId: id } });
-    await this.txHost.tx.favoritePlayer.deleteMany({ where: { seasonId: id } });
+    await this.txHost.tx.directNegotiationClause.deleteMany({
+      where: { negotiation: { seasonId: id } },
+    });
+    await this.txHost.tx.couponTransaction.deleteMany({
+      where: { squad: { seasonId: id } },
+    });
     await this.txHost.tx.coinTransaction.deleteMany({
       where: { squad: { seasonId: id } },
+    });
+    await this.txHost.tx.directNegotiation.deleteMany({
+      where: { seasonId: id },
+    });
+    await this.txHost.tx.transfer.deleteMany({ where: { seasonId: id } });
+    await this.txHost.tx.favoritePlayer.deleteMany({ where: { seasonId: id } });
+    await this.txHost.tx.ruleset.deleteMany({ where: { seasonId: id } });
+    await this.txHost.tx.negotiationWindow.deleteMany({
+      where: { seasonId: id },
     });
     await this.txHost.tx.squad.deleteMany({ where: { seasonId: id } });
     await this.txHost.tx.playerTeamAssignment.deleteMany({

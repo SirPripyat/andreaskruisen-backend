@@ -33,7 +33,7 @@ export class TransfersController {
     @Body(new ZodValidationPipe(CreateTransferSchema))
     dto: CreateTransferRequestDTO,
   ): Promise<TransferResponseDTO> {
-    return this.transfersFacade.create(request.seasonId, request.user.id, dto);
+    return this.transfersFacade.create(request.seasonId, request.user, dto);
   }
 
   @Get()
@@ -49,6 +49,6 @@ export class TransfersController {
     @Query(new ZodValidationPipe(CreateTransferSchema))
     dto: CreateTransferRequestDTO,
   ): Promise<QuoteTransferResponseDTO> {
-    return this.transfersFacade.quote(request.seasonId, request.user.id, dto);
+    return this.transfersFacade.quote(request.seasonId, request.user, dto);
   }
 }

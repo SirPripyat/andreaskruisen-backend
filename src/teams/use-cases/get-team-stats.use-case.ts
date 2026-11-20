@@ -32,10 +32,10 @@ export class GetTeamStatsUseCase {
         await this.tournamentsRepository.findOwnersByTeamIds([teamId], seasonId)
       ).get(teamId) ?? null;
 
-    const coins = await this.teamsRepository.findCoinsByTeamId(
-      teamId,
-      seasonId,
-    );
+    const [coins, couponBalance] = await Promise.all([
+      this.teamsRepository.findCoinsByTeamId(teamId, seasonId),
+      this.teamsRepository.findCouponBalanceByTeamId(teamId, seasonId),
+    ]);
 
     const seasonCampaign = computeSeasonCampaign(matches, seasonId);
 
@@ -53,6 +53,7 @@ export class GetTeamStatsUseCase {
     return {
       owner,
       coins,
+      couponBalance,
       seasonCampaign,
       lastMatches: toRecentMatches(matches, RECENT_MATCHES_LIMIT),
       topScorers,

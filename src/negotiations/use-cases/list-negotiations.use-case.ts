@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { SquadsRepository } from '../../squads/squads.repository';
 import { NegotiationResponseDTO } from '../dto/response';
 import { NegotiationsRepository } from '../negotiations.repository';
+import { NegotiationDirection } from '../types';
 
 @Injectable()
 export class ListNegotiationsUseCase {
@@ -13,6 +14,7 @@ export class ListNegotiationsUseCase {
   async execute(
     seasonId: string,
     userId: string,
+    direction: NegotiationDirection,
   ): Promise<NegotiationResponseDTO[]> {
     const squad = await this.squadsRepository.findByUserAndSeason(
       userId,
@@ -24,6 +26,6 @@ export class ListNegotiationsUseCase {
         'Você ainda não escolheu um time nessa temporada',
       );
 
-    return this.negotiationsRepository.findForSquad(squad.id);
+    return this.negotiationsRepository.findForSquad(squad.id, direction);
   }
 }

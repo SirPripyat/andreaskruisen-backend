@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { AuthenticatedUser } from '../../auth/types';
 import { CreateTransferRequestDTO, QuoteTransferResponseDTO } from '../dto';
 import { ResolveTransferUseCase } from './resolve-transfer.use-case';
 
@@ -10,11 +11,18 @@ export class QuoteTransferUseCase {
 
   async execute(
     seasonId: string,
-    userId: string,
+    actingUser: AuthenticatedUser,
     dto: CreateTransferRequestDTO,
   ): Promise<QuoteTransferResponseDTO> {
-    const { outgoing, incoming, cost, balance, useCoupon, couponBalance } =
-      await this.resolveTransferUseCase.execute(seasonId, userId, dto);
+    const {
+      outgoing,
+      incoming,
+      cost,
+      balance,
+      useCoupon,
+      couponBalance,
+      feeEnabled,
+    } = await this.resolveTransferUseCase.execute(seasonId, actingUser, dto);
 
     return {
       cost,
@@ -24,6 +32,7 @@ export class QuoteTransferUseCase {
       incomingPlayerOverall: incoming.player.overall,
       couponBalance,
       useCoupon,
+      feeEnabled,
     };
   }
 }

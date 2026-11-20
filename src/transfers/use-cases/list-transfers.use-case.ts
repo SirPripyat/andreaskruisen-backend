@@ -20,11 +20,16 @@ export class ListTransfersUseCase {
     return transfers.flatMap((transfer) => this.toPlayerMovements(transfer));
   }
 
+  // Mercado tradicional sempre tem os dois lados (troca completa) e gera 2
+  // movimentos; negociação direta pode ser compra/venda pura (ver
+  // Transfer.outgoing/incomingPlayerId nullable) e gera só 1.
   private toPlayerMovements(
     transfer: TransferResponseDTO,
-  ): [TransferPlayerMovementResponseDTO, TransferPlayerMovementResponseDTO] {
-    return [
-      {
+  ): TransferPlayerMovementResponseDTO[] {
+    const movements: TransferPlayerMovementResponseDTO[] = [];
+
+    if (transfer.outgoingPlayer) {
+      movements.push({
         transferId: transfer.id,
         player: transfer.outgoingPlayer,
         fromTeam: transfer.outgoingTeam,
@@ -32,8 +37,11 @@ export class ListTransfersUseCase {
         requestedBy: transfer.requestedBy,
         date: transfer.createdAt,
         cost: transfer.cost,
-      },
-      {
+      });
+    }
+
+    if (transfer.incomingPlayer) {
+      movements.push({
         transferId: transfer.id,
         player: transfer.incomingPlayer,
         fromTeam: transfer.incomingTeam,
@@ -41,7 +49,9 @@ export class ListTransfersUseCase {
         requestedBy: transfer.requestedBy,
         date: transfer.createdAt,
         cost: transfer.cost,
-      },
-    ];
+      });
+    }
+
+    return movements;
   }
 }

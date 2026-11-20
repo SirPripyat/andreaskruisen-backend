@@ -31,6 +31,7 @@ const calculateRawCost = (
             outgoingPlayerOverall: baseOverall,
             incomingPlayerOverall: overall,
             useCoupon: true,
+            feeEnabled: false,
           },
           pricing,
         ),

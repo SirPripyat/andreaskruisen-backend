@@ -30,4 +30,10 @@ export type NegotiationResponseDTO = DirectNegotiation & {
   outgoingPlayer: NegotiationPlayerSummaryResponseDTO | null;
   incomingPlayer: NegotiationPlayerSummaryResponseDTO | null;
   clauses: NegotiationClauseResponseDTO[];
+  // Snapshotados no Transfer gerado pelo aceite (ver
+  // NegotiationsRepository.toResponseDTO) — nulos enquanto
+  // PENDING/REJECTED, já que nenhum Transfer foi gerado ainda.
+  outgoingPlayerOverall: number | null;
+  incomingPlayerOverall: number | null;
+  feeEnabled: boolean | null;
 };

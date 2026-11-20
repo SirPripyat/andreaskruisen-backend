@@ -36,6 +36,6 @@ import {
     SelectActiveSeasonUseCase,
     GetEffectiveSeasonIdUseCase,
   ],
-  exports: [SeasonsRepository, SeasonContextGuard],
+  exports: [SeasonsRepository, SeasonContextGuard, GetEffectiveSeasonIdUseCase],
 })
 export class SeasonsModule {}

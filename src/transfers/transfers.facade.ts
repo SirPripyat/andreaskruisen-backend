@@ -1,4 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AuthenticatedUser } from '../auth/types';
+import { TRANSFER_COMPLETED_EVENT } from '../notifications/events';
 import {
   CreateTransferRequestDTO,
   QuoteTransferResponseDTO,
@@ -17,22 +20,41 @@ export class TransfersFacade {
     private readonly createTransferUseCase: CreateTransferUseCase,
     private readonly listTransfersUseCase: ListTransfersUseCase,
     private readonly quoteTransferUseCase: QuoteTransferUseCase,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  create(
+  async create(
     seasonId: string,
-    userId: string,
+    actingUser: AuthenticatedUser,
     dto: CreateTransferRequestDTO,
   ): Promise<TransferResponseDTO> {
-    return this.createTransferUseCase.execute(seasonId, userId, dto);
+    const transfer = await this.createTransferUseCase.execute(
+      seasonId,
+      actingUser,
+      dto,
+    );
+
+    // Notifica o solicitante (requestedBy), não quem clicou em "registrar" —
+    // quando é o admin criando em nome de outra pessoa, é essa pessoa que
+    // precisa saber que a transferência aconteceu.
+    this.eventEmitter.emit(TRANSFER_COMPLETED_EVENT, {
+      seasonId,
+      userId: transfer.requestedBy.id,
+      transferId: transfer.id,
+      outgoingPlayerName: transfer.outgoingPlayer.name,
+      incomingPlayerName: transfer.incomingPlayer.name,
+      cost: transfer.cost,
+    });
+
+    return transfer;
   }
 
   quote(
     seasonId: string,
-    userId: string,
+    actingUser: AuthenticatedUser,
     dto: CreateTransferRequestDTO,
   ): Promise<QuoteTransferResponseDTO> {
-    return this.quoteTransferUseCase.execute(seasonId, userId, dto);
+    return this.quoteTransferUseCase.execute(seasonId, actingUser, dto);
   }
 
   findBySeason(seasonId: string): Promise<TransferPlayerMovementResponseDTO[]> {

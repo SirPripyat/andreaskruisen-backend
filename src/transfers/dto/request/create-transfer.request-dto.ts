@@ -14,6 +14,9 @@ export const CreateTransferSchema = z
     outgoingPlayerId: z.uuid(),
     incomingPlayerId: z.uuid(),
     useCoupon: useCouponField,
+    // Só respeitado quando quem faz a requisição é ADMIN (ver
+    // CreateTransferUseCase) — participante sempre é o próprio solicitante.
+    requestedByUserId: z.uuid().optional(),
   })
   .refine((data) => data.outgoingPlayerId !== data.incomingPlayerId, {
     message: 'Os jogadores precisam ser diferentes',

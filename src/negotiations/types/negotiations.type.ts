@@ -5,8 +5,13 @@ import {
 } from '../../../generated/prisma/client';
 import { NegotiationPlayerSummaryResponseDTO } from '../dto/response';
 
+export type NegotiationDirection = 'sent' | 'received';
+
 export type NegotiationAssignment = {
-  player: NegotiationPlayerSummaryResponseDTO;
+  // overall usado pra calcular a taxa de negociação quando a janela tem
+  // feeEnabled (ver negotiation-fee.utils.ts) — não faz parte do DTO de
+  // resposta (outgoingPlayer/incomingPlayer não expõem overall hoje).
+  player: NegotiationPlayerSummaryResponseDTO & { overall: number };
   team: { id: string; name: string; crestUrl: string };
   position: PositionCode;
 };
@@ -32,6 +37,9 @@ export type NegotiationWithTeams = {
   status: DirectNegotiationStatus;
   proposingSquadId: string;
   proposingTeamId: string;
+  // Quem propôs — é quem aparece como requestedBy no Transfer gerado pelo
+  // aceite (ver AcceptNegotiationUseCase/TransfersRepository.record).
+  proposingUserId: string;
   targetSquadId: string;
   targetTeamId: string;
   outgoingPlayerId: string | null;

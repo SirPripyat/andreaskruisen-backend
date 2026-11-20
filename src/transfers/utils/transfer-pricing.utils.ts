@@ -16,7 +16,10 @@ export type TransferPricingConfig = {
   progressiveFeeBands: ProgressiveFeeBand[];
 };
 
-const progressiveFee = (
+// Exportada também pra negotiation-fee.utils.ts (taxa de negociação, ver
+// NegotiationWindow): reaproveita a mesma faixa progressiva do ruleset em
+// vez de duplicar a lógica de banda.
+export const progressiveFee = (
   overallDiff: number,
   progressiveFeeBands: ProgressiveFeeBand[],
 ): number => {
@@ -32,12 +35,17 @@ export type TraditionalMarketTransferPricingInput = {
   outgoingPlayerOverall: number;
   incomingPlayerOverall: number;
   useCoupon: boolean;
+  // Snapshot de NegotiationWindow.feeEnabled vigente (ver
+  // GetOpenNegotiationWindowUseCase) — com a janela sem taxa, só o custo
+  // base (diferença × coinsPerOverallPoint) é cobrado.
+  feeEnabled: boolean;
 };
 
 // Custo = (diferença de overall × coinsPerOverallPoint) + taxa
-// progressiva; o cupom zera só a taxa, nunca a diferença. Diferença
-// negativa ou nula (jogador que entra não é melhor) ainda paga a taxa
-// mínima — toda contratação está sujeita a ela.
+// progressiva, essa última só cobrada se feeEnabled (decidido na abertura
+// da janela de negociação) e sem cupom. Diferença negativa ou nula
+// (jogador que entra não é melhor) ainda paga a taxa mínima quando
+// feeEnabled — toda contratação está sujeita a ela.
 export const calculateTraditionalMarketTransferCost = (
   input: TraditionalMarketTransferPricingInput,
   pricing: TransferPricingConfig,
@@ -46,9 +54,10 @@ export const calculateTraditionalMarketTransferCost = (
     0,
     input.incomingPlayerOverall - input.outgoingPlayerOverall,
   );
-  const fee = input.useCoupon
-    ? 0
-    : progressiveFee(overallDiff, pricing.progressiveFeeBands);
+  const fee =
+    input.feeEnabled && !input.useCoupon
+      ? progressiveFee(overallDiff, pricing.progressiveFeeBands)
+      : 0;
 
   return overallDiff * pricing.coinsPerOverallPoint + fee;
 };

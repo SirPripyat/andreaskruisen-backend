@@ -6,6 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Squad } from '../../../generated/prisma/client';
+import { AuthenticatedUser } from '../../auth/types';
+import { GetOpenNegotiationWindowUseCase } from '../../negotiation-window/use-cases';
 import { GetActiveRulesetUseCase } from '../../rulesets/use-cases';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
 import { SquadsRepository } from '../../squads/squads.repository';
@@ -23,6 +25,7 @@ export type ResolvedTransfer = {
   balance: number;
   useCoupon: boolean;
   couponBalance: number;
+  feeEnabled: boolean;
 };
 
 // Validações e cálculo compartilhados entre criar uma transferência de
@@ -37,22 +40,29 @@ export class ResolveTransferUseCase {
     private readonly squadsRepository: SquadsRepository,
     private readonly hasActiveTournamentUseCase: HasActiveTournamentUseCase,
     private readonly getActiveRulesetUseCase: GetActiveRulesetUseCase,
+    private readonly getOpenNegotiationWindowUseCase: GetOpenNegotiationWindowUseCase,
   ) {}
 
   async execute(
     seasonId: string,
-    userId: string,
+    actingUser: AuthenticatedUser,
     dto: CreateTransferRequestDTO,
   ): Promise<ResolvedTransfer> {
     await this.ensureSeasonExists(seasonId);
     await this.ensureNoActiveTournament(seasonId);
+    const feeEnabled = await this.ensureNegotiationWindowOpen(seasonId);
 
-    const squad = await this.getSquadOrThrow(userId, seasonId);
     const outgoing = await this.getOutgoingAssignmentOrThrow(
       seasonId,
       dto.outgoingPlayerId,
-      squad,
     );
+    // Admin pode agir em nome de qualquer time (ver CLAUDE.md do backend) —
+    // o squad que paga é sempre o do time de saída, não o do admin.
+    // Participante só pode mexer no próprio squad.
+    const squad =
+      actingUser.role === 'ADMIN'
+        ? await this.getSquadByTeamOrThrow(outgoing.team.id, seasonId)
+        : await this.getOwnSquadOrThrow(actingUser.id, seasonId, outgoing);
     const incoming = await this.getIncomingAssignmentOrThrow(
       seasonId,
       dto.incomingPlayerId,
@@ -72,6 +82,7 @@ export class ResolveTransferUseCase {
         outgoingPlayerOverall: outgoing.player.overall,
         incomingPlayerOverall: incoming.player.overall,
         useCoupon: dto.useCoupon,
+        feeEnabled,
       },
       transferPricing,
     );
@@ -86,6 +97,7 @@ export class ResolveTransferUseCase {
       balance,
       useCoupon: dto.useCoupon,
       couponBalance,
+      feeEnabled,
     };
   }
 
@@ -106,9 +118,25 @@ export class ResolveTransferUseCase {
     );
   }
 
-  private async getSquadOrThrow(
+  private async ensureNegotiationWindowOpen(
+    seasonId: string,
+  ): Promise<boolean> {
+    const window = await this.getOpenNegotiationWindowUseCase.execute(seasonId);
+
+    if (!window)
+      throw new ConflictException(
+        'Transferências só são permitidas com a janela de negociação aberta',
+      );
+
+    return window.feeEnabled;
+  }
+
+  // Participante: squad é o próprio, e o jogador de saída precisa estar
+  // nesse squad (senão estaria tentando negociar time de outra pessoa).
+  private async getOwnSquadOrThrow(
     userId: string,
     seasonId: string,
+    outgoing: TransferAssignment,
   ): Promise<Squad> {
     const squad = await this.squadsRepository.findByUserAndSeason(
       userId,
@@ -120,13 +148,33 @@ export class ResolveTransferUseCase {
         'Você ainda não escolheu um time nessa temporada',
       );
 
+    if (outgoing.team.id !== squad.teamId)
+      throw new ForbiddenException('Esse jogador não está no seu time');
+
+    return squad;
+  }
+
+  // Admin: squad é sempre o do time de saída escolhido, nunca o do admin.
+  private async getSquadByTeamOrThrow(
+    teamId: string,
+    seasonId: string,
+  ): Promise<Squad> {
+    const squad = await this.squadsRepository.findByTeamAndSeason(
+      teamId,
+      seasonId,
+    );
+
+    if (!squad)
+      throw new NotFoundException(
+        'Esse time ainda não tem um squad nessa temporada',
+      );
+
     return squad;
   }
 
   private async getOutgoingAssignmentOrThrow(
     seasonId: string,
     playerId: string,
-    squad: Squad,
   ): Promise<TransferAssignment> {
     const outgoing = await this.transfersRepository.findAssignment(
       seasonId,
@@ -137,9 +185,6 @@ export class ResolveTransferUseCase {
       throw new NotFoundException(
         'Jogador que sai não encontrado nessa temporada',
       );
-
-    if (outgoing.team.id !== squad.teamId)
-      throw new ForbiddenException('Esse jogador não está no seu time');
 
     return outgoing;
   }

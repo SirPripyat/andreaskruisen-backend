@@ -323,6 +323,21 @@ export class TeamsRepository {
     return squad.coinTransactions.reduce((total, t) => total + t.amount, 0);
   }
 
+  // Mesmo raciocínio de findCoinsByTeamId, pro ledger de cupons.
+  async findCouponBalanceByTeamId(
+    teamId: string,
+    seasonId: string,
+  ): Promise<number | null> {
+    const squad = await this.txHost.tx.squad.findUnique({
+      where: { seasonId_teamId: { seasonId, teamId } },
+      select: { couponTransactions: { select: { amount: true } } },
+    });
+
+    if (!squad) return null;
+
+    return squad.couponTransactions.reduce((total, t) => total + t.amount, 0);
+  }
+
   async findTopScorersForTeam(
     teamId: string,
     limit: number,

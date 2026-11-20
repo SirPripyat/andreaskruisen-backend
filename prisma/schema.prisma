@@ -396,6 +396,10 @@ model User {
   squads             Squad[]
   transfersRequested Transfer[]
   favoritePlayers    FavoritePlayer[]
+  notifications      Notification[]
+
+  openedNegotiationWindows NegotiationWindow[] @relation("NegotiationWindowOpenedBy")
+  closedNegotiationWindows NegotiationWindow[] @relation("NegotiationWindowClosedBy")
 
   avatarPath String?
 }
@@ -437,6 +441,8 @@ model Season {
   selectedByUsers    User[]
   favoritePlayers    FavoritePlayer[]
   rulesets           Ruleset[]
+  negotiationWindows NegotiationWindow[]
+  notifications      Notification[]
 }
 
 // Regras de economia da temporada (ver CLAUDE.md, "princípio mais
@@ -503,8 +509,15 @@ model Squad {
 // Origem de um lançamento no ledger de moedas de um squad.
 enum CoinTransactionType {
   INITIAL
+  // Custo de qualquer movimentação (ver Transfer.originType): o custo fixo
+  // do mercado tradicional, ou o coinAmount livremente acordado numa
+  // negociação direta.
   TRANSFER
-  DIRECT_NEGOTIATION
+  // Taxa de negociação (ver NegotiationWindow) numa troca entre
+  // participantes — só existe quando Transfer.originType = NEGOTIATION e a
+  // janela aberta tinha feeEnabled = true. No mercado tradicional a taxa já
+  // vem embutida num único lançamento TRANSFER, nunca separada.
+  TRANSFER_FEE
   // Avanço de fase (mata-mata) ou posição na fase de grupos/liga — ver
   // tournament-prizes.utils.ts.
   PRIZE_PHASE
@@ -530,17 +543,12 @@ model CoinTransaction {
   type    CoinTransactionType
   amount  Int
 
-  // Só setado quando type = TRANSFER: liga o lançamento à transferência que
-  // o gerou, pra auditoria não precisar inferir pela combinação squadId +
-  // horário.
-  transferId String?   @unique @db.Uuid
+  // Liga o lançamento à movimentação (mercado ou negociação aceita, ver
+  // Transfer.originType) que o gerou — não é mais @unique: uma negociação
+  // pode gerar até 3 lançamentos (coinAmount dos dois lados + taxa), o
+  // mercado tradicional continua gerando sempre exatamente 1.
+  transferId String?   @db.Uuid
   transfer   Transfer? @relation(fields: [transferId], references: [id])
-
-  // Só setado quando type = DIRECT_NEGOTIATION: liga o lançamento à
-  // negociação que o gerou. Não é @unique — uma negociação com compensação
-  // em moedas gera 2 lançamentos (um pra cada squad, sinais opostos).
-  directNegotiationId String?            @db.Uuid
-  directNegotiation   DirectNegotiation? @relation(fields: [directNegotiationId], references: [id])
 
   // Só setado quando type = WIN/DRAW/LOSS, ou CHAMPION/RUNNER_UP decidido
   // numa final de mata-mata: liga o lançamento à partida que o gerou. Não é
@@ -559,7 +567,7 @@ model CoinTransaction {
   createdAt DateTime @default(now())
 
   @@index([squadId])
-  @@index([directNegotiationId])
+  @@index([transferId])
   @@index([matchId])
   @@index([phaseId])
 }
@@ -585,20 +593,18 @@ model CouponTransaction {
   type    CouponTransactionType
   amount  Int
 
-  // Só setado quando type = USED: liga o lançamento à transferência cuja
-  // taxa progressiva foi isentada por este cupom.
-  transferId String?   @unique @db.Uuid
+  // Liga o lançamento à movimentação que o gerou (ver Transfer.originType):
+  // USED sempre aponta pra um Transfer de mercado; GRANTED pode apontar pra
+  // um Transfer nascido de negociação direta. Não é mais @unique — uma
+  // troca entre participantes concede cupom aos dois squads (2 lançamentos
+  // pro mesmo Transfer).
+  transferId String?   @db.Uuid
   transfer   Transfer? @relation(fields: [transferId], references: [id])
-
-  // Só setado quando type = GRANTED a partir de uma negociação direta. Não
-  // é @unique — uma troca entre participantes concede cupom aos dois squads.
-  directNegotiationId String?            @db.Uuid
-  directNegotiation   DirectNegotiation? @relation(fields: [directNegotiationId], references: [id])
 
   createdAt DateTime @default(now())
 
   @@index([squadId])
-  @@index([directNegotiationId])
+  @@index([transferId])
 }
 
 // Lista pessoal de jogadores "favoritados" por um participante, dentro de
@@ -787,38 +793,71 @@ model PlayerTeamAssignment {
   @@index([seasonId, teamId])
 }
 
-// Log de uma troca de jogadores já concluída. Sem custo por ora (ver
-// PlayerTeamAssignment): a troca só atualiza a "foto" de quem joga em qual
-// time; este registro existe só para dar rastro de auditoria de quem trocou
-// o quê e quando. outgoing/incomingTeamId guardam o time de cada jogador
-// antes da troca, já que PlayerTeamAssignment só guarda o estado atual.
+// Origem de um Transfer: mercado tradicional (preço fixo pela política de
+// pricing, instantâneo) ou negociação direta aceita (preço livre, precisou
+// de aceite do targetSquad — ver DirectNegotiation).
+enum TransferOriginType {
+  MARKET
+  NEGOTIATION
+}
+
+// Log de qualquer movimentação de jogador e/ou moeda já concluída — a
+// "tabela de fato", independente de ter nascido do mercado tradicional ou
+// de uma negociação direta aceita (ver originType/negotiationId). Sem custo
+// próprio: o valor fica inteiramente no ledger (CoinTransaction/
+// CouponTransaction ligados a este id) — este registro existe só para dar
+// rastro de quem trocou o quê e quando. outgoing/incomingTeamId são sempre
+// os dois lados da movimentação (squads envolvidos), preenchidos mesmo
+// quando o jogador daquele lado é nulo — numa compra pura, por exemplo, não
+// existe outgoingPlayer, mas outgoingTeamId ainda identifica quem comprou.
 model Transfer {
-  id       String @id @default(uuid()) @db.Uuid
-  seasonId String @db.Uuid
-  season   Season @relation(fields: [seasonId], references: [id])
+  id         String             @id @default(uuid()) @db.Uuid
+  seasonId   String             @db.Uuid
+  season     Season             @relation(fields: [seasonId], references: [id])
+  originType TransferOriginType
 
   requestedByUserId String @db.Uuid
   requestedBy       User   @relation(fields: [requestedByUserId], references: [id])
 
-  outgoingPlayerId String @db.Uuid
-  outgoingPlayer   Player @relation("TransferOutgoingPlayer", fields: [outgoingPlayerId], references: [id])
-  outgoingTeamId   String @db.Uuid
-  outgoingTeam     Team   @relation("TransferOutgoingTeam", fields: [outgoingTeamId], references: [id])
+  // outgoingPlayerId nulo numa compra pura nascida de negociação direta (só
+  // o incoming existe) — outgoingTeamId continua preenchido (identifica o
+  // squad desse lado da movimentação, mesmo sem jogador saindo dele). No
+  // mercado tradicional (originType = MARKET) é sempre uma troca, então os
+  // dois jogadores são sempre preenchidos.
+  outgoingPlayerId String? @db.Uuid
+  outgoingPlayer   Player? @relation("TransferOutgoingPlayer", fields: [outgoingPlayerId], references: [id])
+  outgoingTeamId   String  @db.Uuid
+  outgoingTeam     Team    @relation("TransferOutgoingTeam", fields: [outgoingTeamId], references: [id])
 
-  incomingPlayerId String @db.Uuid
-  incomingPlayer   Player @relation("TransferIncomingPlayer", fields: [incomingPlayerId], references: [id])
-  incomingTeamId   String @db.Uuid
-  incomingTeam     Team   @relation("TransferIncomingTeam", fields: [incomingTeamId], references: [id])
+  // incomingPlayerId nulo numa venda pura nascida de negociação direta (só
+  // o outgoing existe) — incomingTeamId continua preenchido, mesma lógica
+  // de outgoingTeamId acima.
+  incomingPlayerId String? @db.Uuid
+  incomingPlayer   Player? @relation("TransferIncomingPlayer", fields: [incomingPlayerId], references: [id])
+  incomingTeamId   String  @db.Uuid
+  incomingTeam     Team    @relation("TransferIncomingTeam", fields: [incomingTeamId], references: [id])
 
-  // Overall dos dois jogadores no momento da troca (ver
+  // Overall dos dois jogadores no momento da movimentação (ver
   // docs/regras-temporada/v1-transferencias.md) — snapshot, não aponta pro
   // Player: se o scraper atualizar o overall depois, a auditoria continua
-  // recalculando o custo com o valor que valia na hora da transferência.
-  outgoingPlayerOverall Int
-  incomingPlayerOverall Int
+  // recalculando o custo com o valor que valia na hora da movimentação.
+  // Nulo no lado correspondente a um outgoing/incomingPlayerId nulo.
+  outgoingPlayerOverall Int?
+  incomingPlayerOverall Int?
 
-  coinTransaction   CoinTransaction?
-  couponTransaction CouponTransaction?
+  // Snapshot de NegotiationWindow.feeEnabled no momento da movimentação — a
+  // auditoria recalcula o custo com esse valor, nunca com o estado atual
+  // da janela (que pode já ter virado outra coisa).
+  feeEnabled Boolean
+
+  // Só setado quando originType = NEGOTIATION: liga ao DirectNegotiation
+  // (a proposta) que originou esta movimentação — 1:1, uma negociação
+  // aceita gera exatamente um Transfer.
+  negotiationId String?            @unique @db.Uuid
+  negotiation   DirectNegotiation? @relation(fields: [negotiationId], references: [id])
+
+  coinTransactions   CoinTransaction[]
+  couponTransactions CouponTransaction[]
 
   createdAt DateTime @default(now())
 
@@ -870,9 +909,11 @@ model DirectNegotiation {
   createdAt  DateTime  @default(now())
   resolvedAt DateTime?
 
-  coinTransactions   CoinTransaction[]
-  couponTransactions CouponTransaction[]
-  clauses            DirectNegotiationClause[]
+  // Setado só depois do aceite (status = ACCEPTED) — é o Transfer gerado
+  // pela aceitação, que carrega o snapshot de overall/feeEnabled e o
+  // ledger (ver Transfer.negotiationId). Null enquanto PENDING/REJECTED.
+  transfer Transfer?
+  clauses  DirectNegotiationClause[]
 
   @@index([seasonId])
   @@index([targetSquadId, status])
@@ -921,4 +962,66 @@ model DirectNegotiationClause {
   createdAt DateTime @default(now())
 
   @@index([negotiationId])
+}
+
+enum NotificationType {
+  TRANSFER_COMPLETED
+  TOURNAMENT_PRIZE_AWARDED
+  AUDIT_DISCREPANCY_FOUND
+  NEGOTIATION_PROPOSED
+  NEGOTIATION_ACCEPTED
+  NEGOTIATION_REJECTED
+  SEASON_STARTED
+}
+
+// Notificação assíncrona gerada a partir de um evento de domínio (ver
+// src/notifications/events) — transferência concluída, prêmio de torneio
+// creditado, auditoria com divergência. Isolada por seasonId (como
+// squads/transfers/negociações) pra quem trocou de temporada não ver
+// notificação de uma temporada antiga nem de outra. Fora isso fica achatada
+// (sem relação direta pra transfer/squad) porque cada tipo referencia
+// entidades diferentes; o vínculo com o recurso de origem vai em `metadata`.
+model Notification {
+  id       String           @id @default(uuid()) @db.Uuid
+  seasonId String           @db.Uuid
+  season   Season           @relation(fields: [seasonId], references: [id])
+  userId   String           @db.Uuid
+  user     User             @relation(fields: [userId], references: [id])
+  type     NotificationType
+  title    String
+  message  String
+  metadata Json?
+
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([seasonId, userId, readAt])
+}
+
+// Período, aberto e fechado manualmente pelo admin, em que transferências
+// (mercado tradicional) e negociações diretas são permitidas numa season —
+// ver docs/regras-temporada/v1-transferencias.md. feeEnabled é decidido na
+// abertura e vale pra toda a janela: liga a faixa progressiva do
+// transferPricing do ruleset vigente (hoje cobrada incondicionalmente no
+// mercado tradicional) e, só pra negociações que envolvem troca de
+// jogadores, passa a cobrar a mesma faixa como taxa adicional (ver
+// negotiation-fee.utils.ts). No máximo uma janela aberta (closedAt null)
+// por season — validado em OpenNegotiationWindowUseCase, não por
+// constraint de banco.
+model NegotiationWindow {
+  id       String @id @default(uuid()) @db.Uuid
+  seasonId String @db.Uuid
+  season   Season @relation(fields: [seasonId], references: [id])
+
+  feeEnabled Boolean
+
+  openedAt       DateTime @default(now())
+  openedByUserId String   @db.Uuid
+  openedBy       User     @relation("NegotiationWindowOpenedBy", fields: [openedByUserId], references: [id])
+
+  closedAt       DateTime?
+  closedByUserId String?   @db.Uuid
+  closedBy       User?     @relation("NegotiationWindowClosedBy", fields: [closedByUserId], references: [id])
+
+  @@index([seasonId, closedAt])
 }

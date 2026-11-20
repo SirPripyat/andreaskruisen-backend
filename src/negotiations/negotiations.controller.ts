@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -14,7 +15,12 @@ import {
   RequiredSeasonScopedRequest,
   SeasonContextGuard,
 } from '../seasons/season-context.guard';
-import { ProposeNegotiationRequestDTO, ProposeNegotiationSchema } from './dto';
+import {
+  ListNegotiationsQueryDTO,
+  ListNegotiationsSchema,
+  ProposeNegotiationRequestDTO,
+  ProposeNegotiationSchema,
+} from './dto';
 import { NegotiationResponseDTO } from './dto/response';
 import { NegotiationsFacade } from './negotiations.facade';
 
@@ -39,10 +45,13 @@ export class NegotiationsController {
   @Get()
   listForSquad(
     @Req() request: RequiredSeasonScopedRequest,
+    @Query(new ZodValidationPipe(ListNegotiationsSchema))
+    query: ListNegotiationsQueryDTO,
   ): Promise<NegotiationResponseDTO[]> {
     return this.negotiationsFacade.listForSquad(
       request.seasonId,
       request.user.id,
+      query.direction,
     );
   }
 

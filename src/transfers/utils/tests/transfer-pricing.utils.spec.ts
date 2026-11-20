@@ -29,7 +29,12 @@ describe('calculateTraditionalMarketTransferCost', () => {
     (outgoingPlayerOverall, incomingPlayerOverall, expectedCost) => {
       expect(
         calculateTraditionalMarketTransferCost(
-          { outgoingPlayerOverall, incomingPlayerOverall, useCoupon: false },
+          {
+            outgoingPlayerOverall,
+            incomingPlayerOverall,
+            useCoupon: false,
+            feeEnabled: true,
+          },
           PRICING,
         ),
       ).toBe(expectedCost);
@@ -45,7 +50,33 @@ describe('calculateTraditionalMarketTransferCost', () => {
     (outgoingPlayerOverall, incomingPlayerOverall, expectedCost) => {
       expect(
         calculateTraditionalMarketTransferCost(
-          { outgoingPlayerOverall, incomingPlayerOverall, useCoupon: true },
+          {
+            outgoingPlayerOverall,
+            incomingPlayerOverall,
+            useCoupon: true,
+            feeEnabled: true,
+          },
+          PRICING,
+        ),
+      ).toBe(expectedCost);
+    },
+  );
+
+  it.each([
+    [85, 88, 30],
+    [75, 90, 150],
+    [90, 88, 0],
+  ])(
+    'com a janela sem taxa (feeEnabled: false), %i -> %i custa %i moedas (só a diferença)',
+    (outgoingPlayerOverall, incomingPlayerOverall, expectedCost) => {
+      expect(
+        calculateTraditionalMarketTransferCost(
+          {
+            outgoingPlayerOverall,
+            incomingPlayerOverall,
+            useCoupon: false,
+            feeEnabled: false,
+          },
           PRICING,
         ),
       ).toBe(expectedCost);

@@ -17,12 +17,14 @@ export type TransferPlayerSummaryResponseDTO = Pick<
 
 export type TransferResponseDTO = Transfer & {
   requestedBy: Pick<User, 'id' | 'name'>;
-  outgoingPlayer: TransferPlayerSummaryResponseDTO;
+  // Nulo quando a movimentação nasceu de uma negociação direta sem esse
+  // lado (compra/venda pura — ver Transfer.outgoing/incomingPlayerId).
+  outgoingPlayer: TransferPlayerSummaryResponseDTO | null;
   outgoingTeam: TransferTeamSummaryResponseDTO;
-  incomingPlayer: TransferPlayerSummaryResponseDTO;
+  incomingPlayer: TransferPlayerSummaryResponseDTO | null;
   incomingTeam: TransferTeamSummaryResponseDTO;
-  // Valor da CoinTransaction ligada a essa transferência (ver
-  // TransfersRepository) — não recalculado a partir do overall, pra não
-  // divergir se a fórmula de preço mudar depois.
+  // Soma do(s) lançamento(s) de CoinTransaction ligados a essa movimentação
+  // (ver TransfersRepository) — não recalculado a partir do overall, pra
+  // não divergir se a fórmula de preço mudar depois.
   cost: number;
 };

@@ -53,6 +53,9 @@ export type TeamStats = {
   // null = time sem squad nessa temporada (mesmo caso do owner null);
   // 0 é um saldo real.
   coins: number | null;
+  // Mesmo raciocínio de coins, mas pro ledger de cupons de isenção de taxa
+  // (ver transfer-coupon.utils.ts) — null = sem squad nessa temporada.
+  couponBalance: number | null;
   // null = não há temporada ativa (não é "zero jogos"; ver
   // computeSeasonCampaign pro caso de zero jogos numa temporada que existe).
   seasonCampaign: SeasonCampaign | null;

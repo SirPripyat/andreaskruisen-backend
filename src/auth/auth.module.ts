@@ -23,6 +23,6 @@ import {
     SessionAuthGuard,
     AdminGuard,
   ],
-  exports: [SessionAuthGuard, AdminGuard],
+  exports: [SessionAuthGuard, AdminGuard, ValidateSessionUseCase],
 })
 export class AuthModule {}
