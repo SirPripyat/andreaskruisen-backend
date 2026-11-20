@@ -21,13 +21,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const { status, body } = this.resolve(exception);
 
     const context = `${request.method} ${request.url}`;
-    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
-      this.logger.error(
-        `${context} -> ${status}`,
-        exception instanceof Error ? exception.stack : exception,
-      );
-    } else {
+    if (exception instanceof HttpException) {
       this.logger.warn(`${context} -> ${status} ${JSON.stringify(body)}`);
+    } else {
+      // Não é um HttpException: o body da resposta é só a mensagem
+      // genérica (ver resolve) — nunca o detalhe real do erro, pra não
+      // expor estrutura de banco pro cliente. Loga a exceção original
+      // inteira aqui, senão a causa real fica sem nenhum rastro.
+      this.logger.error(`${context} -> ${status}`, exception);
     }
 
     response.status(status).json(body);
