@@ -4,7 +4,8 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { Season } from '../../../generated/prisma/client';
+import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
+import { PrismaClient, Season } from '../../../generated/prisma/client';
 import { isPrismaErrorCode, PRISMA_ERROR_CODE } from '../../commons/utils';
 import { CreateSeasonRequestDTO } from '../dto/request';
 import { StartSeasonResponseDTO } from '../dto/response';
@@ -18,7 +19,12 @@ export class StartSeasonUseCase {
     private readonly startSeasonEconomyUseCase: StartSeasonEconomyUseCase,
   ) {}
 
-  @Transactional()
+  // Timeout maior que o padrão (5s) porque seedPlayerAssignmentsFromRealTeams
+  // recria o vínculo jogador-time pra todo o elenco real na criação da
+  // temporada, e isso já passa do padrão com a base atual de jogadores.
+  @Transactional<TransactionalAdapterPrisma<PrismaClient>>({
+    timeout: 30_000,
+  })
   async execute(dto: CreateSeasonRequestDTO): Promise<StartSeasonResponseDTO> {
     const season = await this.createSeason(dto.name);
     await this.seasonsRepository.seedPlayerAssignmentsFromRealTeams(season.id);
