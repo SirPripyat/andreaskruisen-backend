@@ -9,6 +9,7 @@ import {
   ChooseSquadResponseDTO,
   GetMySquadResponseDTO,
   GetSquadLineupResponseDTO,
+  ListSquadCoinTransactionsResponseDTO,
   ListSquadRosterResponseDTO,
   ListSquadsResponseDTO,
   SetLineupStarterRequestDTO,
@@ -22,6 +23,7 @@ import {
   ChooseSquadUseCase,
   GetMySquadUseCase,
   GetSquadLineupUseCase,
+  ListSquadCoinTransactionsUseCase,
   ListSquadRosterUseCase,
   ListSquadsUseCase,
   SetLineupStarterUseCase,
@@ -37,6 +39,7 @@ export class SquadsFacade {
     private readonly listSquadRosterUseCase: ListSquadRosterUseCase,
     private readonly getSquadLineupUseCase: GetSquadLineupUseCase,
     private readonly getMySquadUseCase: GetMySquadUseCase,
+    private readonly listSquadCoinTransactionsUseCase: ListSquadCoinTransactionsUseCase,
     private readonly swapLineupStarterUseCase: SwapLineupStarterUseCase,
     private readonly setLineupStarterUseCase: SetLineupStarterUseCase,
     private readonly changeSquadFormationUseCase: ChangeSquadFormationUseCase,
@@ -70,6 +73,13 @@ export class SquadsFacade {
     teamId: string,
   ): Promise<GetSquadLineupResponseDTO> {
     return this.getSquadLineupUseCase.execute(seasonId, teamId);
+  }
+
+  listCoinTransactions(
+    seasonId: string,
+    teamId: string,
+  ): Promise<ListSquadCoinTransactionsResponseDTO> {
+    return this.listSquadCoinTransactionsUseCase.execute(seasonId, teamId);
   }
 
   swapLineupStarter(

@@ -1,6 +1,8 @@
 import {
+  CoinTransactionType,
   Formation,
   League,
+  Phase,
   PositionCode,
   PreferredFoot,
   SofifaPositionCode,
@@ -56,4 +58,22 @@ export type SquadWithRelations = Squad & {
   team: Pick<Team, 'id' | 'name' | 'crestUrl'> & {
     league: Pick<League, 'id' | 'name'>;
   };
+};
+
+// Um lançamento do ledger de moedas (ver model CoinTransaction) já resolvido
+// pra exibição: `match`/`phase` só vêm preenchidos quando o lançamento tem
+// essa origem (ver comentários do model), e `match.opponentTeam` já é o lado
+// contrário ao time cujo extrato está sendo listado — o front não precisa
+// saber se o time era home ou away pra montar "vitória contra Ajax".
+export type SquadCoinTransaction = {
+  id: string;
+  type: CoinTransactionType;
+  amount: number;
+  createdAt: Date;
+  match: {
+    id: string;
+    opponentTeam: Pick<Team, 'id' | 'name' | 'crestUrl'>;
+  } | null;
+  phase: Pick<Phase, 'id' | 'name'> | null;
+  transferId: string | null;
 };

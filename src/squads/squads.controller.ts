@@ -66,6 +66,15 @@ export class SquadsController {
     return this.facade.listRoster(request.seasonId, teamId);
   }
 
+  @Get('/:teamId/coin-transactions')
+  @UseGuards(SessionAuthGuard, SeasonContextGuard)
+  listCoinTransactions(
+    @Req() request: RequiredSeasonScopedRequest,
+    @Param('teamId') teamId: string,
+  ) {
+    return this.facade.listCoinTransactions(request.seasonId, teamId);
+  }
+
   @Get('/:teamId/lineup')
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   getLineup(

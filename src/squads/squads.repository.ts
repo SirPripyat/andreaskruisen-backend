@@ -11,6 +11,7 @@ import {
   LineupOverview,
   LineupSlotAssignment,
   RosterPlayer,
+  SquadCoinTransaction,
   SquadWithRelations,
 } from './types';
 import { limitBench, sortByPosition } from './utils';
@@ -377,5 +378,45 @@ export class SquadsRepository {
       starters: sortByPosition(starters),
       bench: sortByPosition(limitBench(bench)),
     };
+  }
+
+  // Extrato do ledger de moedas do squad (ver model CoinTransaction), mais
+  // recente primeiro. `teamId` só serve pra resolver o lado contrário numa
+  // partida (opponentTeam) — o filtro de fato é por squadId.
+  async findCoinTransactions(
+    squadId: string,
+    teamId: string,
+  ): Promise<SquadCoinTransaction[]> {
+    const transactions = await this.txHost.tx.coinTransaction.findMany({
+      where: { squadId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        type: true,
+        amount: true,
+        createdAt: true,
+        transferId: true,
+        phase: { select: { id: true, name: true } },
+        match: {
+          select: {
+            id: true,
+            homeTeamId: true,
+            homeTeam: { select: { id: true, name: true, crestUrl: true } },
+            awayTeam: { select: { id: true, name: true, crestUrl: true } },
+          },
+        },
+      },
+    });
+
+    return transactions.map(({ match, ...transaction }) => ({
+      ...transaction,
+      match: match
+        ? {
+            id: match.id,
+            opponentTeam:
+              match.homeTeamId === teamId ? match.awayTeam : match.homeTeam,
+          }
+        : null,
+    }));
   }
 }
