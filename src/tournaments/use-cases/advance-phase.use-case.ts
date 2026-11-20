@@ -181,6 +181,7 @@ export class AdvancePhaseUseCase {
       if (!squadId) continue;
 
       await this.awardTournamentPrizeUseCase.execute({
+        seasonId,
         squadId,
         type: 'RANKING',
         targetAmount: rankingReward(standing.position, groupPositionAmounts),
@@ -208,6 +209,7 @@ export class AdvancePhaseUseCase {
       if (!squadId) continue;
 
       await this.awardTournamentPrizeUseCase.execute({
+        seasonId,
         squadId,
         type: 'PRIZE_PHASE',
         targetAmount: phaseAdvanceAmount,

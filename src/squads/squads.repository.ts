@@ -60,6 +60,15 @@ export class SquadsRepository {
     });
   }
 
+  async findUserIdById(squadId: string): Promise<string | null> {
+    const squad = await this.txHost.tx.squad.findUnique({
+      where: { id: squadId },
+      select: { userId: true },
+    });
+
+    return squad?.userId ?? null;
+  }
+
   async findAssignment(
     seasonId: string,
     playerId: string,

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
@@ -17,7 +18,9 @@ import { LeaguesModule } from './leagues/leagues.module';
 import { MatchesModule } from './matches/matches.module';
 import { MeModule } from './me/me.module';
 import { NationalitiesModule } from './nationalities/nationalities.module';
+import { NegotiationWindowModule } from './negotiation-window/negotiation-window.module';
 import { NegotiationsModule } from './negotiations/negotiations.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PlayersModule } from './players/players.module';
 import { PrismaModule, PrismaService } from './prisma';
 import { SeasonsModule } from './seasons/seasons.module';
@@ -32,6 +35,7 @@ import { UsersModule } from './users/users.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
+    EventEmitterModule.forRoot(),
     PrismaModule,
     ClsModule.forRoot({
       global: true,
@@ -56,12 +60,14 @@ import { UsersModule } from './users/users.module';
     MatchesModule,
     TransfersModule,
     NegotiationsModule,
+    NegotiationWindowModule,
     LeaguesModule,
     NationalitiesModule,
     ImportModule,
     StorageModule,
     MeModule,
     AuditModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -35,19 +35,12 @@ export class PlayersController {
     @Query(new ZodValidationPipe(ListPlayersSchema))
     query: ListPlayersRequestDTO,
   ) {
-    return this.facade.listForSeason(
-      request.seasonId,
-      request.user.id,
-      query,
-    );
+    return this.facade.listForSeason(request.seasonId, request.user.id, query);
   }
 
   @Get(':id')
   @UseGuards(SeasonContextGuard)
-  getOne(
-    @Req() request: RequiredSeasonScopedRequest,
-    @Param('id') id: string,
-  ) {
+  getOne(@Req() request: RequiredSeasonScopedRequest, @Param('id') id: string) {
     return this.facade.getOne(request.seasonId, request.user.id, id);
   }
 

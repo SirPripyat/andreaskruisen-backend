@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AUDIT_DISCREPANCY_FOUND_EVENT } from '../../notifications/events';
 import { SeasonAuditReport } from '../types';
 import { AuditDirectNegotiationsUseCase } from './audit-direct-negotiations.use-case';
 import { AuditSquadBalancesUseCase } from './audit-squad-balances.use-case';
@@ -12,6 +14,7 @@ export class RunSeasonAuditUseCase {
     private readonly auditTransfersUseCase: AuditTransfersUseCase,
     private readonly auditDirectNegotiationsUseCase: AuditDirectNegotiationsUseCase,
     private readonly auditTournamentPrizesUseCase: AuditTournamentPrizesUseCase,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(seasonId: string): Promise<SeasonAuditReport> {
@@ -23,6 +26,12 @@ export class RunSeasonAuditUseCase {
         this.auditTournamentPrizesUseCase.execute(seasonId),
       ])
     ).flat();
+
+    if (findings.length > 0)
+      this.eventEmitter.emit(AUDIT_DISCREPANCY_FOUND_EVENT, {
+        seasonId,
+        findingsCount: findings.length,
+      });
 
     return {
       seasonId,

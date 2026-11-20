@@ -39,6 +39,10 @@ export class UsersRepository {
     return this.txHost.tx.user.findUnique({ where: { id } });
   }
 
+  findAllByRole(role: UserRole): Promise<User[]> {
+    return this.txHost.tx.user.findMany({ where: { role } });
+  }
+
   async userExist(name: string): Promise<boolean> {
     return (await this.findByName(name)) !== null;
   }

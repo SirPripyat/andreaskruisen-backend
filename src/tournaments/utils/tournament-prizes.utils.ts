@@ -69,8 +69,9 @@ export const matchResultRewardByTeam = (
 // placar for corrigido depois de já ter premiado, isso só soma uma nova
 // transação do mesmo tipo com a diferença (o total dos lançamentos é que
 // precisa bater com o valor correto, não precisa ser 1 lançamento só — ver
-// CoinTransaction.directNegotiationId, que já não é único pelo mesmo
-// motivo). Retorna 0 (não lança nada) quando já está correto.
+// CoinTransaction.transferId, que pelo mesmo motivo também não é único
+// (uma negociação pode gerar mais de um lançamento pro mesmo Transfer).
+// Retorna 0 (não lança nada) quando já está correto.
 export const resolvePrizeDelta = (
   recordedTotal: number,
   targetAmount: number,

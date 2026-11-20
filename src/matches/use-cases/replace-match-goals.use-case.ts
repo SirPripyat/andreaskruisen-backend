@@ -162,6 +162,7 @@ export class ReplaceMatchGoalsUseCase {
       if (!squadId) continue;
 
       await this.awardTournamentPrizeUseCase.execute({
+        seasonId: match.seasonId,
         squadId,
         type: prize.type,
         targetAmount: prize.amount,
@@ -223,6 +224,7 @@ export class ReplaceMatchGoalsUseCase {
       if (!squadId) continue;
 
       await this.awardTournamentPrizeUseCase.execute({
+        seasonId: match.seasonId,
         squadId,
         type: 'RANKING',
         targetAmount: rankingReward(
@@ -241,6 +243,7 @@ export class ReplaceMatchGoalsUseCase {
     };
 
     await this.awardChampionAndRunnerUp(
+      match.seasonId,
       championInput,
       squadIdByTeamId,
       { phaseId: match.phaseId },
@@ -275,6 +278,7 @@ export class ReplaceMatchGoalsUseCase {
     };
 
     await this.awardChampionAndRunnerUp(
+      match.seasonId,
       championInput,
       squadIdByTeamId,
       { matchId: match.id },
@@ -283,6 +287,7 @@ export class ReplaceMatchGoalsUseCase {
   }
 
   private async awardChampionAndRunnerUp(
+    seasonId: string,
     championInput: Parameters<typeof determineChampionTeamId>[0],
     squadIdByTeamId: Map<string, string>,
     link: { matchId: string } | { phaseId: string },
@@ -296,6 +301,7 @@ export class ReplaceMatchGoalsUseCase {
       : undefined;
     if (championSquadId) {
       await this.awardTournamentPrizeUseCase.execute({
+        seasonId,
         squadId: championSquadId,
         type: 'CHAMPION',
         targetAmount: prizes.champion,
@@ -308,6 +314,7 @@ export class ReplaceMatchGoalsUseCase {
       : undefined;
     if (runnerUpSquadId) {
       await this.awardTournamentPrizeUseCase.execute({
+        seasonId,
         squadId: runnerUpSquadId,
         type: 'RUNNER_UP',
         targetAmount: prizes.runnerUp,

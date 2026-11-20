@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { SEASON_STARTED_EVENT } from '../notifications/events';
 import {
   CreateSeasonRequestDTO,
   FindSeasonResponseDTO,
@@ -29,10 +31,18 @@ export class SeasonsFacade {
     private readonly updateSeasonUseCase: UpdateSeasonUseCase,
     private readonly removeSeasonUseCase: RemoveSeasonUseCase,
     private readonly selectActiveSeasonUseCase: SelectActiveSeasonUseCase,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  start(dto: CreateSeasonRequestDTO): Promise<StartSeasonResponseDTO> {
-    return this.startSeasonUseCase.execute(dto);
+  async start(dto: CreateSeasonRequestDTO): Promise<StartSeasonResponseDTO> {
+    const season = await this.startSeasonUseCase.execute(dto);
+
+    this.eventEmitter.emit(SEASON_STARTED_EVENT, {
+      seasonId: season.id,
+      seasonName: season.name,
+    });
+
+    return season;
   }
 
   findAll(): Promise<ListSeasonsResponseDTO> {

@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { ClsService } from 'nestjs-cls';
+import { queuePendingTournamentPrizeEvent } from '../../notifications/events';
 import { TournamentsRepository } from '../tournaments.repository';
 import { TournamentPrizeType } from '../types';
 import { resolvePrizeDelta } from '../utils';
 
 export type AwardTournamentPrizeInput = {
+  seasonId: string;
   squadId: string;
   type: TournamentPrizeType;
   targetAmount: number;
@@ -19,7 +22,10 @@ export type AwardTournamentPrizeInput = {
 // mudou; lança só a diferença se mudou).
 @Injectable()
 export class AwardTournamentPrizeUseCase {
-  constructor(private readonly tournamentsRepository: TournamentsRepository) {}
+  constructor(
+    private readonly tournamentsRepository: TournamentsRepository,
+    private readonly cls: ClsService,
+  ) {}
 
   async execute(input: AwardTournamentPrizeInput): Promise<void> {
     const recordedTotal =
@@ -34,6 +40,15 @@ export class AwardTournamentPrizeUseCase {
     if (delta === 0) return;
 
     await this.tournamentsRepository.createPrizeTransaction({
+      squadId: input.squadId,
+      type: input.type,
+      amount: delta,
+      matchId: input.matchId,
+      phaseId: input.phaseId,
+    });
+
+    queuePendingTournamentPrizeEvent(this.cls, {
+      seasonId: input.seasonId,
       squadId: input.squadId,
       type: input.type,
       amount: delta,
