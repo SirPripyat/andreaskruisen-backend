@@ -6,9 +6,7 @@ const buildUseCase = (count = 3) => {
     markAllReadForUser: jest.fn().mockResolvedValue({ count }),
   } as unknown as NotificationsRepository;
 
-  const useCase = new MarkAllNotificationsReadUseCase(
-    notificationsRepository,
-  );
+  const useCase = new MarkAllNotificationsReadUseCase(notificationsRepository);
 
   return { useCase, notificationsRepository };
 };
