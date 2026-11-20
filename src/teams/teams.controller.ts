@@ -8,7 +8,9 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { AdminGuard } from '../auth/admin.guard';
+import { UserRole } from '../../generated/prisma/client';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import {
@@ -29,7 +31,6 @@ export class TeamsController {
   constructor(private readonly facade: TeamsFacade) {}
 
   @Get()
-  @UseGuards(AdminGuard)
   async list(
     @Query(new ZodValidationPipe(ListTeamsSchema)) query: ListTeamsRequestDTO,
   ) {
@@ -51,7 +52,8 @@ export class TeamsController {
   }
 
   @Patch(':id')
-  @UseGuards(AdminGuard, SeasonContextGuard)
+  @Roles(UserRole.ADMIN)
+  @UseGuards(RolesGuard, SeasonContextGuard)
   async update(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(UpdateTeamSchema)) dto: UpdateTeamRequestDTO,

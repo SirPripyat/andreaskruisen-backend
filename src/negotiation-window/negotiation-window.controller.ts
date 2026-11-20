@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
-import { AdminGuard } from '../auth/admin.guard';
+import { UserRole } from '../../generated/prisma/client';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import {
@@ -38,7 +40,8 @@ export class NegotiationWindowController {
   }
 
   @Post('open')
-  @UseGuards(AdminGuard)
+  @Roles(UserRole.ADMIN)
+  @UseGuards(RolesGuard)
   open(
     @Req() request: RequiredSeasonScopedRequest,
     @Body(new ZodValidationPipe(OpenNegotiationWindowSchema))
@@ -48,7 +51,8 @@ export class NegotiationWindowController {
   }
 
   @Post('close')
-  @UseGuards(AdminGuard)
+  @Roles(UserRole.ADMIN)
+  @UseGuards(RolesGuard)
   close(
     @Req() request: RequiredSeasonScopedRequest,
   ): Promise<NegotiationWindowResponseDTO> {

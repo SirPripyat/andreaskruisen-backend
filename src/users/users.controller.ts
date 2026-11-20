@@ -10,7 +10,9 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { AdminGuard } from '../auth/admin.guard';
+import { UserRole } from '../../generated/prisma/client';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 import {
   AuthenticatedRequest,
   SessionAuthGuard,
@@ -31,7 +33,8 @@ export class UsersController {
   }
 
   @Post()
-  @UseGuards(SessionAuthGuard, AdminGuard)
+  @Roles(UserRole.ADMIN)
+  @UseGuards(SessionAuthGuard, RolesGuard)
   @HttpCode(HttpStatus.CREATED)
   create(
     @Body(new ZodValidationPipe(CreateUserSchema)) dto: CreateUser,
@@ -40,7 +43,8 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @UseGuards(SessionAuthGuard, AdminGuard)
+  @Roles(UserRole.ADMIN)
+  @UseGuards(SessionAuthGuard, RolesGuard)
   remove(
     @Param('id') id: string,
     @Req() request: AuthenticatedRequest,

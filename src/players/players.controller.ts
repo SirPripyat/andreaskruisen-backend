@@ -1,5 +1,7 @@
 import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
-import { AdminGuard } from '../auth/admin.guard';
+import { UserRole } from '../../generated/prisma/client';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import {
@@ -20,7 +22,8 @@ export class PlayersController {
   constructor(private readonly facade: PlayersFacade) {}
 
   @Get()
-  @UseGuards(AdminGuard)
+  @Roles(UserRole.ADMIN)
+  @UseGuards(RolesGuard)
   list(
     @Query(new ZodValidationPipe(ListPlayersSchema))
     query: ListPlayersRequestDTO,

@@ -1,10 +1,13 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
-import { AdminGuard } from '../auth/admin.guard';
+import { UserRole } from '../../generated/prisma/client';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { RunSeasonAuditUseCase } from './use-cases';
 
 @Controller('seasons/:seasonId/audit')
-@UseGuards(SessionAuthGuard, AdminGuard)
+@Roles(UserRole.ADMIN)
+@UseGuards(SessionAuthGuard, RolesGuard)
 export class AuditController {
   constructor(private readonly runSeasonAuditUseCase: RunSeasonAuditUseCase) {}
 

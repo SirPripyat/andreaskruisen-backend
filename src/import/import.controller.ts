@@ -11,7 +11,9 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AdminGuard } from '../auth/admin.guard';
+import { UserRole } from '../../generated/prisma/client';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ZodValidationPipe } from '../commons/pipes/zod-validation.pipe';
 import { MAX_IMPORT_FILE_SIZE } from './constants';
@@ -25,7 +27,8 @@ const requiredJsonFilePipe = new ParseFilePipe({
 });
 
 @Controller('import')
-@UseGuards(SessionAuthGuard, AdminGuard)
+@Roles(UserRole.ADMIN)
+@UseGuards(SessionAuthGuard, RolesGuard)
 export class ImportController {
   constructor(private readonly facade: ImportFacade) {}
 
