@@ -17,6 +17,7 @@ import {
 export type MatchForGoals = {
   id: string;
   tournamentId: string;
+  tournamentFinishedAt: Date | null;
   seasonId: string;
   tournamentFormat: TournamentFormat;
   phaseId: string;
@@ -47,6 +48,7 @@ export type GoalWithPlayers = {
 export type MatchDetail = {
   id: string;
   tournamentId: string;
+  tournamentFinishedAt: Date | null;
   seasonId: string;
   phaseOrder: number;
   phaseType: PhaseType;

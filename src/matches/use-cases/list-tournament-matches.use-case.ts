@@ -32,10 +32,11 @@ export class ListTournamentMatchesUseCase {
       );
     }
 
-    const [result, locked] = await Promise.all([
+    const [result, hasLaterPhase] = await Promise.all([
       this.matchesRepository.findPaginatedMatches(phase.id, query),
       this.tournamentsRepository.hasLaterPhase(tournamentId, phase.order),
     ]);
+    const locked = hasLaterPhase || tournament.finishedAt !== null;
 
     const ownerByTeamId = await this.tournamentsRepository.findOwnersByTeamIds(
       [...new Set(result.data.flatMap((m) => [m.homeTeam.id, m.awayTeam.id]))],

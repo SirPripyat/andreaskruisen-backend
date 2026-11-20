@@ -22,6 +22,8 @@ export type TournamentSummary = {
   format: TournamentFormat;
   maxTeams: number;
   createdAt: Date;
+  // null = em andamento; setado só via FinishTournamentUseCase.
+  finishedAt: Date | null;
   // Fase em que o torneio está agora (a de maior order). Fases seguintes só
   // existem depois que a atual termina — ver geração por fase na criação.
   currentPhase: PhaseSummary | null;

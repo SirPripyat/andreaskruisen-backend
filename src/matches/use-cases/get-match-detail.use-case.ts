@@ -21,10 +21,11 @@ export class GetMatchDetailUseCase {
       [match.homeTeam.id, match.awayTeam.id],
     );
 
-    const locked = await this.tournamentsRepository.hasLaterPhase(
+    const hasLaterPhase = await this.tournamentsRepository.hasLaterPhase(
       match.tournamentId,
       match.phaseOrder,
     );
+    const locked = hasLaterPhase || match.tournamentFinishedAt !== null;
 
     const homeTeam = {
       ...match.homeTeam,

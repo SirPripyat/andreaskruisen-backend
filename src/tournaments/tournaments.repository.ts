@@ -54,6 +54,13 @@ export class TournamentsRepository {
     return this.txHost.tx.tournament.delete({ where: { id } });
   }
 
+  finish(id: string): Promise<Tournament> {
+    return this.txHost.tx.tournament.update({
+      where: { id },
+      data: { finishedAt: new Date() },
+    });
+  }
+
   findBySeason(seasonId: string): Promise<Tournament[]> {
     return this.txHost.tx.tournament.findMany({
       where: { seasonId },

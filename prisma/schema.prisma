@@ -642,15 +642,20 @@ enum TournamentFormat {
 // TournamentTeam). Nem todo time do torneio tem dono: times sem Squad
 // correspondente na mesma temporada são "máquinas" (CPU).
 model Tournament {
-  id        String           @id @default(uuid()) @db.Uuid
-  seasonId  String           @db.Uuid
-  season    Season           @relation(fields: [seasonId], references: [id])
-  name      String
-  format    TournamentFormat
+  id         String           @id @default(uuid()) @db.Uuid
+  seasonId   String           @db.Uuid
+  season     Season           @relation(fields: [seasonId], references: [id])
+  name       String
+  format     TournamentFormat
   // Limite de times no torneio, validado contra as faixas do formato
   // (ver TEAM_COUNT_RULES em tournament-format-rules.ts).
-  maxTeams  Int
-  createdAt DateTime         @default(now())
+  maxTeams   Int
+  createdAt  DateTime         @default(now())
+  // Encerramento explícito (ver FinishTournamentUseCase): null = em
+  // andamento. Travado só quando setado — sem isso, a final de um mata-mata
+  // podia ter o placar reeditado pra sempre (nunca existe fase seguinte que
+  // a trave via hasLaterPhase).
+  finishedAt DateTime?
 
   teams  TournamentTeam[]
   phases Phase[]

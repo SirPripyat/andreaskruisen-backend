@@ -8,6 +8,7 @@ import {
 import {
   CreateTournamentRequestDTO,
   CreateTournamentResponseDTO,
+  FinishTournamentResponseDTO,
   GetSituationRequestDTO,
   GetTopAssistsResponseDTO,
   GetTopScorersResponseDTO,
@@ -23,6 +24,7 @@ import {
 import {
   AdvancePhaseUseCase,
   CreateTournamentUseCase,
+  FinishTournamentUseCase,
   GetTopAssistsUseCase,
   GetTopScorersUseCase,
   GetTournamentDashboardUseCase,
@@ -49,6 +51,7 @@ export class TournamentsFacade {
     private readonly getTournamentDashboardUseCase: GetTournamentDashboardUseCase,
     private readonly updateTournamentUseCase: UpdateTournamentUseCase,
     private readonly removeTournamentUseCase: RemoveTournamentUseCase,
+    private readonly finishTournamentUseCase: FinishTournamentUseCase,
     private readonly listMyTournamentsUseCase: ListMyTournamentsUseCase,
     private readonly eventEmitter: EventEmitter2,
     private readonly cls: ClsService,
@@ -115,5 +118,9 @@ export class TournamentsFacade {
 
   remove(id: string): Promise<void> {
     return this.removeTournamentUseCase.execute(id);
+  }
+
+  finish(id: string): Promise<FinishTournamentResponseDTO> {
+    return this.finishTournamentUseCase.execute(id);
   }
 }

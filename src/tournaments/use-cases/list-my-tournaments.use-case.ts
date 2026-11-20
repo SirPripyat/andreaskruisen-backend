@@ -68,6 +68,7 @@ export class ListMyTournamentsUseCase {
       format: tournament.format,
       maxTeams: tournament.maxTeams,
       createdAt: tournament.createdAt,
+      finishedAt: tournament.finishedAt,
       currentPhase,
       myStanding,
       nextMatch,

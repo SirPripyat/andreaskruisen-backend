@@ -83,6 +83,13 @@ export class TournamentsController {
     return this.facade.advancePhase(id, phaseId);
   }
 
+  @Post(':id/finish')
+  @Roles(UserRole.ADMIN)
+  @UseGuards(SessionAuthGuard, RolesGuard)
+  finish(@Param('id') id: string) {
+    return this.facade.finish(id);
+  }
+
   @Get(':id/top-scorers')
   getTopScorers(@Param('id') id: string) {
     return this.facade.getTopScorers(id);

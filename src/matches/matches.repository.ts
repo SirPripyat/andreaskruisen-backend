@@ -64,7 +64,9 @@ export class MatchesRepository {
             tournamentId: true,
             order: true,
             type: true,
-            tournament: { select: { seasonId: true, format: true } },
+            tournament: {
+              select: { seasonId: true, format: true, finishedAt: true },
+            },
           },
         },
       },
@@ -74,6 +76,7 @@ export class MatchesRepository {
       ? {
           id: match.id,
           tournamentId: match.phase.tournamentId,
+          tournamentFinishedAt: match.phase.tournament.finishedAt,
           seasonId: match.phase.tournament.seasonId,
           tournamentFormat: match.phase.tournament.format,
           phaseId: match.phaseId,
@@ -102,7 +105,7 @@ export class MatchesRepository {
             tournamentId: true,
             order: true,
             type: true,
-            tournament: { select: { seasonId: true } },
+            tournament: { select: { seasonId: true, finishedAt: true } },
           },
         },
         homeTeam: { select: { id: true, name: true, crestUrl: true } },
@@ -125,6 +128,7 @@ export class MatchesRepository {
     return {
       id: match.id,
       tournamentId: match.phase.tournamentId,
+      tournamentFinishedAt: match.phase.tournament.finishedAt,
       seasonId: match.phase.tournament.seasonId,
       phaseOrder: match.phase.order,
       phaseType: match.phase.type,
