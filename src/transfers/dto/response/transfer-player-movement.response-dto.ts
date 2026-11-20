@@ -1,4 +1,4 @@
-import { User } from '../../../../generated/prisma/client';
+import { TransferOriginType, User } from '../../../../generated/prisma/client';
 import {
   TransferPlayerSummaryResponseDTO,
   TransferTeamSummaryResponseDTO,
@@ -12,4 +12,5 @@ export type TransferPlayerMovementResponseDTO = {
   requestedBy: Pick<User, 'id' | 'name'>;
   date: Date;
   cost: number;
+  originType: TransferOriginType;
 };

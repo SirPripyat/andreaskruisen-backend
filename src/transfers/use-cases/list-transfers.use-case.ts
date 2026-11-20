@@ -37,6 +37,7 @@ export class ListTransfersUseCase {
         requestedBy: transfer.requestedBy,
         date: transfer.createdAt,
         cost: transfer.cost,
+        originType: transfer.originType,
       });
     }
 
@@ -49,6 +50,7 @@ export class ListTransfersUseCase {
         requestedBy: transfer.requestedBy,
         date: transfer.createdAt,
         cost: transfer.cost,
+        originType: transfer.originType,
       });
     }
 
