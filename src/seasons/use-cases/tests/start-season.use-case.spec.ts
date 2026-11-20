@@ -27,6 +27,7 @@ const dto = {
 const buildUseCase = () => {
   const seasonsRepository = {
     create: jest.fn().mockResolvedValue({ id: 'season-1' } as Season),
+    setActive: jest.fn().mockResolvedValue({ id: 'season-1' } as Season),
     seedPlayerAssignmentsFromRealTeams: jest.fn().mockResolvedValue(0),
     createSquads: jest.fn().mockResolvedValue(undefined),
   } as unknown as SeasonsRepository;
