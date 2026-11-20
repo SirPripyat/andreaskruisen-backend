@@ -1,3 +1,4 @@
+export * from './award-match-prizes.use-case';
 export * from './get-match-detail.use-case';
 export * from './list-tournament-matches.use-case';
 export * from './replace-match-goals.use-case';

@@ -15,6 +15,7 @@ import {
 } from '../types';
 import { simulateMatch } from '../utils';
 import { simulatePenaltyShootout } from '../utils/simulate-penalties.utils';
+import { AwardMatchPrizesUseCase } from './award-match-prizes.use-case';
 import { GetMatchDetailUseCase } from './get-match-detail.use-case';
 
 @Injectable()
@@ -22,6 +23,7 @@ export class SimulateMatchUseCase {
   constructor(
     private readonly matchesRepository: MatchesRepository,
     private readonly getMatchDetailUseCase: GetMatchDetailUseCase,
+    private readonly awardMatchPrizesUseCase: AwardMatchPrizesUseCase,
   ) {}
 
   @Transactional()
@@ -69,6 +71,13 @@ export class SimulateMatchUseCase {
           teamId: match.awayTeamId,
         })),
       ],
+      penalties,
+    );
+
+    await this.awardMatchPrizesUseCase.execute(
+      match,
+      result.homeGoals.length,
+      result.awayGoals.length,
       penalties,
     );
 

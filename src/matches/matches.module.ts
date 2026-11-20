@@ -6,6 +6,7 @@ import { MatchesController } from './matches.controller';
 import { MatchesFacade } from './matches.facade';
 import { MatchesRepository } from './matches.repository';
 import {
+  AwardMatchPrizesUseCase,
   GetMatchDetailUseCase,
   ListTournamentMatchesUseCase,
   ReplaceMatchGoalsUseCase,
@@ -20,6 +21,7 @@ import {
     MatchesFacade,
     GetMatchDetailUseCase,
     ListTournamentMatchesUseCase,
+    AwardMatchPrizesUseCase,
     ReplaceMatchGoalsUseCase,
     SimulateMatchUseCase,
   ],
