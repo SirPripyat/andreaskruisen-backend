@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { RulesetsModule } from '../rulesets/rulesets.module';
-import { SeasonContextGuard } from './season-context.guard';
+import {
+  OptionalSeasonContextGuard,
+  SeasonContextGuard,
+} from './season-context.guard';
 import { SeasonsController } from './seasons.controller';
 import { SeasonsFacade } from './seasons.facade';
 import { SeasonsRepository } from './seasons.repository';
@@ -25,6 +28,7 @@ import {
     SeasonsRepository,
     SeasonsFacade,
     SeasonContextGuard,
+    OptionalSeasonContextGuard,
     FindSeasonOrThrowUseCase,
     StartSeasonEconomyUseCase,
     StartSeasonUseCase,
@@ -36,6 +40,11 @@ import {
     SelectActiveSeasonUseCase,
     GetEffectiveSeasonIdUseCase,
   ],
-  exports: [SeasonsRepository, SeasonContextGuard, GetEffectiveSeasonIdUseCase],
+  exports: [
+    SeasonsRepository,
+    SeasonContextGuard,
+    OptionalSeasonContextGuard,
+    GetEffectiveSeasonIdUseCase,
+  ],
 })
 export class SeasonsModule {}

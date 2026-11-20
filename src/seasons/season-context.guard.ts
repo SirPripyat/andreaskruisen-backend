@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuthenticatedRequest } from '../auth/session-auth.guard';
 import { GetEffectiveSeasonIdUseCase } from './use-cases';
 
@@ -15,8 +20,10 @@ export type RequiredSeasonScopedRequest = AuthenticatedRequest & {
   seasonId: string;
 };
 
+// Tolera seasonId null: só o /me usa, pra poder mandar o front-end pra tela
+// de seleção de temporada em vez de dar erro.
 @Injectable()
-export class SeasonContextGuard implements CanActivate {
+export class OptionalSeasonContextGuard implements CanActivate {
   constructor(
     private readonly getEffectiveSeasonIdUseCase: GetEffectiveSeasonIdUseCase,
   ) {}
@@ -26,6 +33,32 @@ export class SeasonContextGuard implements CanActivate {
     request.seasonId = await this.getEffectiveSeasonIdUseCase.execute(
       request.user,
     );
+    return true;
+  }
+}
+
+// Exige seasonId resolvido: usado por todo o resto (squads, transfers,
+// tournaments, notifications, players, teams, favorites, negotiations...).
+// Rejeita a requisição em vez de deixar passar com seasonId null, porque o
+// contrato "front-end só chama depois de ver seasonId em /me" não é
+// garantido em runtime.
+@Injectable()
+export class SeasonContextGuard implements CanActivate {
+  constructor(
+    private readonly getEffectiveSeasonIdUseCase: GetEffectiveSeasonIdUseCase,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context
+      .switchToHttp()
+      .getRequest<RequiredSeasonScopedRequest>();
+    const seasonId = await this.getEffectiveSeasonIdUseCase.execute(
+      request.user,
+    );
+
+    if (!seasonId) throw new NotFoundException('Temporada não encontrada');
+
+    request.seasonId = seasonId;
     return true;
   }
 }

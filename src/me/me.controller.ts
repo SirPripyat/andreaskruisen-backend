@@ -13,7 +13,7 @@ import {
 } from 'src/auth/session-auth.guard';
 import { ZodValidationPipe } from 'src/commons/pipes/zod-validation.pipe';
 import {
-  SeasonContextGuard,
+  OptionalSeasonContextGuard,
   SeasonScopedRequest,
 } from 'src/seasons/season-context.guard';
 import {
@@ -38,7 +38,7 @@ export class MeController {
   constructor(private readonly facade: MeFacade) {}
 
   @Get()
-  @UseGuards(SeasonContextGuard)
+  @UseGuards(OptionalSeasonContextGuard)
   getMe(@Req() request: SeasonScopedRequest): Promise<GetMeResponseDTO> {
     return this.facade.getMe(request.user, request.seasonId);
   }
