@@ -46,42 +46,56 @@ export class SeasonsRepository {
     return this.txHost.tx.season.update({ where: { id }, data });
   }
 
+  // Apaga em cascata tudo que está vinculado à temporada, na ordem que a
+  // FK exige (quem referencia primeiro, quem é referenciado depois) — ver
+  // mapa de dependências no schema.prisma. Postgres é RESTRICT por padrão
+  // em todas essas relações, então a ordem errada vira P2003.
   async delete(id: string): Promise<Season> {
     await this.txHost.tx.goal.deleteMany({
       where: { match: { phase: { tournament: { seasonId: id } } } },
     });
+    await this.txHost.tx.coinTransaction.deleteMany({
+      where: {
+        OR: [
+          { squad: { seasonId: id } },
+          { transfer: { seasonId: id } },
+          { match: { phase: { tournament: { seasonId: id } } } },
+          { phase: { tournament: { seasonId: id } } },
+        ],
+      },
+    });
+    await this.txHost.tx.couponTransaction.deleteMany({
+      where: {
+        OR: [{ squad: { seasonId: id } }, { transfer: { seasonId: id } }],
+      },
+    });
+    await this.txHost.tx.directNegotiationClause.deleteMany({
+      where: { negotiation: { seasonId: id } },
+    });
+    await this.txHost.tx.transfer.deleteMany({ where: { seasonId: id } });
+    await this.txHost.tx.directNegotiation.deleteMany({
+      where: { seasonId: id },
+    });
     await this.txHost.tx.match.deleteMany({
       where: { phase: { tournament: { seasonId: id } } },
-    });
-    await this.txHost.tx.phase.deleteMany({
-      where: { tournament: { seasonId: id } },
     });
     await this.txHost.tx.tournamentTeam.deleteMany({
       where: { tournament: { seasonId: id } },
     });
+    await this.txHost.tx.phase.deleteMany({
+      where: { tournament: { seasonId: id } },
+    });
     await this.txHost.tx.tournament.deleteMany({ where: { seasonId: id } });
-    await this.txHost.tx.directNegotiationClause.deleteMany({
-      where: { negotiation: { seasonId: id } },
-    });
-    await this.txHost.tx.couponTransaction.deleteMany({
-      where: { squad: { seasonId: id } },
-    });
-    await this.txHost.tx.coinTransaction.deleteMany({
-      where: { squad: { seasonId: id } },
-    });
-    await this.txHost.tx.directNegotiation.deleteMany({
-      where: { seasonId: id },
-    });
-    await this.txHost.tx.transfer.deleteMany({ where: { seasonId: id } });
-    await this.txHost.tx.favoritePlayer.deleteMany({ where: { seasonId: id } });
-    await this.txHost.tx.ruleset.deleteMany({ where: { seasonId: id } });
-    await this.txHost.tx.negotiationWindow.deleteMany({
-      where: { seasonId: id },
-    });
-    await this.txHost.tx.squad.deleteMany({ where: { seasonId: id } });
     await this.txHost.tx.playerTeamAssignment.deleteMany({
       where: { seasonId: id },
     });
+    await this.txHost.tx.favoritePlayer.deleteMany({ where: { seasonId: id } });
+    await this.txHost.tx.squad.deleteMany({ where: { seasonId: id } });
+    await this.txHost.tx.negotiationWindow.deleteMany({
+      where: { seasonId: id },
+    });
+    await this.txHost.tx.notification.deleteMany({ where: { seasonId: id } });
+    await this.txHost.tx.ruleset.deleteMany({ where: { seasonId: id } });
 
     return this.txHost.tx.season.delete({ where: { id } });
   }

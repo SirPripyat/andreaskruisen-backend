@@ -6,9 +6,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Squad } from '../../../generated/prisma/client';
+import { GetOpenNegotiationWindowUseCase } from '../../negotiation-window/use-cases';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
 import { SquadsRepository } from '../../squads/squads.repository';
-import { HasActiveTournamentUseCase } from '../../tournaments/use-cases';
 import {
   NegotiationClauseInputDTO,
   ProposeNegotiationRequestDTO,
@@ -23,7 +23,7 @@ export class ProposeNegotiationUseCase {
     private readonly negotiationsRepository: NegotiationsRepository,
     private readonly seasonsRepository: SeasonsRepository,
     private readonly squadsRepository: SquadsRepository,
-    private readonly hasActiveTournamentUseCase: HasActiveTournamentUseCase,
+    private readonly getOpenNegotiationWindowUseCase: GetOpenNegotiationWindowUseCase,
   ) {}
 
   async execute(
@@ -32,7 +32,7 @@ export class ProposeNegotiationUseCase {
     dto: ProposeNegotiationRequestDTO,
   ): Promise<NegotiationResponseDTO> {
     await this.ensureSeasonExists(seasonId);
-    await this.ensureNoActiveTournament(seasonId);
+    await this.ensureNegotiationWindowOpen(seasonId);
 
     const proposingSquad = await this.getSquadOrThrow(userId, seasonId);
     const targetSquad = await this.squadsRepository.findByTeamAndSeason(
@@ -112,15 +112,13 @@ export class ProposeNegotiationUseCase {
     if (!season) throw new NotFoundException('Temporada não encontrada');
   }
 
-  private async ensureNoActiveTournament(seasonId: string): Promise<void> {
-    const hasActiveTournament =
-      await this.hasActiveTournamentUseCase.execute(seasonId);
+  private async ensureNegotiationWindowOpen(seasonId: string): Promise<void> {
+    const window = await this.getOpenNegotiationWindowUseCase.execute(seasonId);
 
-    if (!hasActiveTournament) return;
-
-    throw new ConflictException(
-      'Negociações só são permitidas quando não há torneio em andamento nessa temporada',
-    );
+    if (!window)
+      throw new ConflictException(
+        'Negociações só são permitidas com a janela de negociação aberta',
+      );
   }
 
   private async getSquadOrThrow(

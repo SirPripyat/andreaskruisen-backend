@@ -11,7 +11,6 @@ import { GetOpenNegotiationWindowUseCase } from '../../negotiation-window/use-ca
 import { GetActiveRulesetUseCase } from '../../rulesets/use-cases';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
 import { SquadsRepository } from '../../squads/squads.repository';
-import { HasActiveTournamentUseCase } from '../../tournaments/use-cases';
 import { CreateTransferRequestDTO } from '../dto';
 import { TransfersRepository } from '../transfers.repository';
 import { TransferAssignment } from '../types';
@@ -38,7 +37,6 @@ export class ResolveTransferUseCase {
     private readonly transfersRepository: TransfersRepository,
     private readonly seasonsRepository: SeasonsRepository,
     private readonly squadsRepository: SquadsRepository,
-    private readonly hasActiveTournamentUseCase: HasActiveTournamentUseCase,
     private readonly getActiveRulesetUseCase: GetActiveRulesetUseCase,
     private readonly getOpenNegotiationWindowUseCase: GetOpenNegotiationWindowUseCase,
   ) {}
@@ -49,7 +47,6 @@ export class ResolveTransferUseCase {
     dto: CreateTransferRequestDTO,
   ): Promise<ResolvedTransfer> {
     await this.ensureSeasonExists(seasonId);
-    await this.ensureNoActiveTournament(seasonId);
     const feeEnabled = await this.ensureNegotiationWindowOpen(seasonId);
 
     const outgoing = await this.getOutgoingAssignmentOrThrow(
@@ -105,17 +102,6 @@ export class ResolveTransferUseCase {
     const season = await this.seasonsRepository.findById(seasonId);
 
     if (!season) throw new NotFoundException('Temporada não encontrada');
-  }
-
-  private async ensureNoActiveTournament(seasonId: string): Promise<void> {
-    const hasActiveTournament =
-      await this.hasActiveTournamentUseCase.execute(seasonId);
-
-    if (!hasActiveTournament) return;
-
-    throw new ConflictException(
-      'Transferências só são permitidas quando não há torneio em andamento nessa temporada',
-    );
   }
 
   private async ensureNegotiationWindowOpen(

@@ -4,7 +4,6 @@ import { NegotiationWindowModule } from '../negotiation-window/negotiation-windo
 import { RulesetsModule } from '../rulesets/rulesets.module';
 import { SeasonsModule } from '../seasons/seasons.module';
 import { SquadsModule } from '../squads/squads.module';
-import { TournamentsModule } from '../tournaments/tournaments.module';
 import { TransfersModule } from '../transfers/transfers.module';
 import { NegotiationsController } from './negotiations.controller';
 import { NegotiationsFacade } from './negotiations.facade';
@@ -21,7 +20,6 @@ import {
     AuthModule,
     SeasonsModule,
     SquadsModule,
-    TournamentsModule,
     RulesetsModule,
     NegotiationWindowModule,
     // Negociação aceita grava o Transfer gerado via TransfersRepository.record

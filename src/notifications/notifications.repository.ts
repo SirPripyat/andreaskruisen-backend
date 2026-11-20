@@ -83,4 +83,14 @@ export class NotificationsRepository {
       select: NOTIFICATION_SELECT,
     });
   }
+
+  markAllReadForUser(
+    seasonId: string,
+    userId: string,
+  ): Promise<{ count: number }> {
+    return this.txHost.tx.notification.updateMany({
+      where: { seasonId, userId, readAt: null },
+      data: { readAt: new Date() },
+    });
+  }
 }

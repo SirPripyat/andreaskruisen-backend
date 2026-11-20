@@ -4,7 +4,6 @@ import { NegotiationWindowModule } from '../negotiation-window/negotiation-windo
 import { RulesetsModule } from '../rulesets/rulesets.module';
 import { SeasonsModule } from '../seasons/seasons.module';
 import { SquadsModule } from '../squads/squads.module';
-import { TournamentsModule } from '../tournaments/tournaments.module';
 import { UsersModule } from '../users/users.module';
 import { TransfersController } from './transfers.controller';
 import { TransfersFacade } from './transfers.facade';
@@ -21,7 +20,6 @@ import {
     AuthModule,
     SeasonsModule,
     SquadsModule,
-    TournamentsModule,
     RulesetsModule,
     NegotiationWindowModule,
     UsersModule,

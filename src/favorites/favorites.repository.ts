@@ -45,7 +45,13 @@ export class FavoritesRepository {
       where: { userId, seasonId },
       orderBy: { createdAt: 'desc' },
       include: {
-        player: { include: { team: true, nationality: true } },
+        player: {
+          include: {
+            team: true,
+            nationality: true,
+            positions: { select: { position: true, isPrimary: true } },
+          },
+        },
       },
     });
 
@@ -64,6 +70,10 @@ export class FavoritesRepository {
         name: favorite.player.nationality.name,
         flagUrl: favorite.player.nationality.flagUrl,
       },
+      positions: favorite.player.positions.map((position) => ({
+        position: position.position,
+        isPrimary: position.isPrimary,
+      })),
       latestOverallRating: favorite.player.latestOverallRating,
       favoritedAt: favorite.createdAt,
     }));

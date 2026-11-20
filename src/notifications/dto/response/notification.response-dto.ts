@@ -8,3 +8,7 @@ export type NotificationResponseDTO = Pick<
 
 export type ListNotificationsResponseDTO =
   PaginatedResult<NotificationResponseDTO>;
+
+export type MarkAllNotificationsReadResponseDTO = {
+  count: number;
+};

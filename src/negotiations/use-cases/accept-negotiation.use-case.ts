@@ -10,7 +10,6 @@ import { GetOpenNegotiationWindowUseCase } from '../../negotiation-window/use-ca
 import { GetActiveRulesetUseCase } from '../../rulesets/use-cases';
 import { SeasonsRepository } from '../../seasons/seasons.repository';
 import { SquadsRepository } from '../../squads/squads.repository';
-import { HasActiveTournamentUseCase } from '../../tournaments/use-cases';
 import { TransfersRepository } from '../../transfers/transfers.repository';
 import { NegotiationResponseDTO } from '../dto/response';
 import { NegotiationsRepository } from '../negotiations.repository';
@@ -29,7 +28,6 @@ export class AcceptNegotiationUseCase {
     private readonly transfersRepository: TransfersRepository,
     private readonly seasonsRepository: SeasonsRepository,
     private readonly squadsRepository: SquadsRepository,
-    private readonly hasActiveTournamentUseCase: HasActiveTournamentUseCase,
     private readonly getActiveRulesetUseCase: GetActiveRulesetUseCase,
     private readonly getOpenNegotiationWindowUseCase: GetOpenNegotiationWindowUseCase,
   ) {}
@@ -41,7 +39,6 @@ export class AcceptNegotiationUseCase {
     negotiationId: string,
   ): Promise<NegotiationResponseDTO> {
     await this.ensureSeasonExists(seasonId);
-    await this.ensureNoActiveTournament(seasonId);
     const feeEnabled = await this.ensureNegotiationWindowOpen(seasonId);
 
     const negotiation =
@@ -214,17 +211,6 @@ export class AcceptNegotiationUseCase {
     const season = await this.seasonsRepository.findById(seasonId);
 
     if (!season) throw new NotFoundException('Temporada não encontrada');
-  }
-
-  private async ensureNoActiveTournament(seasonId: string): Promise<void> {
-    const hasActiveTournament =
-      await this.hasActiveTournamentUseCase.execute(seasonId);
-
-    if (!hasActiveTournament) return;
-
-    throw new ConflictException(
-      'Negociações só são permitidas quando não há torneio em andamento nessa temporada',
-    );
   }
 
   private async ensureNegotiationWindowOpen(

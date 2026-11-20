@@ -3,7 +3,6 @@ import { RulesetPayload } from '../../../rulesets/schemas/ruleset-payload.schema
 import { GetActiveRulesetUseCase } from '../../../rulesets/use-cases';
 import { SeasonsRepository } from '../../../seasons/seasons.repository';
 import { SquadsRepository } from '../../../squads/squads.repository';
-import { HasActiveTournamentUseCase } from '../../../tournaments/use-cases';
 import { TransfersRepository } from '../../../transfers/transfers.repository';
 import { NegotiationsRepository } from '../../negotiations.repository';
 import { NegotiationAssignment, NegotiationWithTeams } from '../../types';
@@ -106,10 +105,6 @@ const buildUseCase = (options: {
       .mockResolvedValue({ id: negotiation.targetSquadId }),
   } as unknown as SquadsRepository;
 
-  const hasActiveTournamentUseCase = {
-    execute: jest.fn().mockResolvedValue(false),
-  } as unknown as HasActiveTournamentUseCase;
-
   const getActiveRulesetUseCase = {
     execute: jest.fn().mockResolvedValue(RULESET),
   } as unknown as GetActiveRulesetUseCase;
@@ -123,7 +118,6 @@ const buildUseCase = (options: {
     transfersRepository,
     seasonsRepository,
     squadsRepository,
-    hasActiveTournamentUseCase,
     getActiveRulesetUseCase,
     getOpenNegotiationWindowUseCase,
   );

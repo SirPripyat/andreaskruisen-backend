@@ -10,6 +10,7 @@ import { NotificationsRepository } from './notifications.repository';
 import {
   CreateNotificationUseCase,
   ListNotificationsUseCase,
+  MarkAllNotificationsReadUseCase,
   MarkNotificationReadUseCase,
 } from './use-cases';
 
@@ -22,6 +23,7 @@ import {
     CreateNotificationUseCase,
     ListNotificationsUseCase,
     MarkNotificationReadUseCase,
+    MarkAllNotificationsReadUseCase,
     NotificationEventsListener,
   ],
 })

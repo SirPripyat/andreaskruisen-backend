@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PaginationQuery } from '../commons/pagination';
-import { ListNotificationsResponseDTO, NotificationResponseDTO } from './dto';
+import {
+  ListNotificationsResponseDTO,
+  MarkAllNotificationsReadResponseDTO,
+  NotificationResponseDTO,
+} from './dto';
 import {
   ListNotificationsUseCase,
+  MarkAllNotificationsReadUseCase,
   MarkNotificationReadUseCase,
 } from './use-cases';
 
@@ -11,6 +16,7 @@ export class NotificationsFacade {
   constructor(
     private readonly listNotificationsUseCase: ListNotificationsUseCase,
     private readonly markNotificationReadUseCase: MarkNotificationReadUseCase,
+    private readonly markAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase,
   ) {}
 
   list(
@@ -27,5 +33,12 @@ export class NotificationsFacade {
     userId: string,
   ): Promise<NotificationResponseDTO> {
     return this.markNotificationReadUseCase.execute(id, seasonId, userId);
+  }
+
+  markAllRead(
+    seasonId: string,
+    userId: string,
+  ): Promise<MarkAllNotificationsReadResponseDTO> {
+    return this.markAllNotificationsReadUseCase.execute(seasonId, userId);
   }
 }
