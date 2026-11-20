@@ -12,6 +12,7 @@ export * from './get-tournament-dashboard.use-case';
 export * from './get-tournament-fixtures.use-case';
 export * from './get-tournament-situation.use-case';
 export * from './has-active-tournament.use-case';
+export * from './list-my-tournaments.use-case';
 export * from './list-tournaments.use-case';
 export * from './remove-tournament.use-case';
 export * from './resolve-goal-leaders.use-case';

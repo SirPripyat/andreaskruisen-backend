@@ -1,4 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ClsService } from 'nestjs-cls';
+import {
+  flushPendingTournamentPrizeEvents,
+  TOURNAMENT_PRIZE_AWARDED_EVENT,
+} from '../notifications/events';
 import {
   CreateTournamentRequestDTO,
   CreateTournamentResponseDTO,
@@ -9,6 +15,7 @@ import {
   GetTournamentFixturesResponseDTO,
   GetTournamentResponseDTO,
   GetTournamentSituationResponseDTO,
+  ListMyTournamentsResponseDTO,
   ListTournamentsResponseDTO,
   UpdateTournamentRequestDTO,
   UpdateTournamentResponseDTO,
@@ -22,6 +29,7 @@ import {
   GetTournamentFixturesUseCase,
   GetTournamentSituationUseCase,
   GetTournamentUseCase,
+  ListMyTournamentsUseCase,
   ListTournamentsUseCase,
   RemoveTournamentUseCase,
   UpdateTournamentUseCase,
@@ -41,6 +49,9 @@ export class TournamentsFacade {
     private readonly getTournamentDashboardUseCase: GetTournamentDashboardUseCase,
     private readonly updateTournamentUseCase: UpdateTournamentUseCase,
     private readonly removeTournamentUseCase: RemoveTournamentUseCase,
+    private readonly listMyTournamentsUseCase: ListMyTournamentsUseCase,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly cls: ClsService,
   ) {}
 
   create(
@@ -52,6 +63,13 @@ export class TournamentsFacade {
 
   findBySeason(seasonId: string): Promise<ListTournamentsResponseDTO> {
     return this.listTournamentsUseCase.execute(seasonId);
+  }
+
+  findMine(
+    seasonId: string,
+    userId: string,
+  ): Promise<ListMyTournamentsResponseDTO> {
+    return this.listMyTournamentsUseCase.execute(seasonId, userId);
   }
 
   getOne(id: string): Promise<GetTournamentResponseDTO> {
@@ -69,8 +87,11 @@ export class TournamentsFacade {
     return this.getTournamentFixturesUseCase.execute(id);
   }
 
-  advancePhase(id: string, phaseId: string): Promise<void> {
-    return this.advancePhaseUseCase.execute(id, phaseId);
+  async advancePhase(id: string, phaseId: string): Promise<void> {
+    await this.advancePhaseUseCase.execute(id, phaseId);
+
+    for (const event of flushPendingTournamentPrizeEvents(this.cls))
+      this.eventEmitter.emit(TOURNAMENT_PRIZE_AWARDED_EVENT, event);
   }
 
   getTopScorers(id: string): Promise<GetTopScorersResponseDTO> {

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { RulesetsModule } from '../rulesets/rulesets.module';
 import { SeasonsModule } from '../seasons/seasons.module';
+import { SquadsModule } from '../squads/squads.module';
 import { TournamentsController } from './tournaments.controller';
 import { TournamentsFacade } from './tournaments.facade';
 import { TournamentsRepository } from './tournaments.repository';
@@ -20,6 +21,7 @@ import {
   GetTournamentSituationUseCase,
   GetTournamentUseCase,
   HasActiveTournamentUseCase,
+  ListMyTournamentsUseCase,
   ListTournamentsUseCase,
   RemoveTournamentUseCase,
   ResolveGoalLeadersUseCase,
@@ -27,7 +29,7 @@ import {
 } from './use-cases';
 
 @Module({
-  imports: [AuthModule, SeasonsModule, RulesetsModule],
+  imports: [AuthModule, SeasonsModule, RulesetsModule, SquadsModule],
   controllers: [TournamentsController],
   providers: [
     TournamentsRepository,
@@ -37,6 +39,7 @@ import {
     ResolveGoalLeadersUseCase,
     CreateTournamentUseCase,
     ListTournamentsUseCase,
+    ListMyTournamentsUseCase,
     HasActiveTournamentUseCase,
     GetTournamentUseCase,
     GetTournamentSituationUseCase,

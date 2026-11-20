@@ -10,6 +10,11 @@ import {
   TeamSummary,
 } from './tournaments.type';
 
+export type MyStanding = Pick<
+  GroupStanding,
+  'position' | 'points' | 'goalDifference' | 'last5'
+>;
+
 export type TournamentSummary = {
   id: string;
   seasonId: string;
@@ -93,6 +98,15 @@ export type NextMatchSummary = {
   round: number | null;
   homeTeam: TeamSummary;
   awayTeam: TeamSummary;
+};
+
+// Visão do torneio do ponto de vista do meu time (ver ListMyTournamentsUseCase):
+// mesmos campos de TournamentSummary, mais minha posição na fase atual e meu
+// próximo confronto. myStanding é null quando a fase atual é mata-mata (não
+// existe classificação ali) ou quando ainda não há fase gerada.
+export type MyTournamentSummary = TournamentSummary & {
+  myStanding: MyStanding | null;
+  nextMatch: NextMatchSummary | null;
 };
 
 export type TournamentDashboard = {

@@ -48,6 +48,13 @@ export class TournamentsController {
     return this.facade.findBySeason(request.seasonId);
   }
 
+  // Precisa vir antes de ':id' pro Nest não casar "mine" como se fosse o id.
+  @Get('mine')
+  @UseGuards(SessionAuthGuard, SeasonContextGuard)
+  findMine(@Req() request: RequiredSeasonScopedRequest) {
+    return this.facade.findMine(request.seasonId, request.user.id);
+  }
+
   @Get(':id')
   getOne(@Param('id') id: string) {
     return this.facade.getOne(id);

@@ -61,6 +61,13 @@ export class TournamentsRepository {
     });
   }
 
+  findByTeamAndSeason(seasonId: string, teamId: string): Promise<Tournament[]> {
+    return this.txHost.tx.tournament.findMany({
+      where: { seasonId, teams: { some: { teamId } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findTournamentsByTeam(teamId: string): Promise<
     {
       tournamentId: string;
