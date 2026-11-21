@@ -35,6 +35,13 @@ export type MatchupTeam = TeamSummary & {
   owner: TeamOwner | null;
 };
 
+// Time que venceu a fase decisiva do torneio (ver GetChampionTeamIdUseCase);
+// null enquanto o torneio não foi encerrado (FinishTournamentUseCase) ou se
+// a fase decisiva não tem como ter um campeão único.
+export type TournamentListItem = TournamentSummary & {
+  champion: MatchupTeam | null;
+};
+
 export type Matchup = {
   id: string;
   homeTeam: MatchupTeam;

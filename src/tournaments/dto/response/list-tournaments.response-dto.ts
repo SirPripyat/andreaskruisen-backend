@@ -1,3 +1,3 @@
-import { Tournament } from '../../../../generated/prisma/client';
+import { TournamentListItem } from '../../types';
 
-export type ListTournamentsResponseDTO = Tournament[];
+export type ListTournamentsResponseDTO = TournamentListItem[];
