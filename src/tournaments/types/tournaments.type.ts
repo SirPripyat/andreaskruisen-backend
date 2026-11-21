@@ -55,6 +55,16 @@ export type TeamOwner = {
   name: string;
 };
 
+// Linha crua de ranking de artilheiros/assistências: teamId vem do snapshot
+// Goal.teamId (time no momento daquele gol), nunca de Player.teamId — um
+// jogador trocado de time no meio do torneio não pode "reescrever" os gols
+// que já marcou por outro time (ver ResolveGoalLeadersUseCase).
+export type GoalLeaderRow = {
+  playerId: string;
+  teamId: string;
+  count: number;
+};
+
 // Tipos de CoinTransaction reconciliáveis automaticamente por
 // AwardTournamentPrizeUseCase (ver tournament-prizes.utils.ts) — exclui
 // INITIAL/TRANSFER/TRANSFER_FEE/ADJUSTMENT, que não nascem daqui.

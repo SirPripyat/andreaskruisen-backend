@@ -9,6 +9,7 @@ import {
 } from '../../generated/prisma/client';
 import { normalizeSearchTerm } from '../commons/normalize-search-term';
 import { PaginatedResult, PaginationQuery } from '../commons/pagination';
+import { GoalLeaderRow } from '../tournaments/types';
 import {
   LineupSlotInput,
   TeamCrestDimension,
@@ -338,10 +339,12 @@ export class TeamsRepository {
     return squad.couponTransactions.reduce((total, t) => total + t.amount, 0);
   }
 
+  // teamId já vem fixo do parâmetro: o where filtra por Goal.teamId (o time
+  // de fato naquele gol), não há ambiguidade de qual time exibir aqui.
   async findTopScorersForTeam(
     teamId: string,
     limit: number,
-  ): Promise<{ playerId: string; count: number }[]> {
+  ): Promise<GoalLeaderRow[]> {
     const result = await this.txHost.tx.goal.groupBy({
       by: ['scorerId'],
       where: { teamId },
@@ -352,6 +355,7 @@ export class TeamsRepository {
 
     return result.map((row) => ({
       playerId: row.scorerId,
+      teamId,
       count: row._count.scorerId,
     }));
   }
@@ -359,7 +363,7 @@ export class TeamsRepository {
   async findTopAssistsForTeam(
     teamId: string,
     limit: number,
-  ): Promise<{ playerId: string; count: number }[]> {
+  ): Promise<GoalLeaderRow[]> {
     const result = await this.txHost.tx.goal.groupBy({
       by: ['assistId'],
       where: {
@@ -373,6 +377,7 @@ export class TeamsRepository {
 
     return result.map((row) => ({
       playerId: row.assistId as string,
+      teamId,
       count: row._count.assistId,
     }));
   }

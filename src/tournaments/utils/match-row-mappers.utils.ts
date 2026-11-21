@@ -1,5 +1,6 @@
 import { PositionCode } from '../../../generated/prisma/client';
 import {
+  GoalLeaderRow,
   MatchPenalties,
   MatchWithTeams,
   PlayerSummary,
@@ -94,4 +95,27 @@ export const toPlayerSummary = (player: {
     teamId: player.teamId,
     position: primary?.position ?? 'ATA',
   };
+};
+
+// Linhas vêm de um groupBy(['scorerId'|'assistId', 'teamId']) já ordenado
+// por contagem desc: a primeira linha de cada jogador é o seu time com mais
+// gols/assistências no torneio, por isso vira o time exibido no ranking.
+export const aggregateGoalLeaderRows = (
+  rows: GoalLeaderRow[],
+  limit: number,
+): GoalLeaderRow[] => {
+  const byPlayer = new Map<string, GoalLeaderRow>();
+
+  for (const row of rows) {
+    const existing = byPlayer.get(row.playerId);
+    if (existing) {
+      existing.count += row.count;
+    } else {
+      byPlayer.set(row.playerId, { ...row });
+    }
+  }
+
+  return [...byPlayer.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
 };

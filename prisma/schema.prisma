@@ -718,6 +718,13 @@ model Match {
   // Rodada (turno) dentro do grupo — todo time joga uma vez por rodada.
   // Preenchido só em fases do tipo GROUP, igual groupLabel.
   round      Int?
+  // Posição do confronto dentro da fase (0-based), na ordem em que foi
+  // gerado — ver TournamentsRepository.createPhaseWithMatches. Em fases
+  // KNOCKOUT é o que ancora o chaveamento: os vencedores dos slots 2i/2i+1
+  // de uma rodada se enfrentam no slot i da próxima (ver advanceKnockoutRound).
+  // Sem isso, a ordem de leitura do banco (createdAt/id) não tem relação
+  // garantida com a posição no bracket.
+  bracketSlot Int?
   // Quando o resultado foi registrado (null = ainda não jogado).
   playedAt   DateTime?
 

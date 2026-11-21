@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TournamentsRepository } from '../tournaments.repository';
-import { GoalLeader, TournamentDashboard } from '../types';
+import { GoalLeader, GoalLeaderRow, TournamentDashboard } from '../types';
 import { FindTournamentOrThrowUseCase } from './find-tournament-or-throw.use-case';
 import { ResolveGoalLeadersUseCase } from './resolve-goal-leaders.use-case';
 
@@ -82,7 +82,7 @@ export class GetTournamentDashboardUseCase {
   }
 
   private async resolveGoalLeader(
-    leader: { playerId: string; count: number } | undefined,
+    leader: GoalLeaderRow | undefined,
   ): Promise<GoalLeader | null> {
     if (!leader) return null;
 

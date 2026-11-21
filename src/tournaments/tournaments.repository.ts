@@ -10,6 +10,7 @@ import {
   TournamentFormat,
 } from '../../generated/prisma/client';
 import {
+  GoalLeaderRow,
   GroupPhaseMatch,
   MatchWithTeams,
   PhaseSummary,
@@ -19,6 +20,7 @@ import {
   TournamentPrizeType,
 } from './types';
 import {
+  aggregateGoalLeaderRows,
   MATCH_SELECT_FOR_LIST,
   PLAYER_SUMMARY_SELECT,
   toMatchWithTeams,
@@ -142,12 +144,13 @@ export class TournamentsRepository {
     });
 
     await this.txHost.tx.match.createMany({
-      data: data.matches.map((match) => ({
+      data: data.matches.map((match, index) => ({
         phaseId: phase.id,
         homeTeamId: match.homeTeamId,
         awayTeamId: match.awayTeamId,
         groupLabel: match.groupLabel,
         round: match.round,
+        bracketSlot: index,
       })),
     });
   }
@@ -215,7 +218,7 @@ export class TournamentsRepository {
   async findMatchesByPhase(phaseId: string): Promise<MatchWithTeams[]> {
     const matches = await this.txHost.tx.match.findMany({
       where: { phaseId },
-      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      orderBy: [{ bracketSlot: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
       select: MATCH_SELECT_FOR_LIST,
     });
 
@@ -265,43 +268,53 @@ export class TournamentsRepository {
     return players.map(toPlayerSummary);
   }
 
+  // teamId vem do snapshot Goal.teamId (time no momento do gol), não de
+  // Player.teamId — por isso o groupBy é por scorerId+teamId: um jogador
+  // trocado de time no meio do torneio tem os gols de cada time separados,
+  // e aggregateGoalLeaderRows soma o total e escolhe o time com mais gols.
   async findTopScorers(
     tournamentId: string,
     limit: number,
-  ): Promise<{ playerId: string; count: number }[]> {
+  ): Promise<GoalLeaderRow[]> {
     const result = await this.txHost.tx.goal.groupBy({
-      by: ['scorerId'],
+      by: ['scorerId', 'teamId'],
       where: { match: { phase: { tournamentId } } },
       _count: { scorerId: true },
       orderBy: { _count: { scorerId: 'desc' } },
-      take: limit,
     });
 
-    return result.map((row) => ({
-      playerId: row.scorerId,
-      count: row._count.scorerId,
-    }));
+    return aggregateGoalLeaderRows(
+      result.map((row) => ({
+        playerId: row.scorerId,
+        teamId: row.teamId,
+        count: row._count.scorerId,
+      })),
+      limit,
+    );
   }
 
   async findTopAssists(
     tournamentId: string,
     limit: number,
-  ): Promise<{ playerId: string; count: number }[]> {
+  ): Promise<GoalLeaderRow[]> {
     const result = await this.txHost.tx.goal.groupBy({
-      by: ['assistId'],
+      by: ['assistId', 'teamId'],
       where: {
         match: { phase: { tournamentId } },
         assistId: { not: null },
       },
       _count: { assistId: true },
       orderBy: { _count: { assistId: 'desc' } },
-      take: limit,
     });
 
-    return result.map((row) => ({
-      playerId: row.assistId as string,
-      count: row._count.assistId,
-    }));
+    return aggregateGoalLeaderRows(
+      result.map((row) => ({
+        playerId: row.assistId as string,
+        teamId: row.teamId,
+        count: row._count.assistId,
+      })),
+      limit,
+    );
   }
 
   async findOwnersByTeamIds(
