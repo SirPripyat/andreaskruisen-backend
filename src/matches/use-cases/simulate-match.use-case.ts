@@ -28,6 +28,15 @@ export class SimulateMatchUseCase {
 
   @Transactional()
   async execute(matchId: string): Promise<MatchDetailResponse> {
+    await this.simulateCore(matchId);
+
+    return this.getMatchDetailUseCase.execute(matchId);
+  }
+
+  // Núcleo reaproveitável por SimulateMatchesBulkUseCase — sem o detail no
+  // final e sem decorator próprio, já que quem chama (o execute() acima,
+  // ou o use-case em lote) já está dentro de uma transação.
+  async simulateCore(matchId: string): Promise<void> {
     const match = await this.matchesRepository.findMatchForGoals(matchId);
 
     if (!match) throw new NotFoundException('Partida não encontrada');
@@ -80,8 +89,6 @@ export class SimulateMatchUseCase {
       result.awayGoals.length,
       penalties,
     );
-
-    return this.getMatchDetailUseCase.execute(matchId);
   }
 
   private resolveSimulatedPenalties(

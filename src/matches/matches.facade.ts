@@ -11,12 +11,14 @@ import {
   ListMatchesResponseDTO,
   ReplaceMatchGoalsRequestDTO,
   ReplaceMatchGoalsResponseDTO,
+  SimulateMatchesBulkResponseDTO,
   SimulateMatchResponseDTO,
 } from './dto';
 import {
   GetMatchDetailUseCase,
   ListTournamentMatchesUseCase,
   ReplaceMatchGoalsUseCase,
+  SimulateMatchesBulkUseCase,
   SimulateMatchUseCase,
 } from './use-cases';
 
@@ -27,6 +29,7 @@ export class MatchesFacade {
     private readonly getMatchDetailUseCase: GetMatchDetailUseCase,
     private readonly replaceMatchGoalsUseCase: ReplaceMatchGoalsUseCase,
     private readonly simulateMatchUseCase: SimulateMatchUseCase,
+    private readonly simulateMatchesBulkUseCase: SimulateMatchesBulkUseCase,
     private readonly eventEmitter: EventEmitter2,
     private readonly cls: ClsService,
   ) {}
@@ -53,5 +56,13 @@ export class MatchesFacade {
 
   simulateMatch(matchId: string): Promise<SimulateMatchResponseDTO> {
     return this.simulateMatchUseCase.execute(matchId);
+  }
+
+  // Sem flush de eventos de prêmio aqui, igual ao simulateMatch acima —
+  // paridade intencional com o individual (ver AwardMatchPrizesUseCase).
+  simulateMatchesBulk(
+    matchIds: string[],
+  ): Promise<SimulateMatchesBulkResponseDTO> {
+    return this.simulateMatchesBulkUseCase.execute(matchIds);
   }
 }

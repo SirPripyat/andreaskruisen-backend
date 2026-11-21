@@ -10,6 +10,7 @@ import {
   GetMatchDetailUseCase,
   ListTournamentMatchesUseCase,
   ReplaceMatchGoalsUseCase,
+  SimulateMatchesBulkUseCase,
   SimulateMatchUseCase,
 } from './use-cases';
 
@@ -24,6 +25,7 @@ import {
     AwardMatchPrizesUseCase,
     ReplaceMatchGoalsUseCase,
     SimulateMatchUseCase,
+    SimulateMatchesBulkUseCase,
   ],
 })
 export class MatchesModule {}

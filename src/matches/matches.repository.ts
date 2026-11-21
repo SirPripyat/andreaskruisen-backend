@@ -89,6 +89,45 @@ export class MatchesRepository {
       : null;
   }
 
+  async findManyForBulkSimulation(
+    matchIds: string[],
+  ): Promise<MatchForGoals[]> {
+    const matches = await this.txHost.tx.match.findMany({
+      where: { id: { in: matchIds } },
+      select: {
+        id: true,
+        phaseId: true,
+        homeTeamId: true,
+        awayTeamId: true,
+        playedAt: true,
+        phase: {
+          select: {
+            tournamentId: true,
+            order: true,
+            type: true,
+            tournament: {
+              select: { seasonId: true, format: true, finishedAt: true },
+            },
+          },
+        },
+      },
+    });
+
+    return matches.map((match) => ({
+      id: match.id,
+      tournamentId: match.phase.tournamentId,
+      tournamentFinishedAt: match.phase.tournament.finishedAt,
+      seasonId: match.phase.tournament.seasonId,
+      tournamentFormat: match.phase.tournament.format,
+      phaseId: match.phaseId,
+      phaseOrder: match.phase.order,
+      phaseType: match.phase.type,
+      homeTeamId: match.homeTeamId,
+      awayTeamId: match.awayTeamId,
+      playedAt: match.playedAt,
+    }));
+  }
+
   async findMatchDetail(matchId: string): Promise<MatchDetail | null> {
     const match = await this.txHost.tx.match.findUnique({
       where: { id: matchId },

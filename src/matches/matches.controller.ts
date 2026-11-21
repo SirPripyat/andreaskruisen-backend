@@ -15,6 +15,8 @@ import {
   ListMatchesSchema,
   ReplaceMatchGoalsRequestDTO,
   ReplaceMatchGoalsSchema,
+  SimulateMatchesBulkRequestDTO,
+  SimulateMatchesBulkSchema,
 } from './dto';
 import { MatchesFacade } from './matches.facade';
 
@@ -48,5 +50,13 @@ export class MatchesController {
   @Post(':matchId/simulate')
   simulateMatch(@Param('matchId') matchId: string) {
     return this.facade.simulateMatch(matchId);
+  }
+
+  @Post('simulate-bulk')
+  simulateMatchesBulk(
+    @Body(new ZodValidationPipe(SimulateMatchesBulkSchema))
+    dto: SimulateMatchesBulkRequestDTO,
+  ) {
+    return this.facade.simulateMatchesBulk(dto.matchIds);
   }
 }
