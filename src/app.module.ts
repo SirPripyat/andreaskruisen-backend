@@ -11,6 +11,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { ClubsModule } from './clubs/clubs.module';
 import { validateEnv } from './commons/config/env.schema';
 import { FavoritesModule } from './favorites/favorites.module';
 import { ImportModule } from './import/import.module';
@@ -56,6 +57,7 @@ import { UsersModule } from './users/users.module';
     FavoritesModule,
     PlayersModule,
     TeamsModule,
+    ClubsModule,
     TournamentsModule,
     MatchesModule,
     TransfersModule,

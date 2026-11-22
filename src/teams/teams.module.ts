@@ -27,6 +27,6 @@ import {
     GetTeamTitlesUseCase,
     UpdateTeamUseCase,
   ],
-  exports: [TeamsRepository],
+  exports: [TeamsRepository, GetTeamStatsUseCase],
 })
 export class TeamsModule {}
