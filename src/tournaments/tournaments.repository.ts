@@ -215,14 +215,39 @@ export class TournamentsRepository {
     }));
   }
 
-  async findMatchesByPhase(phaseId: string): Promise<MatchWithTeams[]> {
+  async findMatchesByPhase(
+    phaseId: string,
+    teamIds?: string[],
+  ): Promise<MatchWithTeams[]> {
     const matches = await this.txHost.tx.match.findMany({
-      where: { phaseId },
+      where: {
+        phaseId,
+        ...(teamIds !== undefined
+          ? {
+              OR: [
+                { homeTeamId: { in: teamIds } },
+                { awayTeamId: { in: teamIds } },
+              ],
+            }
+          : {}),
+      },
       orderBy: [{ bracketSlot: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
       select: MATCH_SELECT_FOR_LIST,
     });
 
     return matches.map(toMatchWithTeams);
+  }
+
+  // Todo teamId com Squad nessa temporada, pro filtro onlyOwnedTeams (ver
+  // GetSituationSchema) — sem Squad = time só de CPU (ver comentário de
+  // TournamentTeam no schema).
+  async findOwnedTeamIds(seasonId: string): Promise<string[]> {
+    const squads = await this.txHost.tx.squad.findMany({
+      where: { seasonId },
+      select: { teamId: true },
+    });
+
+    return squads.map((squad) => squad.teamId);
   }
 
   findTeamsByIds(teamIds: string[]): Promise<TeamSummary[]> {

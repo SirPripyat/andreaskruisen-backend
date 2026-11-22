@@ -13,6 +13,7 @@ import {
   GetTopAssistsResponseDTO,
   GetTopScorersResponseDTO,
   GetTournamentDashboardResponseDTO,
+  GetTournamentFixturesRequestDTO,
   GetTournamentFixturesResponseDTO,
   GetTournamentResponseDTO,
   GetTournamentSituationResponseDTO,
@@ -86,8 +87,11 @@ export class TournamentsFacade {
     return this.getTournamentSituationUseCase.execute(id, query);
   }
 
-  getFixtures(id: string): Promise<GetTournamentFixturesResponseDTO> {
-    return this.getTournamentFixturesUseCase.execute(id);
+  getFixtures(
+    id: string,
+    query: GetTournamentFixturesRequestDTO,
+  ): Promise<GetTournamentFixturesResponseDTO> {
+    return this.getTournamentFixturesUseCase.execute(id, query.onlyOwnedTeams);
   }
 
   async advancePhase(id: string, phaseId: string): Promise<void> {

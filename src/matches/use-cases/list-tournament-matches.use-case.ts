@@ -15,7 +15,7 @@ export class ListTournamentMatchesUseCase {
   ) {}
 
   async execute(query: ListMatchesRequestDTO): Promise<MatchesPage> {
-    const { tournamentId } = query;
+    const { tournamentId, onlyOwnedTeams } = query;
 
     const [tournament, phase] = await Promise.all([
       this.findTournamentOrThrowUseCase.execute(tournamentId),
@@ -32,8 +32,12 @@ export class ListTournamentMatchesUseCase {
       );
     }
 
+    const teamIds = onlyOwnedTeams
+      ? await this.tournamentsRepository.findOwnedTeamIds(tournament.seasonId)
+      : undefined;
+
     const [result, hasLaterPhase] = await Promise.all([
-      this.matchesRepository.findPaginatedMatches(phase.id, query),
+      this.matchesRepository.findPaginatedMatches(phase.id, query, teamIds),
       this.tournamentsRepository.hasLaterPhase(tournamentId, phase.order),
     ]);
     const locked = hasLaterPhase || tournament.finishedAt !== null;

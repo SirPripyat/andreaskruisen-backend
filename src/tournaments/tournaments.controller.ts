@@ -24,6 +24,8 @@ import {
   CreateTournamentSchema,
   GetSituationRequestDTO,
   GetSituationSchema,
+  GetTournamentFixturesRequestDTO,
+  GetTournamentFixturesSchema,
   UpdateTournamentRequestDTO,
   UpdateTournamentSchema,
 } from './dto';
@@ -72,8 +74,12 @@ export class TournamentsController {
   }
 
   @Get(':id/fixtures')
-  getFixtures(@Param('id') id: string) {
-    return this.facade.getFixtures(id);
+  getFixtures(
+    @Param('id') id: string,
+    @Query(new ZodValidationPipe(GetTournamentFixturesSchema))
+    query: GetTournamentFixturesRequestDTO,
+  ) {
+    return this.facade.getFixtures(id, query);
   }
 
   @Post(':id/phases/:phaseId/advance')
