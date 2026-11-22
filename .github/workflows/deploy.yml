@@ -1,9 +1,9 @@
 name: Deploy backend
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types:
+      - published
 
 permissions:
   id-token: write
@@ -42,6 +42,7 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:${{ github.event.release.tag_name }}
 
       - name: Sync compose/caddy config to VM
         uses: appleboy/scp-action@v0.1.7
