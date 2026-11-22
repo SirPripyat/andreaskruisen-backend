@@ -11,7 +11,10 @@ export class GetTournamentFixturesUseCase {
     private readonly findTournamentOrThrowUseCase: FindTournamentOrThrowUseCase,
   ) {}
 
-  async execute(tournamentId: string): Promise<MatchesByPhase[]> {
+  async execute(
+    tournamentId: string,
+    onlyOwnedTeams?: boolean,
+  ): Promise<MatchesByPhase[]> {
     const tournament =
       await this.findTournamentOrThrowUseCase.execute(tournamentId);
 
@@ -21,9 +24,13 @@ export class GetTournamentFixturesUseCase {
       return [];
     }
 
+    const teamIds = onlyOwnedTeams
+      ? await this.tournamentsRepository.findOwnedTeamIds(tournament.seasonId)
+      : undefined;
+
     const matchesByPhase = await Promise.all(
       phases.map((phase) =>
-        this.tournamentsRepository.findMatchesByPhase(phase.id),
+        this.tournamentsRepository.findMatchesByPhase(phase.id, teamIds),
       ),
     );
 
