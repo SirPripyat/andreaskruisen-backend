@@ -33,12 +33,25 @@ export class MatchesRepository {
   async findPaginatedMatches(
     phaseId: string,
     pagination: PaginationQuery,
+    teamIds?: string[],
   ): Promise<PaginatedResult<MatchWithTeams>> {
+    const where = {
+      phaseId,
+      ...(teamIds !== undefined
+        ? {
+            OR: [
+              { homeTeamId: { in: teamIds } },
+              { awayTeamId: { in: teamIds } },
+            ],
+          }
+        : {}),
+    };
+
     const result = await paginate(
-      () => this.txHost.tx.match.count({ where: { phaseId } }),
+      () => this.txHost.tx.match.count({ where }),
       ({ skip, take }) =>
         this.txHost.tx.match.findMany({
-          where: { phaseId },
+          where,
           skip,
           take,
           orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
