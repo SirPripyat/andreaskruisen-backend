@@ -1,6 +1,7 @@
 export * from './generate-tournament-phase.utils';
 export * from './group-stage-tournament.utils';
 export * from './group-standings.utils';
+export * from './hall-of-fame.utils';
 export * from './knockout-tournament.utils';
 export * from './league-matches.utils';
 export * from './match-mappers.utils';

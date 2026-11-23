@@ -9,6 +9,8 @@ import {
   CreateTournamentRequestDTO,
   CreateTournamentResponseDTO,
   FinishTournamentResponseDTO,
+  GetHallOfFameRequestDTO,
+  GetHallOfFameResponseDTO,
   GetSituationRequestDTO,
   GetTopAssistsResponseDTO,
   GetTopScorersResponseDTO,
@@ -25,6 +27,7 @@ import {
   AdvancePhaseUseCase,
   CreateTournamentUseCase,
   FinishTournamentUseCase,
+  GetHallOfFameUseCase,
   GetTopAssistsUseCase,
   GetTopScorersUseCase,
   GetTournamentDashboardUseCase,
@@ -48,6 +51,7 @@ export class TournamentsFacade {
     private readonly advancePhaseUseCase: AdvancePhaseUseCase,
     private readonly getTopScorersUseCase: GetTopScorersUseCase,
     private readonly getTopAssistsUseCase: GetTopAssistsUseCase,
+    private readonly getHallOfFameUseCase: GetHallOfFameUseCase,
     private readonly getTournamentDashboardUseCase: GetTournamentDashboardUseCase,
     private readonly updateTournamentUseCase: UpdateTournamentUseCase,
     private readonly removeTournamentUseCase: RemoveTournamentUseCase,
@@ -103,6 +107,13 @@ export class TournamentsFacade {
 
   getTopAssists(id: string): Promise<GetTopAssistsResponseDTO> {
     return this.getTopAssistsUseCase.execute(id);
+  }
+
+  getHallOfFame(
+    seasonId: string,
+    query: GetHallOfFameRequestDTO,
+  ): Promise<GetHallOfFameResponseDTO> {
+    return this.getHallOfFameUseCase.execute(seasonId, query.format);
   }
 
   getDashboard(id: string): Promise<GetTournamentDashboardResponseDTO> {

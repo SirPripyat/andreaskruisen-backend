@@ -5,6 +5,7 @@ export * from './create-tournament.use-case';
 export * from './find-tournament-or-throw.use-case';
 export * from './finish-tournament.use-case';
 export * from './get-champion-team-id.use-case';
+export * from './get-hall-of-fame.use-case';
 export * from './get-titles-for-team.use-case';
 export * from './get-top-assists.use-case';
 export * from './get-top-scorers.use-case';

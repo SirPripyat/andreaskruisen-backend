@@ -140,3 +140,29 @@ export type TeamTitle = {
   seasonId: string;
   seasonName: string;
 };
+
+// GoalLeader de hall da fama, acrescido de quantos jogos e títulos o TIME
+// dele (não o jogador: não existe registro de presença em partida nem de
+// quem estava no elenco campeão, só de quem marcou/assistiu — ver
+// GetHallOfFameUseCase) teve no formato dentro da temporada, e da média de
+// gol/assistência por partida resultante. Serve só de aproximação: um
+// jogador que trocou de time no meio do caminho tem média e títulos
+// calculados sobre o time que mais o viu balançar as redes.
+// Quantas posições o jogador subiu (positivo) ou desceu (negativo) nesse
+// ranking desde antes do último torneio encerrado do formato entrar na
+// conta — ver GetHallOfFameUseCase. Null quando ele não aparecia no
+// ranking anterior (estreante ou saiu da lista e voltou).
+export type HallOfFameLeader = GoalLeader & {
+  matchesPlayed: number;
+  average: number;
+  titles: number;
+  positionChange: number | null;
+};
+
+// Líderes de gols/assistências de uma temporada, somados entre todos os
+// torneios já encerrados daquele formato (ver GetHallOfFameUseCase) — não
+// de um torneio só, como GoalLeader em TournamentDashboard.
+export type HallOfFame = {
+  topScorers: HallOfFameLeader[];
+  topAssists: HallOfFameLeader[];
+};

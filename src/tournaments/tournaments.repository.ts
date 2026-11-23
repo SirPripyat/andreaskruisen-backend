@@ -323,6 +323,133 @@ export class TournamentsRepository {
     );
   }
 
+  // Hall da fama: soma gols de todos os torneios já encerrados daquele
+  // formato, dentro da temporada selecionada (ver GetHallOfFameUseCase) —
+  // mesmo princípio de agregação por scorerId+teamId de findTopScorers.
+  // excludeTournamentId tira um torneio da conta — usado pra recalcular o
+  // ranking "antes do último torneio encerrado" e descobrir se alguém
+  // subiu ou desceu (ver countPositionChanges).
+  async findTopScorersByFormat(
+    seasonId: string,
+    format: TournamentFormat,
+    limit: number,
+    excludeTournamentId?: string,
+  ): Promise<GoalLeaderRow[]> {
+    const result = await this.txHost.tx.goal.groupBy({
+      by: ['scorerId', 'teamId'],
+      where: {
+        match: {
+          phase: {
+            tournament: {
+              seasonId,
+              format,
+              finishedAt: { not: null },
+              ...(excludeTournamentId
+                ? { id: { not: excludeTournamentId } }
+                : {}),
+            },
+          },
+        },
+      },
+      _count: { scorerId: true },
+      orderBy: { _count: { scorerId: 'desc' } },
+    });
+
+    return aggregateGoalLeaderRows(
+      result.map((row) => ({
+        playerId: row.scorerId,
+        teamId: row.teamId,
+        count: row._count.scorerId,
+      })),
+      limit,
+    );
+  }
+
+  async findTopAssistsByFormat(
+    seasonId: string,
+    format: TournamentFormat,
+    limit: number,
+    excludeTournamentId?: string,
+  ): Promise<GoalLeaderRow[]> {
+    const result = await this.txHost.tx.goal.groupBy({
+      by: ['assistId', 'teamId'],
+      where: {
+        match: {
+          phase: {
+            tournament: {
+              seasonId,
+              format,
+              finishedAt: { not: null },
+              ...(excludeTournamentId
+                ? { id: { not: excludeTournamentId } }
+                : {}),
+            },
+          },
+        },
+        assistId: { not: null },
+      },
+      _count: { assistId: true },
+      orderBy: { _count: { assistId: 'desc' } },
+    });
+
+    return aggregateGoalLeaderRows(
+      result.map((row) => ({
+        playerId: row.assistId as string,
+        teamId: row.teamId,
+        count: row._count.assistId,
+      })),
+      limit,
+    );
+  }
+
+  // Torneio mais recente a ser encerrado daquele formato, na temporada —
+  // usado só pra saber qual torneio tirar da conta no ranking "anterior"
+  // (ver findTopScorersByFormat/findTopAssistsByFormat excludeTournamentId).
+  async findLatestFinishedTournamentIdByFormat(
+    seasonId: string,
+    format: TournamentFormat,
+  ): Promise<string | null> {
+    const tournament = await this.txHost.tx.tournament.findFirst({
+      where: { seasonId, format, finishedAt: { not: null } },
+      orderBy: { finishedAt: 'desc' },
+      select: { id: true },
+    });
+
+    return tournament?.id ?? null;
+  }
+
+  // Partidas já jogadas de todos os torneios encerrados daquele formato, na
+  // temporada — usado só pra contar quantos jogos cada time disputou (ver
+  // countMatchesPerTeam), já que não existe registro de presença do
+  // jogador em cada partida, só de quem marcou/assistiu.
+  findPlayedMatchTeamsByFormat(
+    seasonId: string,
+    format: TournamentFormat,
+  ): Promise<{ homeTeamId: string; awayTeamId: string }[]> {
+    return this.txHost.tx.match.findMany({
+      where: {
+        playedAt: { not: null },
+        phase: { tournament: { seasonId, format, finishedAt: { not: null } } },
+      },
+      select: { homeTeamId: true, awayTeamId: true },
+    });
+  }
+
+  // Torneios já encerrados daquele formato, na temporada — usado só pra
+  // descobrir o campeão de cada um (ver GetChampionTeamIdUseCase) e contar
+  // títulos por time no hall da fama.
+  async findFinishedTournamentIdsByFormat(
+    seasonId: string,
+    format: TournamentFormat,
+  ): Promise<string[]> {
+    const tournaments = await this.txHost.tx.tournament.findMany({
+      where: { seasonId, format, finishedAt: { not: null } },
+      select: { id: true },
+    });
+
+    return tournaments.map((tournament) => tournament.id);
+  }
+
   async findOwnersByTeamIds(
     teamIds: string[],
     seasonId: string,

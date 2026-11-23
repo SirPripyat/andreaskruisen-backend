@@ -1,5 +1,6 @@
 export * from './create-tournament.response-dto';
 export * from './finish-tournament.response-dto';
+export * from './get-hall-of-fame.response-dto';
 export * from './get-top-assists.response-dto';
 export * from './get-top-scorers.response-dto';
 export * from './get-tournament.response-dto';

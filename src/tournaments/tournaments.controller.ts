@@ -22,6 +22,8 @@ import {
 import {
   CreateTournamentRequestDTO,
   CreateTournamentSchema,
+  GetHallOfFameRequestDTO,
+  GetHallOfFameSchema,
   GetSituationRequestDTO,
   GetSituationSchema,
   UpdateTournamentRequestDTO,
@@ -55,6 +57,17 @@ export class TournamentsController {
   @UseGuards(SessionAuthGuard, SeasonContextGuard)
   findMine(@Req() request: RequiredSeasonScopedRequest) {
     return this.facade.findMine(request.seasonId, request.user.id);
+  }
+
+  // Mesmo motivo de 'mine': precisa vir antes de ':id'.
+  @Get('hall-of-fame')
+  @UseGuards(SessionAuthGuard, SeasonContextGuard)
+  getHallOfFame(
+    @Req() request: RequiredSeasonScopedRequest,
+    @Query(new ZodValidationPipe(GetHallOfFameSchema))
+    query: GetHallOfFameRequestDTO,
+  ) {
+    return this.facade.getHallOfFame(request.seasonId, query);
   }
 
   @Get(':id')
