@@ -57,7 +57,9 @@ export const nextPowerOfTwo = (n: number): number => {
 // formato que não seja GROUP_STAGE_KNOCKOUT (os outros não têm
 // groupStageConfig). Revalida o JSONB a cada leitura, mesmo princípio de
 // AdvancePhaseUseCase.
-export const readQualifiersPerGroup = (tournament: Tournament): number | null =>
+export const readQualifiersPerGroup = (
+  tournament: Tournament,
+): number | null =>
   tournament.format === 'GROUP_STAGE_KNOCKOUT'
     ? GroupStageConfigSchema.parse(tournament.groupStageConfig)
         .qualifiersPerGroup
