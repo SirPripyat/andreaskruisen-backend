@@ -14,8 +14,8 @@ describe('calculateDirectNegotiationFee', () => {
       {
         proposingSquadId: 'proposing',
         targetSquadId: 'target',
-        outgoingPlayerOverall: 80,
-        incomingPlayerOverall: 85,
+        outgoingOverallSum: 80,
+        incomingOverallSum: 85,
       },
       BANDS,
     );
@@ -28,8 +28,8 @@ describe('calculateDirectNegotiationFee', () => {
       {
         proposingSquadId: 'proposing',
         targetSquadId: 'target',
-        outgoingPlayerOverall: 90,
-        incomingPlayerOverall: 85,
+        outgoingOverallSum: 90,
+        incomingOverallSum: 85,
       },
       BANDS,
     );
@@ -42,12 +42,28 @@ describe('calculateDirectNegotiationFee', () => {
       {
         proposingSquadId: 'proposing',
         targetSquadId: 'target',
-        outgoingPlayerOverall: 85,
-        incomingPlayerOverall: 85,
+        outgoingOverallSum: 85,
+        incomingOverallSum: 85,
       },
       BANDS,
     );
 
     expect(fee).toEqual({ squadId: 'target', amount: 10 });
+  });
+
+  // Troca multi-jogador (ver v1-transferencias.md): a fórmula não muda, só
+  // os overalls de entrada são somados antes de calcular a diferença.
+  it('2 jogadores saem por 1 que entra: soma dos dois lados define quem paga', () => {
+    const fee = calculateDirectNegotiationFee(
+      {
+        proposingSquadId: 'proposing',
+        targetSquadId: 'target',
+        outgoingOverallSum: 70 + 75,
+        incomingOverallSum: 90,
+      },
+      BANDS,
+    );
+
+    expect(fee).toEqual({ squadId: 'target', amount: 50 });
   });
 });

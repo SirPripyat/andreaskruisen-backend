@@ -50,7 +50,7 @@ export const toMatchWithTeams = (match: {
   penaltyAwayScore: number | null;
   penaltyWinnerTeamId: string | null;
   homeTeam: TeamSummary;
-  awayTeam: TeamSummary;
+  awayTeam: TeamSummary | null;
   goals: { teamId: string }[];
 }): MatchWithTeams => ({
   id: match.id,

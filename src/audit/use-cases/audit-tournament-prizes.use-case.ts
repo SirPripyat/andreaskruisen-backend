@@ -3,7 +3,11 @@ import { TournamentFormat } from '../../../generated/prisma/client';
 import { RulesetPrizeTable } from '../../rulesets/schemas';
 import { GetActiveRulesetUseCase } from '../../rulesets/use-cases';
 import { TournamentsRepository } from '../../tournaments/tournaments.repository';
-import { MatchWithTeams, PhaseSummary } from '../../tournaments/types';
+import {
+  MatchWithTeams,
+  PhaseSummary,
+  TeamSummary,
+} from '../../tournaments/types';
 import { BuildGroupStandingsUseCase } from '../../tournaments/use-cases';
 import {
   computeMatchScore,
@@ -103,7 +107,12 @@ export class AuditTournamentPrizesUseCase {
     matches: MatchWithTeams[],
   ): Promise<AuditFinding[]> {
     const findings: AuditFinding[] = [];
-    const playedMatches = matches.filter((match) => match.playedAt !== null);
+    // Bye (awayTeam null) não tem resultado real pra auditar — nasce já
+    // "jogado" sem placar (ver buildGroupStageQualifiersBracket).
+    const playedMatches = matches.filter(
+      (match): match is MatchWithTeams & { awayTeam: TeamSummary } =>
+        match.playedAt !== null && match.awayTeam !== null,
+    );
     if (playedMatches.length === 0) return findings;
 
     const teamIds = [
@@ -251,7 +260,11 @@ export class AuditTournamentPrizesUseCase {
     );
     const advancingTeamIds = [
       ...new Set(
-        nextMatches.flatMap((match) => [match.homeTeam.id, match.awayTeam.id]),
+        nextMatches.flatMap((match) =>
+          match.awayTeam
+            ? [match.homeTeam.id, match.awayTeam.id]
+            : [match.homeTeam.id],
+        ),
       ),
     ];
 
@@ -302,7 +315,9 @@ export class AuditTournamentPrizesUseCase {
     const finalMatch = matches[0];
     const squadIdByTeamId =
       await this.tournamentsRepository.findSquadIdsByTeamIds(
-        [finalMatch.homeTeam.id, finalMatch.awayTeam.id],
+        finalMatch.awayTeam
+          ? [finalMatch.homeTeam.id, finalMatch.awayTeam.id]
+          : [finalMatch.homeTeam.id],
         seasonId,
       );
     const { prizes } = await this.getActiveRulesetUseCase.execute(
@@ -316,7 +331,7 @@ export class AuditTournamentPrizesUseCase {
       latestPhaseType: 'KNOCKOUT' as const,
       knockoutMatches: matches.map((match) => ({
         homeTeamId: match.homeTeam.id,
-        awayTeamId: match.awayTeam.id,
+        awayTeamId: match.awayTeam?.id ?? null,
         goalScorerTeamIds: match.goalScorerTeamIds,
         penaltyWinnerTeamId: match.penalties?.winnerTeamId ?? null,
       })),

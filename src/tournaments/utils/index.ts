@@ -1,4 +1,6 @@
 export * from './generate-tournament-phase.utils';
+export * from './group-stage-draw.utils';
+export * from './group-stage-knockout-draw.utils';
 export * from './group-stage-tournament.utils';
 export * from './group-standings.utils';
 export * from './hall-of-fame.utils';

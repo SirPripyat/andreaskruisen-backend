@@ -8,6 +8,7 @@ import {
   MyTournamentSummary,
   PhaseSummary,
 } from '../types';
+import { readQualifiersPerGroup } from '../utils';
 import { BuildGroupStandingsUseCase } from './build-group-standings.use-case';
 
 // Torneios em que o meu time tem squad, com minha posição na fase atual e
@@ -70,6 +71,7 @@ export class ListMyTournamentsUseCase {
       createdAt: tournament.createdAt,
       finishedAt: tournament.finishedAt,
       currentPhase,
+      qualifiersPerGroup: readQualifiersPerGroup(tournament),
       myStanding,
       nextMatch,
     };
@@ -114,7 +116,7 @@ export class ListMyTournamentsUseCase {
     const next = matches.find(
       (match) =>
         match.playedAt === null &&
-        (match.homeTeam.id === teamId || match.awayTeam.id === teamId),
+        (match.homeTeam.id === teamId || match.awayTeam?.id === teamId),
     );
 
     return next ? this.toNextMatch(next, phase.name) : null;

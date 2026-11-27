@@ -7,9 +7,15 @@ import { Transactional } from '@nestjs-cls/transactional';
 import { Tournament } from '../../../generated/prisma/client';
 import { RulesetPrizeTable } from '../../rulesets/schemas';
 import { GetActiveRulesetUseCase } from '../../rulesets/use-cases';
+import { GroupStageConfigSchema } from '../schemas';
 import { TournamentsRepository } from '../tournaments.repository';
 import { GeneratedKnockoutMatch, PhaseSummary } from '../types';
-import { computeMatchScore, knockoutRoundName, rankingReward } from '../utils';
+import {
+  buildGroupStageQualifiersBracket,
+  computeMatchScore,
+  knockoutRoundName,
+  rankingReward,
+} from '../utils';
 import { AwardTournamentPrizeUseCase } from './award-tournament-prize.use-case';
 import { BuildGroupStandingsUseCase } from './build-group-standings.use-case';
 import { FindTournamentOrThrowUseCase } from './find-tournament-or-throw.use-case';
@@ -72,6 +78,10 @@ export class AdvancePhaseUseCase {
     if (tournament.format !== 'GROUP_STAGE_KNOCKOUT')
       throw new ConflictException('Este torneio não tem fase de mata-mata');
 
+    const { qualifiersPerGroup } = GroupStageConfigSchema.parse(
+      tournament.groupStageConfig,
+    );
+
     const groupMatches = await this.tournamentsRepository.findGroupMatches(
       phase.id,
     );
@@ -81,8 +91,11 @@ export class AdvancePhaseUseCase {
 
     const groupLabels = Object.keys(standingsByGroup).sort();
 
-    const firstPlaced = groupLabels.map((label) => standingsByGroup[label][0]);
-    const secondPlaced = groupLabels.map((label) => standingsByGroup[label][1]);
+    const qualifiedTeamIds = groupLabels.flatMap((label) =>
+      standingsByGroup[label]
+        .slice(0, qualifiersPerGroup)
+        .map((standing) => standing.teamId),
+    );
 
     await this.awardGroupPositionPrizes(
       tournament.seasonId,
@@ -93,14 +106,15 @@ export class AdvancePhaseUseCase {
     await this.awardPhaseAdvancePrizes(
       tournament.seasonId,
       phase.id,
-      [...firstPlaced, ...secondPlaced].map((standing) => standing.teamId),
+      qualifiedTeamIds,
       prizes.phaseAdvance,
     );
 
-    const matches = firstPlaced.map((first, i) => ({
-      homeTeamId: first.teamId,
-      awayTeamId: secondPlaced[(i + 1) % secondPlaced.length].teamId,
-    }));
+    const matches = buildGroupStageQualifiersBracket(
+      groupLabels,
+      standingsByGroup,
+      qualifiersPerGroup,
+    );
 
     await this.createNextKnockoutPhase(tournament.id, phase.order, matches);
   }
@@ -120,6 +134,11 @@ export class AdvancePhaseUseCase {
     const winnerTeamIds: string[] = [];
 
     for (const match of matches) {
+      if (match.awayTeam === null) {
+        winnerTeamIds.push(match.homeTeam.id);
+        continue;
+      }
+
       const score = computeMatchScore(
         match.homeTeam.id,
         match.awayTeam.id,
@@ -230,7 +249,12 @@ export class AdvancePhaseUseCase {
       type: 'KNOCKOUT',
       order: nextOrder,
       name: knockoutRoundName(matches.length * 2, nextOrder),
-      matches,
+      matches: matches.map((match) => ({
+        ...match,
+        // Bye nasce já "jogado" — vencedor automático, sem placar a
+        // registrar (ver countUnplayedMatches/execute()).
+        playedAt: match.awayTeamId === null ? new Date() : undefined,
+      })),
     });
   }
 }

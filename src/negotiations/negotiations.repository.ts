@@ -31,16 +31,22 @@ const NEGOTIATION_INCLUDE = {
       team: { select: { id: true, name: true, crestUrl: true } },
     },
   },
-  outgoingPlayer: { select: { id: true, name: true, photoUrl: true } },
-  incomingPlayer: { select: { id: true, name: true, photoUrl: true } },
+  // Até 2 jogadores de cada lado (troca multi-jogador, ver
+  // v1-transferencias.md).
+  outgoingPlayers: {
+    select: { player: { select: { id: true, name: true, photoUrl: true } } },
+  },
+  incomingPlayers: {
+    select: { player: { select: { id: true, name: true, photoUrl: true } } },
+  },
   // Só existe depois do aceite (ver AcceptNegotiationUseCase) — é onde mora
   // o snapshot de overall/feeEnabled, que deixou de existir na própria
   // DirectNegotiation (ver Transfer.negotiationId).
   transfer: {
     select: {
-      outgoingPlayerOverall: true,
-      incomingPlayerOverall: true,
       feeEnabled: true,
+      outgoingPlayers: { select: { overall: true } },
+      incomingPlayers: { select: { overall: true } },
     },
   },
   clauses: {
@@ -60,14 +66,17 @@ type NegotiationWithRelations = Prisma.DirectNegotiationGetPayload<{
   include: typeof NEGOTIATION_INCLUDE;
 }>;
 
+const sumOveralls = (rows: Array<{ overall: number }>): number =>
+  rows.reduce((sum, row) => sum + row.overall, 0);
+
 const toResponseDTO = (
   raw: NegotiationWithRelations,
 ): NegotiationResponseDTO => {
   const {
     proposingSquad,
     targetSquad,
-    outgoingPlayer,
-    incomingPlayer,
+    outgoingPlayers,
+    incomingPlayers,
     transfer,
     ...rest
   } = raw;
@@ -84,10 +93,10 @@ const toResponseDTO = (
       user: targetSquad.user,
       team: targetSquad.team,
     },
-    outgoingPlayer,
-    incomingPlayer,
-    outgoingPlayerOverall: transfer?.outgoingPlayerOverall ?? null,
-    incomingPlayerOverall: transfer?.incomingPlayerOverall ?? null,
+    outgoingPlayers: outgoingPlayers.map((row) => row.player),
+    incomingPlayers: incomingPlayers.map((row) => row.player),
+    outgoingOverallSum: transfer ? sumOveralls(transfer.outgoingPlayers) : null,
+    incomingOverallSum: transfer ? sumOveralls(transfer.incomingPlayers) : null,
     feeEnabled: transfer?.feeEnabled ?? null,
   } as NegotiationResponseDTO;
 };
@@ -154,16 +163,32 @@ export class NegotiationsRepository {
     seasonId: string;
     proposingSquadId: string;
     targetSquadId: string;
-    outgoingPlayerId: string | null;
-    incomingPlayerId: string | null;
+    // Até 2 jogadores de cada lado (troca multi-jogador, ver
+    // v1-transferencias.md) — vazio numa compra/venda pura.
+    outgoingPlayerIds: string[];
+    incomingPlayerIds: string[];
     coinAmount: number | null;
     clauses: NegotiationClauseInput[];
   }): Promise<NegotiationResponseDTO> {
-    const { clauses, ...negotiationData } = data;
+    const {
+      clauses,
+      outgoingPlayerIds,
+      incomingPlayerIds,
+      ...negotiationData
+    } = data;
 
     return this.txHost.tx.directNegotiation
       .create({
-        data: { ...negotiationData, clauses: { create: clauses } },
+        data: {
+          ...negotiationData,
+          clauses: { create: clauses },
+          outgoingPlayers: {
+            create: outgoingPlayerIds.map((playerId) => ({ playerId })),
+          },
+          incomingPlayers: {
+            create: incomingPlayerIds.map((playerId) => ({ playerId })),
+          },
+        },
         include: NEGOTIATION_INCLUDE,
       })
       .then(toResponseDTO);
@@ -175,6 +200,8 @@ export class NegotiationsRepository {
       include: {
         proposingSquad: { select: { teamId: true, userId: true } },
         targetSquad: { select: { teamId: true } },
+        outgoingPlayers: { select: { playerId: true } },
+        incomingPlayers: { select: { playerId: true } },
       },
     });
 
@@ -189,8 +216,8 @@ export class NegotiationsRepository {
       proposingUserId: negotiation.proposingSquad.userId,
       targetSquadId: negotiation.targetSquadId,
       targetTeamId: negotiation.targetSquad.teamId,
-      outgoingPlayerId: negotiation.outgoingPlayerId,
-      incomingPlayerId: negotiation.incomingPlayerId,
+      outgoingPlayerIds: negotiation.outgoingPlayers.map((row) => row.playerId),
+      incomingPlayerIds: negotiation.incomingPlayers.map((row) => row.playerId),
       coinAmount: negotiation.coinAmount,
     };
   }
@@ -232,8 +259,10 @@ export class NegotiationsRepository {
     proposingTeamId: string;
     proposingUserId: string;
     targetTeamId: string;
-    outgoing: NegotiationAssignment | null;
-    incoming: NegotiationAssignment | null;
+    // Até 2 jogadores de cada lado (troca multi-jogador, ver
+    // v1-transferencias.md) — vazio numa compra/venda pura.
+    outgoing: NegotiationAssignment[];
+    incoming: NegotiationAssignment[];
     feeEnabled: boolean;
     coinTransactions: Array<{
       squadId: string;

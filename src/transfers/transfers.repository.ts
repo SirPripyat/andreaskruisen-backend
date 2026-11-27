@@ -14,12 +14,32 @@ import { canGrantCoupon } from './utils/transfer-coupon.utils';
 
 const TRANSFER_INCLUDE = {
   requestedBy: { select: { id: true, name: true } },
-  outgoingPlayer: { select: { id: true, name: true, photoUrl: true } },
+  outgoingPlayers: {
+    select: {
+      overall: true,
+      player: { select: { id: true, name: true, photoUrl: true } },
+    },
+  },
   outgoingTeam: { select: { id: true, name: true, crestUrl: true } },
-  incomingPlayer: { select: { id: true, name: true, photoUrl: true } },
+  incomingPlayers: {
+    select: {
+      overall: true,
+      player: { select: { id: true, name: true, photoUrl: true } },
+    },
+  },
   incomingTeam: { select: { id: true, name: true, crestUrl: true } },
   coinTransactions: { select: { amount: true } },
 } as const;
+
+// Prisma devolve cada linha de TransferOutgoingPlayer/TransferIncomingPlayer
+// como { overall, player: {...} } — achata pro formato que o resto da API
+// espera (ver TransferPlayerMovementSummaryResponseDTO).
+const toPlayerSummaries = (
+  rows: Array<{
+    overall: number;
+    player: { id: string; name: string; photoUrl: string };
+  }>,
+) => rows.map(({ player, overall }) => ({ ...player, overall }));
 
 // CoinTransaction.amount é negativo (saiu do saldo); cost é o valor
 // positivo que o front mostra. No mercado tradicional sempre existe
@@ -127,8 +147,11 @@ export class TransfersRepository {
     // depois (ver DirectNegotiation: é o targetTeam; no mercado é o
     // incoming.team.id).
     teamBId: string;
-    outgoing: TransferAssignment | null;
-    incoming: TransferAssignment | null;
+    // Vazio numa compra/venda pura nascida de negociação direta — 1
+    // elemento no caso comum, até 2 no mercado tradicional multi-jogador
+    // (ver v1-transferencias.md).
+    outgoing: TransferAssignment[];
+    incoming: TransferAssignment[];
     feeEnabled: boolean;
     coinTransactions: Array<{
       squadId: string;
@@ -155,19 +178,19 @@ export class TransfersRepository {
       couponTransactions,
     } = params;
 
-    if (outgoing) {
+    for (const assignment of outgoing) {
       await this.txHost.tx.playerTeamAssignment.update({
         where: {
-          seasonId_playerId: { seasonId, playerId: outgoing.player.id },
+          seasonId_playerId: { seasonId, playerId: assignment.player.id },
         },
         data: { teamId: teamBId },
       });
     }
 
-    if (incoming) {
+    for (const assignment of incoming) {
       await this.txHost.tx.playerTeamAssignment.update({
         where: {
-          seasonId_playerId: { seasonId, playerId: incoming.player.id },
+          seasonId_playerId: { seasonId, playerId: assignment.player.id },
         },
         data: { teamId: teamAId },
       });
@@ -184,13 +207,21 @@ export class TransfersRepository {
         originType,
         requestedByUserId,
         negotiationId,
-        outgoingPlayerId: outgoing?.player.id,
         outgoingTeamId: teamAId,
-        incomingPlayerId: incoming?.player.id,
         incomingTeamId: teamBId,
-        outgoingPlayerOverall: outgoing?.player.overall,
-        incomingPlayerOverall: incoming?.player.overall,
         feeEnabled,
+        outgoingPlayers: {
+          create: outgoing.map((assignment) => ({
+            playerId: assignment.player.id,
+            overall: assignment.player.overall,
+          })),
+        },
+        incomingPlayers: {
+          create: incoming.map((assignment) => ({
+            playerId: assignment.player.id,
+            overall: assignment.player.overall,
+          })),
+        },
       },
       include: TRANSFER_INCLUDE,
     });
@@ -213,13 +244,18 @@ export class TransfersRepository {
       });
     }
 
-    return transfer;
+    const { outgoingPlayers, incomingPlayers, ...transferData } = transfer;
+    return {
+      ...transferData,
+      outgoingPlayers: toPlayerSummaries(outgoingPlayers),
+      incomingPlayers: toPlayerSummaries(incomingPlayers),
+    };
   }
 
   async swap(
     seasonId: string,
-    outgoing: TransferAssignment,
-    incoming: TransferAssignment,
+    outgoing: TransferAssignment[],
+    incoming: TransferAssignment[],
     requestedByUserId: string,
     payingSquadId: string,
     cost: number,
@@ -230,8 +266,8 @@ export class TransfersRepository {
       seasonId,
       originType: 'MARKET',
       requestedByUserId,
-      teamAId: outgoing.team.id,
-      teamBId: incoming.team.id,
+      teamAId: outgoing[0].team.id,
+      teamBId: incoming[0].team.id,
       outgoing,
       incoming,
       feeEnabled,
@@ -251,29 +287,28 @@ export class TransfersRepository {
   }
 
   // Generalização do recálculo de titulares: outgoing/incoming podem vir
-  // nulos (compra/venda pura nascida de negociação direta), ao contrário do
-  // mercado tradicional, onde a troca é sempre completa (os dois lados
-  // sempre preenchidos).
+  // vazios (compra/venda pura nascida de negociação direta) ou ter mais de
+  // 1 jogador (mercado tradicional multi-jogador).
   private async applyLineupChanges(
     seasonId: string,
     teamAId: string,
     teamBId: string,
     movement: {
-      outgoing: TransferAssignment | null;
-      incoming: TransferAssignment | null;
+      outgoing: TransferAssignment[];
+      incoming: TransferAssignment[];
     },
   ): Promise<void> {
     const affectedPositions = [
       ...new Set(
-        [movement.outgoing?.position, movement.incoming?.position].filter(
-          (position): position is PositionCode => position != null,
+        [...movement.outgoing, ...movement.incoming].map(
+          (assignment) => assignment.position,
         ),
       ),
     ];
 
-    const arrivedPlayerByTeam: Record<string, string | null> = {
-      [teamAId]: movement.incoming?.player.id ?? null,
-      [teamBId]: movement.outgoing?.player.id ?? null,
+    const arrivedPlayerIdsByTeam: Record<string, string[]> = {
+      [teamAId]: movement.incoming.map((assignment) => assignment.player.id),
+      [teamBId]: movement.outgoing.map((assignment) => assignment.player.id),
     };
 
     for (const teamId of [teamAId, teamBId]) {
@@ -282,14 +317,12 @@ export class TransfersRepository {
         select: { hasManualLineup: true },
       });
 
-      const arrivedPlayerId = arrivedPlayerByTeam[teamId];
+      const arrivedPlayerIds = arrivedPlayerIdsByTeam[teamId];
 
       if (squad?.hasManualLineup) {
-        if (arrivedPlayerId) {
-          await this.txHost.tx.playerTeamAssignment.update({
-            where: {
-              seasonId_playerId: { seasonId, playerId: arrivedPlayerId },
-            },
+        if (arrivedPlayerIds.length > 0) {
+          await this.txHost.tx.playerTeamAssignment.updateMany({
+            where: { seasonId, playerId: { in: arrivedPlayerIds } },
             data: { isStarter: false, lineupPosition: null },
           });
         }
@@ -395,10 +428,19 @@ export class TransfersRepository {
         include: TRANSFER_INCLUDE,
       })
       .then((transfers) =>
-        transfers.map(({ coinTransactions, ...transfer }) => ({
-          ...transfer,
-          cost: toCost(coinTransactions),
-        })),
+        transfers.map(
+          ({
+            coinTransactions,
+            outgoingPlayers,
+            incomingPlayers,
+            ...transfer
+          }) => ({
+            ...transfer,
+            outgoingPlayers: toPlayerSummaries(outgoingPlayers),
+            incomingPlayers: toPlayerSummaries(incomingPlayers),
+            cost: toCost(coinTransactions),
+          }),
+        ),
       );
   }
 }

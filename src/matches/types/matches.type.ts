@@ -24,7 +24,9 @@ export type MatchForGoals = {
   phaseOrder: number;
   phaseType: PhaseType;
   homeTeamId: string;
-  awayTeamId: string;
+  // null = bye (ver buildGroupStageQualifiersBracket) — rejeitado logo no
+  // início de ReplaceMatchGoalsUseCase/SimulateMatchUseCase.
+  awayTeamId: string | null;
   playedAt: Date | null;
 };
 
@@ -57,7 +59,7 @@ export type MatchDetail = {
   playedAt: Date | null;
   penalties: MatchPenalties | null;
   homeTeam: TeamSummary;
-  awayTeam: TeamSummary;
+  awayTeam: TeamSummary | null;
   goals: GoalWithPlayers[];
 };
 
@@ -69,7 +71,7 @@ export type MatchDetailResponse = {
   playedAt: Date | null;
   penalties: MatchPenalties | null;
   homeTeam: MatchTeamWithPlayers;
-  awayTeam: MatchTeamWithPlayers;
+  awayTeam: MatchTeamWithPlayers | null;
   goals: MatchGoal[];
   locked: boolean;
 };

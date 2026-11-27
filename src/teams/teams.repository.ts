@@ -9,7 +9,7 @@ import {
 } from '../../generated/prisma/client';
 import { normalizeSearchTerm } from '../commons/normalize-search-term';
 import { PaginatedResult, PaginationQuery } from '../commons/pagination';
-import { GoalLeaderRow } from '../tournaments/types';
+import { GoalLeaderRow, TeamSummary } from '../tournaments/types';
 import {
   LineupSlotInput,
   TeamCrestDimension,
@@ -265,6 +265,9 @@ export class TeamsRepository {
     const matches = await this.txHost.tx.match.findMany({
       where: {
         playedAt: { not: null },
+        // Exclui bye: não é uma partida de verdade pra nenhum dos dois
+        // lados (ver buildGroupStageQualifiersBracket).
+        awayTeamId: { not: null },
         OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }],
       },
       orderBy: { playedAt: 'desc' },
@@ -282,8 +285,14 @@ export class TeamsRepository {
 
     return matches.map((match) => {
       const isHome = match.homeTeamId === teamId;
-      const opponent = isHome ? match.awayTeam : match.homeTeam;
-      const opponentTeamId = isHome ? match.awayTeamId : match.homeTeamId;
+      // awayTeamId: { not: null } no where acima garante que awayTeam
+      // nunca é null aqui, mas o Prisma não propaga isso pro tipo.
+      const opponent = (
+        isHome ? match.awayTeam : match.homeTeam
+      ) as TeamSummary;
+      const opponentTeamId = (
+        isHome ? match.awayTeamId : match.homeTeamId
+      ) as string;
 
       let goalsFor = 0;
       let goalsAgainst = 0;

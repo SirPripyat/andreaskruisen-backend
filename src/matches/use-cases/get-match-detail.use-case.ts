@@ -18,7 +18,9 @@ export class GetMatchDetailUseCase {
 
     const players = await this.matchesRepository.findPlayersByTeamIds(
       match.seasonId,
-      [match.homeTeam.id, match.awayTeam.id],
+      match.awayTeam
+        ? [match.homeTeam.id, match.awayTeam.id]
+        : [match.homeTeam.id],
     );
 
     const hasLaterPhase = await this.tournamentsRepository.hasLaterPhase(
@@ -34,12 +36,14 @@ export class GetMatchDetailUseCase {
         .map(toPlayerOption),
     };
 
-    const awayTeam = {
-      ...match.awayTeam,
-      players: players
-        .filter((player) => player.teamId === match.awayTeam.id)
-        .map(toPlayerOption),
-    };
+    const awayTeam = match.awayTeam
+      ? {
+          ...match.awayTeam,
+          players: players
+            .filter((player) => player.teamId === match.awayTeam?.id)
+            .map(toPlayerOption),
+        }
+      : null;
 
     const goals = match.goals.map((goal) => ({
       id: goal.id,

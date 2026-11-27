@@ -18,8 +18,10 @@ import { calculateTraditionalMarketTransferCost } from '../utils/transfer-pricin
 
 export type ResolvedTransfer = {
   squad: Squad;
-  outgoing: TransferAssignment;
-  incoming: TransferAssignment;
+  // Até 2 jogadores de cada lado (troca multi-jogador, ver
+  // v1-transferencias.md) — 1 no caso comum.
+  outgoing: TransferAssignment[];
+  incoming: TransferAssignment[];
   cost: number;
   balance: number;
   useCoupon: boolean;
@@ -49,20 +51,20 @@ export class ResolveTransferUseCase {
     await this.ensureSeasonExists(seasonId);
     const feeEnabled = await this.ensureNegotiationWindowOpen(seasonId);
 
-    const outgoing = await this.getOutgoingAssignmentOrThrow(
+    const outgoing = await this.getOutgoingAssignmentsOrThrow(
       seasonId,
-      dto.outgoingPlayerId,
+      dto.outgoingPlayerIds,
     );
     // Admin pode agir em nome de qualquer time (ver CLAUDE.md do backend) —
     // o squad que paga é sempre o do time de saída, não o do admin.
     // Participante só pode mexer no próprio squad.
     const squad =
       actingUser.role === 'ADMIN'
-        ? await this.getSquadByTeamOrThrow(outgoing.team.id, seasonId)
+        ? await this.getSquadByTeamOrThrow(outgoing[0].team.id, seasonId)
         : await this.getOwnSquadOrThrow(actingUser.id, seasonId, outgoing);
-    const incoming = await this.getIncomingAssignmentOrThrow(
+    const incoming = await this.getIncomingAssignmentsOrThrow(
       seasonId,
-      dto.incomingPlayerId,
+      dto.incomingPlayerIds,
       outgoing,
     );
 
@@ -76,8 +78,14 @@ export class ResolveTransferUseCase {
 
     const cost = calculateTraditionalMarketTransferCost(
       {
-        outgoingPlayerOverall: outgoing.player.overall,
-        incomingPlayerOverall: incoming.player.overall,
+        outgoingOverallSum: outgoing.reduce(
+          (sum, assignment) => sum + assignment.player.overall,
+          0,
+        ),
+        incomingOverallSum: incoming.reduce(
+          (sum, assignment) => sum + assignment.player.overall,
+          0,
+        ),
         useCoupon: dto.useCoupon,
         feeEnabled,
       },
@@ -117,12 +125,14 @@ export class ResolveTransferUseCase {
     return window.feeEnabled;
   }
 
-  // Participante: squad é o próprio, e o jogador de saída precisa estar
-  // nesse squad (senão estaria tentando negociar time de outra pessoa).
+  // Participante: squad é o próprio, e os jogadores de saída precisam
+  // estar nesse squad (senão estaria tentando negociar time de outra
+  // pessoa) — já vêm garantidos do mesmo time entre si (ver
+  // ensureSameTeam em getOutgoingAssignmentsOrThrow).
   private async getOwnSquadOrThrow(
     userId: string,
     seasonId: string,
-    outgoing: TransferAssignment,
+    outgoing: TransferAssignment[],
   ): Promise<Squad> {
     const squad = await this.squadsRepository.findByUserAndSeason(
       userId,
@@ -134,7 +144,7 @@ export class ResolveTransferUseCase {
         'Você ainda não escolheu um time nessa temporada',
       );
 
-    if (outgoing.team.id !== squad.teamId)
+    if (outgoing[0].team.id !== squad.teamId)
       throw new ForbiddenException('Esse jogador não está no seu time');
 
     return squad;
@@ -158,42 +168,75 @@ export class ResolveTransferUseCase {
     return squad;
   }
 
-  private async getOutgoingAssignmentOrThrow(
+  private async getOutgoingAssignmentsOrThrow(
     seasonId: string,
-    playerId: string,
-  ): Promise<TransferAssignment> {
-    const outgoing = await this.transfersRepository.findAssignment(
+    playerIds: string[],
+  ): Promise<TransferAssignment[]> {
+    const outgoing = await this.findAssignmentsOrThrow(
       seasonId,
-      playerId,
+      playerIds,
+      'Jogador que sai não encontrado nessa temporada',
     );
 
-    if (!outgoing)
-      throw new NotFoundException(
-        'Jogador que sai não encontrado nessa temporada',
-      );
+    this.ensureSameTeam(
+      outgoing,
+      'Os jogadores que saem precisam ser todos do mesmo time',
+    );
 
     return outgoing;
   }
 
-  private async getIncomingAssignmentOrThrow(
+  private async getIncomingAssignmentsOrThrow(
     seasonId: string,
-    playerId: string,
-    outgoing: TransferAssignment,
-  ): Promise<TransferAssignment> {
-    const incoming = await this.transfersRepository.findAssignment(
+    playerIds: string[],
+    outgoing: TransferAssignment[],
+  ): Promise<TransferAssignment[]> {
+    const incoming = await this.findAssignmentsOrThrow(
       seasonId,
-      playerId,
+      playerIds,
+      'Jogador que entra não encontrado nessa temporada',
     );
 
-    if (!incoming)
-      throw new NotFoundException(
-        'Jogador que entra não encontrado nessa temporada',
-      );
+    this.ensureSameTeam(
+      incoming,
+      'Os jogadores que entram precisam ser todos do mesmo time',
+    );
 
-    if (incoming.team.id === outgoing.team.id)
+    if (incoming[0].team.id === outgoing[0].team.id)
       throw new BadRequestException('Os jogadores já estão no mesmo time');
 
     return incoming;
+  }
+
+  private async findAssignmentsOrThrow(
+    seasonId: string,
+    playerIds: string[],
+    notFoundMessage: string,
+  ): Promise<TransferAssignment[]> {
+    const assignments = await Promise.all(
+      playerIds.map((playerId) =>
+        this.transfersRepository.findAssignment(seasonId, playerId),
+      ),
+    );
+
+    if (assignments.some((assignment) => !assignment))
+      throw new NotFoundException(notFoundMessage);
+
+    return assignments as TransferAssignment[];
+  }
+
+  // Troca multi-jogador (ver v1-transferencias.md) ainda é bilateral: os
+  // jogadores de um mesmo lado precisam vir todos do mesmo time, senão não
+  // tem como resolver pra qual squad cada um pertence.
+  private ensureSameTeam(
+    assignments: TransferAssignment[],
+    message: string,
+  ): void {
+    const teamIds = new Set(
+      assignments.map((assignment) => assignment.team.id),
+    );
+
+    if (teamIds.size > 1) throw new BadRequestException(message);
   }
 
   private ensureCouponAvailableIfRequested(

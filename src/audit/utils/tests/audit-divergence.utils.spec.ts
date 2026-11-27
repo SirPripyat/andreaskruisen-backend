@@ -7,8 +7,8 @@ import {
 const baseTransfer: TransferForAudit = {
   id: 't1',
   createdAt: new Date('2026-01-01T00:00:00Z'),
-  outgoingPlayerOverall: 80,
-  incomingPlayerOverall: 85,
+  outgoingOverallSum: 80,
+  incomingOverallSum: 85,
   useCoupon: false,
   feeEnabled: true,
   recordedCost: 70,
@@ -47,8 +47,8 @@ const baseNegotiation: DirectNegotiationForAudit = {
   coinTransactionCount: 2,
   coinTransactionSum: 0,
   resolvedAt: new Date('2026-01-01T00:00:00Z'),
-  outgoingPlayerOverall: 80,
-  incomingPlayerOverall: 85,
+  outgoingOverallSum: 80,
+  incomingOverallSum: 85,
   feeEnabled: true,
   recordedFee: 20,
 };

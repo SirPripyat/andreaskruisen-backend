@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TournamentsRepository } from '../tournaments.repository';
 import { TournamentSummary } from '../types';
+import { readQualifiersPerGroup } from '../utils';
 import { FindTournamentOrThrowUseCase } from './find-tournament-or-throw.use-case';
 
 @Injectable()
@@ -26,6 +27,7 @@ export class GetTournamentUseCase {
       createdAt: tournament.createdAt,
       finishedAt: tournament.finishedAt,
       currentPhase,
+      qualifiersPerGroup: readQualifiersPerGroup(tournament),
     };
   }
 }

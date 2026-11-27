@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { RulesetPrizeTable } from '../../rulesets/schemas';
 import { GetActiveRulesetUseCase } from '../../rulesets/use-cases';
 import { TournamentsRepository } from '../../tournaments/tournaments.repository';
@@ -14,6 +14,12 @@ import {
   rankingReward,
 } from '../../tournaments/utils';
 import { MatchForGoals } from '../types';
+
+// Variante de MatchForGoals com awayTeamId garantido não-nulo — usada pelos
+// métodos privados daqui pra baixo, todos chamados só depois do guard em
+// execute() (bye nunca chega a fixar placar, ver ReplaceMatchGoalsUseCase/
+// SimulateMatchUseCase).
+type MatchForGoalsWithAway = MatchForGoals & { awayTeamId: string };
 
 // Reaproveitado por qualquer use-case que fixe o placar de uma partida —
 // hoje ReplaceMatchGoalsUseCase (edição manual) e SimulateMatchUseCase
@@ -34,24 +40,34 @@ export class AwardMatchPrizesUseCase {
     awayGoals: number,
     penalties: MatchPenalties | null,
   ): Promise<void> {
+    // Bye (awayTeamId null) nunca chega aqui: ReplaceMatchGoalsUseCase e
+    // SimulateMatchUseCase já rejeitam antes de fixar qualquer placar — este
+    // guard é só pra manter o tipo estreito pro resto do método.
+    if (!match.awayTeamId)
+      throw new ConflictException('Partida de bye não pode premiar resultado');
+    const matchWithAway = match as MatchForGoalsWithAway;
+
     const { prizes } = await this.getActiveRulesetUseCase.execute(
       match.seasonId,
     );
 
     await this.awardMatchResultPrizes(
-      match,
+      matchWithAway,
       homeGoals,
       awayGoals,
       penalties,
       prizes,
     );
-    await this.awardTerminalPrizesIfTournamentJustFinished(match, prizes);
+    await this.awardTerminalPrizesIfTournamentJustFinished(
+      matchWithAway,
+      prizes,
+    );
   }
 
   // Prêmio de resultado (WIN/DRAW/LOSS) — toda partida, de qualquer
   // formato/fase, sempre que o placar é fixado (ou corrigido).
   private async awardMatchResultPrizes(
-    match: MatchForGoals,
+    match: MatchForGoalsWithAway,
     homeGoals: number,
     awayGoals: number,
     penalties: MatchPenalties | null,
@@ -95,7 +111,7 @@ export class AwardMatchPrizesUseCase {
   // match.phaseId já é garantido ser a fase mais recente aqui: uma partida
   // de fase anterior já teria sido rejeitada por `locked` no caller.
   private async awardTerminalPrizesIfTournamentJustFinished(
-    match: MatchForGoals,
+    match: MatchForGoalsWithAway,
     prizes: RulesetPrizeTable,
   ): Promise<void> {
     const unplayedCount = await this.tournamentsRepository.countUnplayedMatches(
@@ -119,7 +135,7 @@ export class AwardMatchPrizesUseCase {
   }
 
   private async awardLeaguePrizes(
-    match: MatchForGoals,
+    match: MatchForGoalsWithAway,
     prizes: RulesetPrizeTable,
   ): Promise<void> {
     const groupMatches = await this.tournamentsRepository.findGroupMatches(
@@ -168,7 +184,7 @@ export class AwardMatchPrizesUseCase {
   }
 
   private async awardKnockoutFinalPrizes(
-    match: MatchForGoals,
+    match: MatchForGoalsWithAway,
     prizes: RulesetPrizeTable,
   ): Promise<void> {
     const matches = await this.tournamentsRepository.findMatchesByPhase(
@@ -187,7 +203,7 @@ export class AwardMatchPrizesUseCase {
       latestPhaseType: 'KNOCKOUT' as const,
       knockoutMatches: matches.map((knockoutMatch) => ({
         homeTeamId: knockoutMatch.homeTeam.id,
-        awayTeamId: knockoutMatch.awayTeam.id,
+        awayTeamId: knockoutMatch.awayTeam?.id ?? null,
         goalScorerTeamIds: knockoutMatch.goalScorerTeamIds,
         penaltyWinnerTeamId: knockoutMatch.penalties?.winnerTeamId ?? null,
       })),

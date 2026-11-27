@@ -62,8 +62,8 @@ const buildNegotiation = (
   proposingUserId: 'proposing-user',
   targetSquadId: 'target-squad',
   targetTeamId: 'target-team',
-  outgoingPlayerId: null,
-  incomingPlayerId: null,
+  outgoingPlayerIds: [],
+  incomingPlayerIds: [],
   coinAmount: null,
   ...overrides,
 });
@@ -128,8 +128,8 @@ const buildUseCase = (options: {
 describe('AcceptNegotiationUseCase', () => {
   it('troca com taxa: lança TRANSFER dos dois lados e TRANSFER_FEE de quem recebe o jogador melhor', async () => {
     const negotiation = buildNegotiation({
-      outgoingPlayerId: 'out-1',
-      incomingPlayerId: 'in-1',
+      outgoingPlayerIds: ['out-1'],
+      incomingPlayerIds: ['in-1'],
       coinAmount: 20,
     });
     const { useCase, negotiationsRepository } = buildUseCase({
@@ -164,8 +164,8 @@ describe('AcceptNegotiationUseCase', () => {
 
   it('troca sem taxa: janela com feeEnabled=false não gera TRANSFER_FEE', async () => {
     const negotiation = buildNegotiation({
-      outgoingPlayerId: 'out-1',
-      incomingPlayerId: 'in-1',
+      outgoingPlayerIds: ['out-1'],
+      incomingPlayerIds: ['in-1'],
       coinAmount: null,
     });
     const { useCase, negotiationsRepository } = buildUseCase({
@@ -192,8 +192,8 @@ describe('AcceptNegotiationUseCase', () => {
 
   it('compra pura: só o squad vendedor (incoming) recebe cupom, sem taxa de negociação', async () => {
     const negotiation = buildNegotiation({
-      outgoingPlayerId: null,
-      incomingPlayerId: 'in-1',
+      outgoingPlayerIds: [],
+      incomingPlayerIds: ['in-1'],
       coinAmount: 15,
     });
     const { useCase, negotiationsRepository } = buildUseCase({
@@ -208,7 +208,7 @@ describe('AcceptNegotiationUseCase', () => {
 
     expect(negotiationsRepository.accept).toHaveBeenCalledWith(
       expect.objectContaining({
-        outgoing: null,
+        outgoing: [],
         coinTransactions: [
           { squadId: 'proposing-squad', type: 'TRANSFER', amount: -15 },
           { squadId: 'target-squad', type: 'TRANSFER', amount: 15 },
@@ -222,8 +222,8 @@ describe('AcceptNegotiationUseCase', () => {
 
   it('venda pura: só o squad vendedor (outgoing) recebe cupom', async () => {
     const negotiation = buildNegotiation({
-      outgoingPlayerId: 'out-1',
-      incomingPlayerId: null,
+      outgoingPlayerIds: ['out-1'],
+      incomingPlayerIds: [],
       coinAmount: -15,
     });
     const { useCase, negotiationsRepository } = buildUseCase({
@@ -240,7 +240,7 @@ describe('AcceptNegotiationUseCase', () => {
 
     expect(negotiationsRepository.accept).toHaveBeenCalledWith(
       expect.objectContaining({
-        incoming: null,
+        incoming: [],
         couponTransactions: [
           { squadId: 'proposing-squad', type: 'GRANTED', amount: 1 },
         ],
@@ -250,8 +250,8 @@ describe('AcceptNegotiationUseCase', () => {
 
   it('cupom respeitando o cap: squad que já está no teto não recebe novo lançamento', async () => {
     const negotiation = buildNegotiation({
-      outgoingPlayerId: 'out-1',
-      incomingPlayerId: 'in-1',
+      outgoingPlayerIds: ['out-1'],
+      incomingPlayerIds: ['in-1'],
       coinAmount: null,
     });
     const { useCase, negotiationsRepository } = buildUseCase({
@@ -273,6 +273,56 @@ describe('AcceptNegotiationUseCase', () => {
       expect.objectContaining({
         couponTransactions: [
           { squadId: 'target-squad', type: 'GRANTED', amount: 1 },
+        ],
+      }),
+    );
+  });
+
+  // Troca multi-jogador (ver v1-transferencias.md): mesma regra do
+  // mercado tradicional, estendida pra negociação direta.
+  it('troca multi-jogador: 2 jogadores saem por 1 que entra, taxa calculada pela soma dos overalls', async () => {
+    const negotiation = buildNegotiation({
+      outgoingPlayerIds: ['out-1', 'out-2'],
+      incomingPlayerIds: ['in-1'],
+      coinAmount: null,
+    });
+    const { useCase, negotiationsRepository } = buildUseCase({
+      negotiation,
+      feeEnabled: true,
+    });
+    negotiationsRepository.findAssignment = jest
+      .fn()
+      .mockImplementation((_seasonId: string, playerId: string) => {
+        if (playerId === 'out-1')
+          return buildAssignment('out-1', negotiation.proposingTeamId, 70);
+        if (playerId === 'out-2')
+          return buildAssignment('out-2', negotiation.proposingTeamId, 75);
+        return buildAssignment('in-1', negotiation.targetTeamId, 90);
+      });
+
+    await useCase.execute(negotiation.seasonId, 'user-1', negotiation.id);
+
+    // sai 70 + 75 (soma 145), entra 90 -> diff = 90 - 145 = -55 -> target
+    // paga a taxa (quem recebe o jogador melhor, aqui o proposing, com
+    // diff negativo significa que o target recebeu "pior" soma... a regra
+    // é: diff > 0 quem paga é o proposing; diff <= 0 quem paga é o target).
+    expect(negotiationsRepository.accept).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outgoing: [
+          expect.objectContaining({
+            player: expect.objectContaining({ id: 'out-1' }),
+          }),
+          expect.objectContaining({
+            player: expect.objectContaining({ id: 'out-2' }),
+          }),
+        ],
+        incoming: [
+          expect.objectContaining({
+            player: expect.objectContaining({ id: 'in-1' }),
+          }),
+        ],
+        coinTransactions: [
+          { squadId: 'target-squad', type: 'TRANSFER_FEE', amount: -20 },
         ],
       }),
     );

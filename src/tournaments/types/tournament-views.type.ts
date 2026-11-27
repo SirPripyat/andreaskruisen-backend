@@ -27,6 +27,11 @@ export type TournamentSummary = {
   // Fase em que o torneio está agora (a de maior order). Fases seguintes só
   // existem depois que a atual termina — ver geração por fase na criação.
   currentPhase: PhaseSummary | null;
+  // Quantos times de cada grupo avançam pro mata-mata — null pra formatos
+  // que não são GROUP_STAGE_KNOCKOUT (ver readQualifiersPerGroup). Usado só
+  // pela UI pra saber quantas linhas da tabela de grupos marcar como
+  // classificadas.
+  qualifiersPerGroup: number | null;
 };
 
 export type StandingWithOwner = GroupStanding & { owner: TeamOwner | null };
@@ -45,7 +50,8 @@ export type TournamentListItem = TournamentSummary & {
 export type Matchup = {
   id: string;
   homeTeam: MatchupTeam;
-  awayTeam: MatchupTeam;
+  // null = bye (ver buildGroupStageQualifiersBracket).
+  awayTeam: MatchupTeam | null;
 };
 
 export type TournamentSituation = {
@@ -66,7 +72,9 @@ export type MatchListItem = {
   // tempo normal (ver tournament-champion.ts) — null quando não houve.
   penalties: MatchPenalties | null;
   homeTeam: MatchupTeam;
-  awayTeam: MatchupTeam;
+  // null = bye (ver buildGroupStageQualifiersBracket) — sem placar, sem
+  // ação de registrar gols.
+  awayTeam: MatchupTeam | null;
   // true = a fase seguinte já foi gerada a partir desta (ver
   // AdvancePhaseUseCase); resultado não pode mais ser editado.
   locked: boolean;
@@ -106,7 +114,8 @@ export type NextMatchSummary = {
   groupLabel: string | null;
   round: number | null;
   homeTeam: TeamSummary;
-  awayTeam: TeamSummary;
+  // null = bye (ver buildGroupStageQualifiersBracket).
+  awayTeam: TeamSummary | null;
 };
 
 // Visão do torneio do ponto de vista do meu time (ver ListMyTournamentsUseCase):

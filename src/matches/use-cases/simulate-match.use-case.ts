@@ -41,6 +41,9 @@ export class SimulateMatchUseCase {
 
     if (!match) throw new NotFoundException('Partida não encontrada');
 
+    if (!match.awayTeamId)
+      throw new ConflictException('Partida de bye não pode ser simulada');
+
     if (match.playedAt)
       throw new ConflictException('Partida já tem resultado registrado');
 

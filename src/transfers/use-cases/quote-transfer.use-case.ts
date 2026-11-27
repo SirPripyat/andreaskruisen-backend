@@ -28,8 +28,14 @@ export class QuoteTransferUseCase {
       cost,
       balance,
       sufficientBalance: balance >= cost,
-      outgoingPlayerOverall: outgoing.player.overall,
-      incomingPlayerOverall: incoming.player.overall,
+      outgoingOverallSum: outgoing.reduce(
+        (sum, assignment) => sum + assignment.player.overall,
+        0,
+      ),
+      incomingOverallSum: incoming.reduce(
+        (sum, assignment) => sum + assignment.player.overall,
+        0,
+      ),
       couponBalance,
       useCoupon,
       feeEnabled,

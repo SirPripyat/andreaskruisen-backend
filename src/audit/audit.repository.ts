@@ -47,9 +47,9 @@ export class AuditRepository {
       select: {
         id: true,
         createdAt: true,
-        outgoingPlayerOverall: true,
-        incomingPlayerOverall: true,
         feeEnabled: true,
+        outgoingPlayers: { select: { overall: true } },
+        incomingPlayers: { select: { overall: true } },
         couponTransactions: { select: { id: true } },
         coinTransactions: { select: { amount: true } },
       },
@@ -58,10 +58,14 @@ export class AuditRepository {
     return transfers.map((transfer) => ({
       id: transfer.id,
       createdAt: transfer.createdAt,
-      // Mercado tradicional é sempre uma troca completa (ver
-      // CreateTransferUseCase) — os dois overalls nunca são nulos aqui.
-      outgoingPlayerOverall: transfer.outgoingPlayerOverall as number,
-      incomingPlayerOverall: transfer.incomingPlayerOverall as number,
+      outgoingOverallSum: transfer.outgoingPlayers.reduce(
+        (sum, player) => sum + player.overall,
+        0,
+      ),
+      incomingOverallSum: transfer.incomingPlayers.reduce(
+        (sum, player) => sum + player.overall,
+        0,
+      ),
       feeEnabled: transfer.feeEnabled,
       useCoupon: transfer.couponTransactions.length > 0,
       recordedCost:
@@ -88,9 +92,9 @@ export class AuditRepository {
         // Transfer.negotiationId).
         transfer: {
           select: {
-            outgoingPlayerOverall: true,
-            incomingPlayerOverall: true,
             feeEnabled: true,
+            outgoingPlayers: { select: { overall: true } },
+            incomingPlayers: { select: { overall: true } },
             coinTransactions: { select: { type: true, amount: true } },
           },
         },
@@ -115,10 +119,27 @@ export class AuditRepository {
           0,
         ),
         resolvedAt: negotiation.resolvedAt,
-        outgoingPlayerOverall:
-          negotiation.transfer?.outgoingPlayerOverall ?? null,
-        incomingPlayerOverall:
-          negotiation.transfer?.incomingPlayerOverall ?? null,
+        // Null quando não há Transfer OU quando esse lado não tem nenhum
+        // jogador (compra/venda pura) — o `=== null` em
+        // AuditDirectNegotiationsUseCase depende de distinguir "sem
+        // jogador" de "soma 0 com jogador(es) de overall 0", então não dá
+        // pra só somar: array vazio tem que virar null, não 0.
+        outgoingOverallSum:
+          negotiation.transfer &&
+          negotiation.transfer.outgoingPlayers.length > 0
+            ? negotiation.transfer.outgoingPlayers.reduce(
+                (sum, player) => sum + player.overall,
+                0,
+              )
+            : null,
+        incomingOverallSum:
+          negotiation.transfer &&
+          negotiation.transfer.incomingPlayers.length > 0
+            ? negotiation.transfer.incomingPlayers.reduce(
+                (sum, player) => sum + player.overall,
+                0,
+              )
+            : null,
         feeEnabled: negotiation.transfer?.feeEnabled ?? null,
         recordedFee: -feeTransactions.reduce(
           (total, transaction) => total + transaction.amount,

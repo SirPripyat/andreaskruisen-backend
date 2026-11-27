@@ -48,7 +48,8 @@ describe('NegotiationsFacade', () => {
 
     await facade.propose('season-1', 'user-proposing', {
       targetTeamId: 'team-target',
-      incomingPlayerId: 'player-in',
+      outgoingPlayerIds: [],
+      incomingPlayerIds: ['player-in'],
       clauses: [],
     });
 

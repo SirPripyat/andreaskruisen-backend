@@ -5,14 +5,15 @@
 export const resolveNegotiationCouponRecipients = (negotiation: {
   proposingSquadId: string;
   targetSquadId: string;
-  outgoingPlayerId: string | null;
-  incomingPlayerId: string | null;
+  outgoingPlayerIds: string[];
+  incomingPlayerIds: string[];
 }): string[] => {
   const recipients: string[] = [];
 
-  if (negotiation.outgoingPlayerId)
+  if (negotiation.outgoingPlayerIds.length > 0)
     recipients.push(negotiation.proposingSquadId);
-  if (negotiation.incomingPlayerId) recipients.push(negotiation.targetSquadId);
+  if (negotiation.incomingPlayerIds.length > 0)
+    recipients.push(negotiation.targetSquadId);
 
   return recipients;
 };

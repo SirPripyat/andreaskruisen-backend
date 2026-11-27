@@ -41,7 +41,11 @@ export class GetTournamentFixturesUseCase {
         ...new Set(
           matchesByPhase
             .flat()
-            .flatMap((match) => [match.homeTeam.id, match.awayTeam.id]),
+            .flatMap((match) =>
+              match.awayTeam
+                ? [match.homeTeam.id, match.awayTeam.id]
+                : [match.homeTeam.id],
+            ),
         ),
       ],
       tournament.seasonId,

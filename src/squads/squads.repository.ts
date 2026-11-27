@@ -276,6 +276,7 @@ export class SquadsRepository {
         preferredFoot: player.preferredFoot,
         nationality: player.nationality,
         isStarter,
+        positions: player.positions,
         positionRatings: player.ratings[0]?.positionRatings ?? [],
       };
     });
@@ -367,6 +368,7 @@ export class SquadsRepository {
         preferredFoot: player.preferredFoot,
         nationality: player.nationality,
         isStarter,
+        positions: player.positions,
         positionRatings: player.ratings[0]?.positionRatings ?? [],
       };
 

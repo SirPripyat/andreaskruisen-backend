@@ -39,12 +39,12 @@ export class AuditDirectNegotiationsUseCase {
     seasonId: string,
     negotiation: DirectNegotiationForAudit,
   ): Promise<number> {
-    const { outgoingPlayerOverall, incomingPlayerOverall } = negotiation;
+    const { outgoingOverallSum, incomingOverallSum } = negotiation;
 
     if (
       !negotiation.feeEnabled ||
-      outgoingPlayerOverall === null ||
-      incomingPlayerOverall === null
+      outgoingOverallSum === null ||
+      incomingOverallSum === null
     )
       return 0;
 
@@ -53,7 +53,7 @@ export class AuditDirectNegotiationsUseCase {
       negotiation.resolvedAt ?? undefined,
     );
 
-    const diff = Math.abs(incomingPlayerOverall - outgoingPlayerOverall);
+    const diff = Math.abs(incomingOverallSum - outgoingOverallSum);
 
     return progressiveFee(diff, transferPricing.progressiveFeeBands);
   }

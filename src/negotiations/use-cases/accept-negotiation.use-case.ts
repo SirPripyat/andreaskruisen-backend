@@ -60,20 +60,16 @@ export class AcceptNegotiationUseCase {
     // Revalida que os jogadores ainda estão nos times esperados: entre o
     // propose e o accept, outra negociação ou transferência pode ter movido
     // algum deles.
-    const outgoing = negotiation.outgoingPlayerId
-      ? await this.getAssignmentOrThrow(
-          seasonId,
-          negotiation.outgoingPlayerId,
-          negotiation.proposingTeamId,
-        )
-      : null;
-    const incoming = negotiation.incomingPlayerId
-      ? await this.getAssignmentOrThrow(
-          seasonId,
-          negotiation.incomingPlayerId,
-          negotiation.targetTeamId,
-        )
-      : null;
+    const outgoing = await this.getAssignmentsOrThrow(
+      seasonId,
+      negotiation.outgoingPlayerIds,
+      negotiation.proposingTeamId,
+    );
+    const incoming = await this.getAssignmentsOrThrow(
+      seasonId,
+      negotiation.incomingPlayerIds,
+      negotiation.targetTeamId,
+    );
 
     const { coupon, transferPricing } =
       await this.getActiveRulesetUseCase.execute(seasonId);
@@ -82,13 +78,19 @@ export class AcceptNegotiationUseCase {
     // jogadores (os dois lados preenchidos) com a janela aberta tendo
     // feeEnabled = true. Compra/venda pura nunca paga essa taxa.
     const fee =
-      outgoing && incoming && feeEnabled
+      outgoing.length > 0 && incoming.length > 0 && feeEnabled
         ? calculateDirectNegotiationFee(
             {
               proposingSquadId: negotiation.proposingSquadId,
               targetSquadId: negotiation.targetSquadId,
-              outgoingPlayerOverall: outgoing.player.overall,
-              incomingPlayerOverall: incoming.player.overall,
+              outgoingOverallSum: outgoing.reduce(
+                (sum, assignment) => sum + assignment.player.overall,
+                0,
+              ),
+              incomingOverallSum: incoming.reduce(
+                (sum, assignment) => sum + assignment.player.overall,
+                0,
+              ),
             },
             transferPricing.progressiveFeeBands,
           )
@@ -243,21 +245,25 @@ export class AcceptNegotiationUseCase {
     return squad;
   }
 
-  private async getAssignmentOrThrow(
+  private async getAssignmentsOrThrow(
     seasonId: string,
-    playerId: string,
+    playerIds: string[],
     expectedTeamId: string,
-  ): Promise<NegotiationAssignment> {
-    const assignment = await this.negotiationsRepository.findAssignment(
-      seasonId,
-      playerId,
+  ): Promise<NegotiationAssignment[]> {
+    return Promise.all(
+      playerIds.map(async (playerId) => {
+        const assignment = await this.negotiationsRepository.findAssignment(
+          seasonId,
+          playerId,
+        );
+
+        if (!assignment || assignment.team.id !== expectedTeamId)
+          throw new ConflictException(
+            'Um dos jogadores dessa negociação não está mais no time esperado',
+          );
+
+        return assignment;
+      }),
     );
-
-    if (!assignment || assignment.team.id !== expectedTeamId)
-      throw new ConflictException(
-        'Um dos jogadores dessa negociação não está mais no time esperado',
-      );
-
-    return assignment;
   }
 }

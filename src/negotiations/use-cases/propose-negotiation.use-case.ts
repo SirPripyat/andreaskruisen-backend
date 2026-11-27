@@ -50,22 +50,18 @@ export class ProposeNegotiationUseCase {
         'Você não pode negociar com seu próprio time',
       );
 
-    const outgoing = dto.outgoingPlayerId
-      ? await this.getAssignmentOrThrow(
-          seasonId,
-          dto.outgoingPlayerId,
-          proposingSquad.teamId,
-          'que sai',
-        )
-      : null;
-    const incoming = dto.incomingPlayerId
-      ? await this.getAssignmentOrThrow(
-          seasonId,
-          dto.incomingPlayerId,
-          targetSquad.teamId,
-          'que entra',
-        )
-      : null;
+    const outgoing = await this.getAssignmentsOrThrow(
+      seasonId,
+      dto.outgoingPlayerIds,
+      proposingSquad.teamId,
+      'que sai',
+    );
+    const incoming = await this.getAssignmentsOrThrow(
+      seasonId,
+      dto.incomingPlayerIds,
+      targetSquad.teamId,
+      'que entra',
+    );
 
     const clauses = this.resolveClauses(dto.clauses, outgoing, incoming);
 
@@ -73,22 +69,25 @@ export class ProposeNegotiationUseCase {
       seasonId,
       proposingSquadId: proposingSquad.id,
       targetSquadId: targetSquad.id,
-      outgoingPlayerId: outgoing?.player.id ?? null,
-      incomingPlayerId: incoming?.player.id ?? null,
+      outgoingPlayerIds: outgoing.map((assignment) => assignment.player.id),
+      incomingPlayerIds: incoming.map((assignment) => assignment.player.id),
       coinAmount: dto.coinAmount ?? null,
       clauses,
     });
   }
 
-  // Cada cláusula precisa se referir a um dos dois jogadores já resolvidos
-  // da negociação (ver seção 4 do regulamento) — sem isso, não dá pra saber
-  // de qual time é o "ex-clube"/beneficiário da cláusula.
+  // Cada cláusula precisa se referir a um dos jogadores já resolvidos da
+  // negociação (ver seção 4 do regulamento) — sem isso, não dá pra saber de
+  // qual time é o "ex-clube"/beneficiário da cláusula. Até 2 de cada lado
+  // (troca multi-jogador, ver v1-transferencias.md), então até 4 no total.
   private resolveClauses(
     clauses: NegotiationClauseInputDTO[],
-    outgoing: NegotiationAssignment | null,
-    incoming: NegotiationAssignment | null,
+    outgoing: NegotiationAssignment[],
+    incoming: NegotiationAssignment[],
   ): NegotiationClauseInput[] {
-    const negotiatedPlayerIds = [outgoing?.player.id, incoming?.player.id];
+    const negotiatedPlayerIds = [...outgoing, ...incoming].map(
+      (assignment) => assignment.player.id,
+    );
 
     return clauses.map((clause) => {
       if (!negotiatedPlayerIds.includes(clause.playerId))
@@ -138,27 +137,31 @@ export class ProposeNegotiationUseCase {
     return squad;
   }
 
-  private async getAssignmentOrThrow(
+  private async getAssignmentsOrThrow(
     seasonId: string,
-    playerId: string,
+    playerIds: string[],
     expectedTeamId: string,
     label: string,
-  ): Promise<NegotiationAssignment> {
-    const assignment = await this.negotiationsRepository.findAssignment(
-      seasonId,
-      playerId,
+  ): Promise<NegotiationAssignment[]> {
+    return Promise.all(
+      playerIds.map(async (playerId) => {
+        const assignment = await this.negotiationsRepository.findAssignment(
+          seasonId,
+          playerId,
+        );
+
+        if (!assignment)
+          throw new NotFoundException(
+            `Jogador ${label} não encontrado nessa temporada`,
+          );
+
+        if (assignment.team.id !== expectedTeamId)
+          throw new ForbiddenException(
+            `Jogador ${label} não está no time esperado`,
+          );
+
+        return assignment;
+      }),
     );
-
-    if (!assignment)
-      throw new NotFoundException(
-        `Jogador ${label} não encontrado nessa temporada`,
-      );
-
-    if (assignment.team.id !== expectedTeamId)
-      throw new ForbiddenException(
-        `Jogador ${label} não está no time esperado`,
-      );
-
-    return assignment;
   }
 }

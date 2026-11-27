@@ -201,18 +201,18 @@ model Player {
   // precisar de uma query correlacionada em PlayerRating (histórico 1:N).
   latestOverallRating Int
 
-  positions          PlayerPosition[]
-  ratings            PlayerRating[]
-  seasonAssignments  PlayerTeamAssignment[]
-  goalsScored        Goal[]                    @relation("GoalScorer")
-  goalsAssisted      Goal[]                    @relation("GoalAssist")
-  transfersOut       Transfer[]                @relation("TransferOutgoingPlayer")
-  transfersIn        Transfer[]                @relation("TransferIncomingPlayer")
-  negotiationsOut    DirectNegotiation[]       @relation("DirectNegotiationOutgoingPlayer")
-  negotiationsIn     DirectNegotiation[]       @relation("DirectNegotiationIncomingPlayer")
-  negotiationClauses DirectNegotiationClause[]
-  lineupSlots        TeamLineupSlot[]
-  favoritedBy        FavoritePlayer[]
+  positions                    PlayerPosition[]
+  ratings                      PlayerRating[]
+  seasonAssignments            PlayerTeamAssignment[]
+  goalsScored                  Goal[]                            @relation("GoalScorer")
+  goalsAssisted                Goal[]                            @relation("GoalAssist")
+  transferOutgoingMovements    TransferOutgoingPlayer[]
+  transferIncomingMovements    TransferIncomingPlayer[]
+  negotiationOutgoingMovements DirectNegotiationOutgoingPlayer[]
+  negotiationIncomingMovements DirectNegotiationIncomingPlayer[]
+  negotiationClauses           DirectNegotiationClause[]
+  lineupSlots                  TeamLineupSlot[]
+  favoritedBy                  FavoritePlayer[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -650,6 +650,12 @@ model Tournament {
   // Limite de times no torneio, validado contra as faixas do formato
   // (ver TEAM_COUNT_RULES em tournament-format-rules.ts).
   maxTeams   Int
+  // Configuração da fase de grupos, só preenchida quando format =
+  // GROUP_STAGE_KNOCKOUT (tamanho do grupo, nº de classificados, ida e
+  // volta, se os times de participantes ficam concentrados no sorteio) —
+  // validada por GroupStageConfigSchema antes de gravar, e revalidada
+  // sempre que lida (ver AdvancePhaseUseCase), nunca confiada como está.
+  groupStageConfig Json?
   createdAt  DateTime         @default(now())
   // Encerramento explícito (ver FinishTournamentUseCase): null = em
   // andamento. Travado só quando setado — sem isso, a final de um mata-mata
@@ -706,18 +712,21 @@ model Phase {
 // "terminou 0 a 0" — sem ele, as duas situações teriam zero Goal e seriam
 // indistinguíveis.
 model Match {
-  id         String    @id @default(uuid()) @db.Uuid
-  phaseId    String    @db.Uuid
-  phase      Phase     @relation(fields: [phaseId], references: [id])
-  homeTeamId String    @db.Uuid
-  homeTeam   Team      @relation("MatchHomeTeam", fields: [homeTeamId], references: [id])
-  awayTeamId String    @db.Uuid
-  awayTeam   Team      @relation("MatchAwayTeam", fields: [awayTeamId], references: [id])
+  id          String    @id @default(uuid()) @db.Uuid
+  phaseId     String    @db.Uuid
+  phase       Phase     @relation(fields: [phaseId], references: [id])
+  homeTeamId  String    @db.Uuid
+  homeTeam    Team      @relation("MatchHomeTeam", fields: [homeTeamId], references: [id])
+  // null = partida de "bye" (ver buildGroupStageQualifiersBracket): o time
+  // da casa avança automaticamente sem jogar, pra completar o bracket até a
+  // próxima potência de 2. Nasce com playedAt já preenchido.
+  awayTeamId  String?   @db.Uuid
+  awayTeam    Team?     @relation("MatchAwayTeam", fields: [awayTeamId], references: [id])
   // Preenchido só em fases do tipo GROUP (ex.: "A", "B").
-  groupLabel String?
+  groupLabel  String?
   // Rodada (turno) dentro do grupo — todo time joga uma vez por rodada.
   // Preenchido só em fases do tipo GROUP, igual groupLabel.
-  round      Int?
+  round       Int?
   // Posição do confronto dentro da fase (0-based), na ordem em que foi
   // gerado — ver TournamentsRepository.createPhaseWithMatches. Em fases
   // KNOCKOUT é o que ancora o chaveamento: os vencedores dos slots 2i/2i+1
@@ -726,7 +735,7 @@ model Match {
   // garantida com a posição no bracket.
   bracketSlot Int?
   // Quando o resultado foi registrado (null = ainda não jogado).
-  playedAt   DateTime?
+  playedAt    DateTime?
 
   // Resultado dos pênaltis, preenchido só quando a partida é de mata-mata
   // (Phase.type == KNOCKOUT) e termina empatada no tempo normal — uma
@@ -831,31 +840,27 @@ model Transfer {
   requestedByUserId String @db.Uuid
   requestedBy       User   @relation(fields: [requestedByUserId], references: [id])
 
-  // outgoingPlayerId nulo numa compra pura nascida de negociação direta (só
-  // o incoming existe) — outgoingTeamId continua preenchido (identifica o
-  // squad desse lado da movimentação, mesmo sem jogador saindo dele). No
-  // mercado tradicional (originType = MARKET) é sempre uma troca, então os
-  // dois jogadores são sempre preenchidos.
-  outgoingPlayerId String? @db.Uuid
-  outgoingPlayer   Player? @relation("TransferOutgoingPlayer", fields: [outgoingPlayerId], references: [id])
-  outgoingTeamId   String  @db.Uuid
-  outgoingTeam     Team    @relation("TransferOutgoingTeam", fields: [outgoingTeamId], references: [id])
+  // outgoingTeamId continua preenchido mesmo quando nenhum jogador sai
+  // desse lado (compra pura nascida de negociação direta — ver
+  // outgoingPlayers abaixo) — identifica o squad desse lado da
+  // movimentação. No mercado tradicional (originType = MARKET) sempre tem
+  // pelo menos 1 jogador de cada lado, podendo ter até 2 (troca
+  // multi-jogador, ver v1-transferencias.md).
+  outgoingTeamId String @db.Uuid
+  outgoingTeam   Team   @relation("TransferOutgoingTeam", fields: [outgoingTeamId], references: [id])
 
-  // incomingPlayerId nulo numa venda pura nascida de negociação direta (só
-  // o outgoing existe) — incomingTeamId continua preenchido, mesma lógica
-  // de outgoingTeamId acima.
-  incomingPlayerId String? @db.Uuid
-  incomingPlayer   Player? @relation("TransferIncomingPlayer", fields: [incomingPlayerId], references: [id])
-  incomingTeamId   String  @db.Uuid
-  incomingTeam     Team    @relation("TransferIncomingTeam", fields: [incomingTeamId], references: [id])
+  // incomingTeamId continua preenchido mesmo quando nenhum jogador entra
+  // desse lado (venda pura nascida de negociação direta), mesma lógica de
+  // outgoingTeamId acima.
+  incomingTeamId String @db.Uuid
+  incomingTeam   Team   @relation("TransferIncomingTeam", fields: [incomingTeamId], references: [id])
 
-  // Overall dos dois jogadores no momento da movimentação (ver
-  // docs/regras-temporada/v1-transferencias.md) — snapshot, não aponta pro
-  // Player: se o scraper atualizar o overall depois, a auditoria continua
-  // recalculando o custo com o valor que valia na hora da movimentação.
-  // Nulo no lado correspondente a um outgoing/incomingPlayerId nulo.
-  outgoingPlayerOverall Int?
-  incomingPlayerOverall Int?
+  // Jogador(es) de cada lado da movimentação, com overall snapshotado no
+  // momento (ver TransferOutgoingPlayer/TransferIncomingPlayer) — 0 numa
+  // compra/venda pura de negociação direta, 1 no caso comum, até 2 no
+  // mercado tradicional multi-jogador.
+  outgoingPlayers TransferOutgoingPlayer[]
+  incomingPlayers TransferIncomingPlayer[]
 
   // Snapshot de NegotiationWindow.feeEnabled no momento da movimentação — a
   // auditoria recalcula o custo com esse valor, nunca com o estado atual
@@ -874,6 +879,37 @@ model Transfer {
   createdAt DateTime @default(now())
 
   @@index([seasonId])
+}
+
+// Jogador que saiu do outgoingTeam em direção ao incomingTeam numa
+// movimentação (ver Transfer.outgoingPlayers). overall é o snapshot no
+// momento da troca (não aponta pro Player: scraper pode atualizar depois
+// e a auditoria precisa recalcular pelo valor que valia na hora). Até 2
+// linhas por Transfer no mercado tradicional (troca multi-jogador, ver
+// docs/regras-temporada/v1-transferencias.md); no máximo 1 numa
+// negociação direta aceita.
+model TransferOutgoingPlayer {
+  id         String   @id @default(uuid()) @db.Uuid
+  transferId String   @db.Uuid
+  transfer   Transfer @relation(fields: [transferId], references: [id])
+  playerId   String   @db.Uuid
+  player     Player   @relation(fields: [playerId], references: [id])
+  overall    Int
+
+  @@index([transferId])
+}
+
+// Mesma ideia de TransferOutgoingPlayer, lado incoming (ver
+// Transfer.incomingPlayers).
+model TransferIncomingPlayer {
+  id         String   @id @default(uuid()) @db.Uuid
+  transferId String   @db.Uuid
+  transfer   Transfer @relation(fields: [transferId], references: [id])
+  playerId   String   @db.Uuid
+  player     Player   @relation(fields: [playerId], references: [id])
+  overall    Int
+
+  @@index([transferId])
 }
 
 // Status de uma negociação direta entre dois participantes (ver
@@ -901,15 +937,15 @@ model DirectNegotiation {
   targetSquadId    String @db.Uuid
   targetSquad      Squad  @relation("DirectNegotiationTargetSquad", fields: [targetSquadId], references: [id])
 
-  // Jogador que sai do proposingSquad em direção ao targetSquad. Nulo numa
-  // compra direta (proposingSquad só paga moedas pelo incomingPlayer).
-  outgoingPlayerId String? @db.Uuid
-  outgoingPlayer   Player? @relation("DirectNegotiationOutgoingPlayer", fields: [outgoingPlayerId], references: [id])
+  // Jogador(es) que saem do proposingSquad em direção ao targetSquad. Vazio
+  // numa compra direta (proposingSquad só paga moedas pelos
+  // incomingPlayers). Até 2 jogadores — troca multi-jogador, mesma regra
+  // do mercado tradicional (ver Transfer.outgoingPlayers).
+  outgoingPlayers DirectNegotiationOutgoingPlayer[]
 
-  // Jogador que sai do targetSquad em direção ao proposingSquad. Nulo numa
-  // venda (proposingSquad só entrega o outgoingPlayer por moedas).
-  incomingPlayerId String? @db.Uuid
-  incomingPlayer   Player? @relation("DirectNegotiationIncomingPlayer", fields: [incomingPlayerId], references: [id])
+  // Jogador(es) que saem do targetSquad em direção ao proposingSquad. Vazio
+  // numa venda (proposingSquad só entrega jogadores por moedas).
+  incomingPlayers DirectNegotiationIncomingPlayer[]
 
   // Moedas pagas pelo proposingSquad ao targetSquad no aceite. Negativo
   // significa que é o targetSquad quem paga o proposingSquad. Nulo/0 quando
@@ -929,6 +965,34 @@ model DirectNegotiation {
 
   @@index([seasonId])
   @@index([targetSquadId, status])
+}
+
+// Jogador que sai do proposingSquad numa negociação direta (ver
+// DirectNegotiation.outgoingPlayers) — até 2, mesma regra de troca
+// multi-jogador do mercado tradicional. Sem overall snapshotado aqui: isso
+// só acontece no Transfer gerado pelo aceite (ver Transfer.outgoingPlayers),
+// já que a proposta pode ficar PENDING por tempo indeterminado e o overall
+// pode mudar entre a proposta e o aceite.
+model DirectNegotiationOutgoingPlayer {
+  id            String            @id @default(uuid()) @db.Uuid
+  negotiationId String            @db.Uuid
+  negotiation   DirectNegotiation @relation(fields: [negotiationId], references: [id])
+  playerId      String            @db.Uuid
+  player        Player            @relation(fields: [playerId], references: [id])
+
+  @@index([negotiationId])
+}
+
+// Mesma ideia de DirectNegotiationOutgoingPlayer, lado incoming (ver
+// DirectNegotiation.incomingPlayers).
+model DirectNegotiationIncomingPlayer {
+  id            String            @id @default(uuid()) @db.Uuid
+  negotiationId String            @db.Uuid
+  negotiation   DirectNegotiation @relation(fields: [negotiationId], references: [id])
+  playerId      String            @db.Uuid
+  player        Player            @relation(fields: [playerId], references: [id])
+
+  @@index([negotiationId])
 }
 
 // Tipos de cláusula contratual básica do regulamento (ver

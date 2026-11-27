@@ -4,24 +4,24 @@ import {
 } from '../direct-negotiation.utils';
 
 describe('resolveNegotiationCouponRecipients', () => {
-  it('concede cupom só ao proposingSquad numa venda (só outgoingPlayer)', () => {
+  it('concede cupom só ao proposingSquad numa venda (só outgoingPlayers)', () => {
     expect(
       resolveNegotiationCouponRecipients({
         proposingSquadId: 'proposing',
         targetSquadId: 'target',
-        outgoingPlayerId: 'player-1',
-        incomingPlayerId: null,
+        outgoingPlayerIds: ['player-1'],
+        incomingPlayerIds: [],
       }),
     ).toEqual(['proposing']);
   });
 
-  it('concede cupom só ao targetSquad numa compra (só incomingPlayer)', () => {
+  it('concede cupom só ao targetSquad numa compra (só incomingPlayers)', () => {
     expect(
       resolveNegotiationCouponRecipients({
         proposingSquadId: 'proposing',
         targetSquadId: 'target',
-        outgoingPlayerId: null,
-        incomingPlayerId: 'player-1',
+        outgoingPlayerIds: [],
+        incomingPlayerIds: ['player-1'],
       }),
     ).toEqual(['target']);
   });
@@ -31,8 +31,19 @@ describe('resolveNegotiationCouponRecipients', () => {
       resolveNegotiationCouponRecipients({
         proposingSquadId: 'proposing',
         targetSquadId: 'target',
-        outgoingPlayerId: 'player-1',
-        incomingPlayerId: 'player-2',
+        outgoingPlayerIds: ['player-1'],
+        incomingPlayerIds: ['player-2'],
+      }),
+    ).toEqual(['proposing', 'target']);
+  });
+
+  it('concede cupom aos dois squads numa troca multi-jogador (2 de um lado)', () => {
+    expect(
+      resolveNegotiationCouponRecipients({
+        proposingSquadId: 'proposing',
+        targetSquadId: 'target',
+        outgoingPlayerIds: ['player-1', 'player-2'],
+        incomingPlayerIds: ['player-3'],
       }),
     ).toEqual(['proposing', 'target']);
   });

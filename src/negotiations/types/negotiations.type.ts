@@ -10,7 +10,7 @@ export type NegotiationDirection = 'sent' | 'received';
 export type NegotiationAssignment = {
   // overall usado pra calcular a taxa de negociação quando a janela tem
   // feeEnabled (ver negotiation-fee.utils.ts) — não faz parte do DTO de
-  // resposta (outgoingPlayer/incomingPlayer não expõem overall hoje).
+  // resposta (outgoingPlayers/incomingPlayers não expõem overall hoje).
   player: NegotiationPlayerSummaryResponseDTO & { overall: number };
   team: { id: string; name: string; crestUrl: string };
   position: PositionCode;
@@ -42,7 +42,9 @@ export type NegotiationWithTeams = {
   proposingUserId: string;
   targetSquadId: string;
   targetTeamId: string;
-  outgoingPlayerId: string | null;
-  incomingPlayerId: string | null;
+  // Até 2 jogadores de cada lado (troca multi-jogador, ver
+  // v1-transferencias.md) — vazio no caso de compra/venda pura.
+  outgoingPlayerIds: string[];
+  incomingPlayerIds: string[];
   coinAmount: number | null;
 };

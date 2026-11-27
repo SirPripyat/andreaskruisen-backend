@@ -41,7 +41,7 @@ export class GetChampionTeamIdUseCase {
         latestPhaseType: 'KNOCKOUT',
         knockoutMatches: matches.map((match) => ({
           homeTeamId: match.homeTeam.id,
-          awayTeamId: match.awayTeam.id,
+          awayTeamId: match.awayTeam?.id ?? null,
           goalScorerTeamIds: match.goalScorerTeamIds,
           penaltyWinnerTeamId: match.penalties?.winnerTeamId ?? null,
         })),

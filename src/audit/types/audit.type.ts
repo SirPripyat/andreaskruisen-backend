@@ -31,8 +31,10 @@ export type SquadBalance = {
 export type TransferForAudit = {
   id: string;
   createdAt: Date;
-  outgoingPlayerOverall: number;
-  incomingPlayerOverall: number;
+  // Soma dos overalls de cada lado — 1 jogador no caso comum, até 2 numa
+  // troca multi-jogador (ver v1-transferencias.md).
+  outgoingOverallSum: number;
+  incomingOverallSum: number;
   useCoupon: boolean;
   // Snapshot de NegotiationWindow.feeEnabled na hora da troca (ver
   // Transfer.feeEnabled) — a auditoria recalcula o custo com esse valor,
@@ -52,8 +54,11 @@ export type DirectNegotiationForAudit = {
   // nesse caso a taxa de negociação nunca se aplica, não importa o
   // feeEnabled snapshotado.
   resolvedAt: Date | null;
-  outgoingPlayerOverall: number | null;
-  incomingPlayerOverall: number | null;
+  // Soma dos overalls de cada lado — null quando esse lado não tem nenhum
+  // jogador (compra/venda pura), número (podendo ser 0) quando tem 1 ou
+  // até 2 (troca multi-jogador, ver v1-transferencias.md).
+  outgoingOverallSum: number | null;
+  incomingOverallSum: number | null;
   feeEnabled: boolean | null;
   // Soma dos CoinTransaction tipo DIRECT_NEGOTIATION_FEE ligados a essa
   // negociação (valor positivo) — 0 se não houve taxa.

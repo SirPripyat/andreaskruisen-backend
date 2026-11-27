@@ -43,7 +43,13 @@ export class ListTournamentMatchesUseCase {
     const locked = hasLaterPhase || tournament.finishedAt !== null;
 
     const ownerByTeamId = await this.tournamentsRepository.findOwnersByTeamIds(
-      [...new Set(result.data.flatMap((m) => [m.homeTeam.id, m.awayTeam.id]))],
+      [
+        ...new Set(
+          result.data.flatMap((m) =>
+            m.awayTeam ? [m.homeTeam.id, m.awayTeam.id] : [m.homeTeam.id],
+          ),
+        ),
+      ],
       tournament.seasonId,
     );
 

@@ -28,8 +28,8 @@ export class AuditTransfersUseCase {
 
       const expectedCost = calculateTraditionalMarketTransferCost(
         {
-          outgoingPlayerOverall: transfer.outgoingPlayerOverall,
-          incomingPlayerOverall: transfer.incomingPlayerOverall,
+          outgoingOverallSum: transfer.outgoingOverallSum,
+          incomingOverallSum: transfer.incomingOverallSum,
           useCoupon: transfer.useCoupon,
           feeEnabled: transfer.feeEnabled,
         },

@@ -28,8 +28,8 @@ const calculateRawCost = (
         total +
         calculateTraditionalMarketTransferCost(
           {
-            outgoingPlayerOverall: baseOverall,
-            incomingPlayerOverall: overall,
+            outgoingOverallSum: baseOverall,
+            incomingOverallSum: overall,
             useCoupon: true,
             feeEnabled: false,
           },

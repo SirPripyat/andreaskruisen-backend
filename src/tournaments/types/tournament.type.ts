@@ -7,5 +7,7 @@ export type GeneratedGroupMatch = {
 
 export type GeneratedKnockoutMatch = {
   homeTeamId: string;
-  awayTeamId: string;
+  // null = bye (ver buildGroupStageQualifiersBracket) — o time da casa
+  // avança sem jogar.
+  awayTeamId: string | null;
 };

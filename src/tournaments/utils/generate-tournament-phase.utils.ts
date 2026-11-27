@@ -1,4 +1,6 @@
 import { TournamentFormat } from 'generated/prisma/enums';
+import { GroupStageConfig } from '../schemas';
+import { drawGroupStageGroups } from './group-stage-draw.utils';
 import { generateGroupStageMatches } from './group-stage-tournament.utils';
 import { generateKnockoutMatches } from './knockout-tournament.utils';
 import { generateLeagueMatches } from './league-matches.utils';
@@ -29,6 +31,10 @@ export const knockoutRoundName = (teamsCount: number, order: number): string =>
 export const buildFirstPhase = (
   format: TournamentFormat,
   teamsIds: string[],
+  // Só usados (e obrigatórios) pra GROUP_STAGE_KNOCKOUT — a DTO de criação
+  // garante que groupStageConfig vem preenchido nesse formato (ver
+  // CreateTournamentSchema).
+  groupStage?: { config: GroupStageConfig; ownedTeamIds: ReadonlySet<string> },
 ): GenerateTournamentPhase => {
   switch (format) {
     case 'KNOCKOUT':
@@ -38,12 +44,26 @@ export const buildFirstPhase = (
         matches: generateKnockoutMatches(teamsIds),
       };
 
-    case 'GROUP_STAGE_KNOCKOUT':
+    case 'GROUP_STAGE_KNOCKOUT': {
+      if (!groupStage)
+        throw new Error('groupStage é obrigatório para GROUP_STAGE_KNOCKOUT');
+
+      const groups = drawGroupStageGroups(
+        teamsIds,
+        groupStage.ownedTeamIds,
+        groupStage.config.groupSize,
+        groupStage.config.keepOwnedTeamsInSameGroup,
+      );
+
       return {
         type: 'GROUP',
         name: 'Fase de grupos',
-        matches: generateGroupStageMatches(teamsIds),
+        matches: generateGroupStageMatches(
+          groups,
+          groupStage.config.doubleRound,
+        ),
       };
+    }
 
     default:
       return {

@@ -20,40 +20,35 @@ export class ListTransfersUseCase {
     return transfers.flatMap((transfer) => this.toPlayerMovements(transfer));
   }
 
-  // Mercado tradicional sempre tem os dois lados (troca completa) e gera 2
-  // movimentos; negociação direta pode ser compra/venda pura (ver
-  // Transfer.outgoing/incomingPlayerId nullable) e gera só 1.
+  // Mercado tradicional sempre tem pelo menos 1 jogador de cada lado
+  // (podendo ter até 2 numa troca multi-jogador, ver
+  // v1-transferencias.md) e gera 1 movimento por jogador; negociação
+  // direta pode ser compra/venda pura (listas vazias de um dos lados).
   private toPlayerMovements(
     transfer: TransferResponseDTO,
   ): TransferPlayerMovementResponseDTO[] {
-    const movements: TransferPlayerMovementResponseDTO[] = [];
+    const toMovement = (
+      player: TransferResponseDTO['outgoingPlayers'][number],
+      fromTeam: TransferResponseDTO['outgoingTeam'],
+      toTeam: TransferResponseDTO['incomingTeam'],
+    ): TransferPlayerMovementResponseDTO => ({
+      transferId: transfer.id,
+      player,
+      fromTeam,
+      toTeam,
+      requestedBy: transfer.requestedBy,
+      date: transfer.createdAt,
+      cost: transfer.cost,
+      originType: transfer.originType,
+    });
 
-    if (transfer.outgoingPlayer) {
-      movements.push({
-        transferId: transfer.id,
-        player: transfer.outgoingPlayer,
-        fromTeam: transfer.outgoingTeam,
-        toTeam: transfer.incomingTeam,
-        requestedBy: transfer.requestedBy,
-        date: transfer.createdAt,
-        cost: transfer.cost,
-        originType: transfer.originType,
-      });
-    }
-
-    if (transfer.incomingPlayer) {
-      movements.push({
-        transferId: transfer.id,
-        player: transfer.incomingPlayer,
-        fromTeam: transfer.incomingTeam,
-        toTeam: transfer.outgoingTeam,
-        requestedBy: transfer.requestedBy,
-        date: transfer.createdAt,
-        cost: transfer.cost,
-        originType: transfer.originType,
-      });
-    }
-
-    return movements;
+    return [
+      ...transfer.outgoingPlayers.map((player) =>
+        toMovement(player, transfer.outgoingTeam, transfer.incomingTeam),
+      ),
+      ...transfer.incomingPlayers.map((player) =>
+        toMovement(player, transfer.incomingTeam, transfer.outgoingTeam),
+      ),
+    ];
   }
 }

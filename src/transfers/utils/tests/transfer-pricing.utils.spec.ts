@@ -26,12 +26,12 @@ describe('calculateTraditionalMarketTransferCost', () => {
     [85, 85, 10],
   ])(
     'sem cupom, %i -> %i custa %i moedas',
-    (outgoingPlayerOverall, incomingPlayerOverall, expectedCost) => {
+    (outgoingOverallSum, incomingOverallSum, expectedCost) => {
       expect(
         calculateTraditionalMarketTransferCost(
           {
-            outgoingPlayerOverall,
-            incomingPlayerOverall,
+            outgoingOverallSum,
+            incomingOverallSum,
             useCoupon: false,
             feeEnabled: true,
           },
@@ -47,12 +47,12 @@ describe('calculateTraditionalMarketTransferCost', () => {
     [90, 88, 0],
   ])(
     'com cupom, %i -> %i custa %i moedas',
-    (outgoingPlayerOverall, incomingPlayerOverall, expectedCost) => {
+    (outgoingOverallSum, incomingOverallSum, expectedCost) => {
       expect(
         calculateTraditionalMarketTransferCost(
           {
-            outgoingPlayerOverall,
-            incomingPlayerOverall,
+            outgoingOverallSum,
+            incomingOverallSum,
             useCoupon: true,
             feeEnabled: true,
           },
@@ -68,12 +68,12 @@ describe('calculateTraditionalMarketTransferCost', () => {
     [90, 88, 0],
   ])(
     'com a janela sem taxa (feeEnabled: false), %i -> %i custa %i moedas (só a diferença)',
-    (outgoingPlayerOverall, incomingPlayerOverall, expectedCost) => {
+    (outgoingOverallSum, incomingOverallSum, expectedCost) => {
       expect(
         calculateTraditionalMarketTransferCost(
           {
-            outgoingPlayerOverall,
-            incomingPlayerOverall,
+            outgoingOverallSum,
+            incomingOverallSum,
             useCoupon: false,
             feeEnabled: false,
           },
@@ -82,4 +82,38 @@ describe('calculateTraditionalMarketTransferCost', () => {
       ).toBe(expectedCost);
     },
   );
+
+  // Troca multi-jogador (ver v1-transferencias.md): a fórmula não muda,
+  // só os overalls de entrada são somados antes de calcular a diferença.
+  describe('troca multi-jogador', () => {
+    it('2 jogadores saem por 1 que entra: soma dos dois lados define a diferença', () => {
+      // sai 70 + 75 (soma 145), entra 90 -> diferença negativa -> só taxa mínima
+      expect(
+        calculateTraditionalMarketTransferCost(
+          {
+            outgoingOverallSum: 70 + 75,
+            incomingOverallSum: 90,
+            useCoupon: false,
+            feeEnabled: true,
+          },
+          PRICING,
+        ),
+      ).toBe(10);
+    });
+
+    it('1 jogador sai por 2 que entram: soma dos dois lados define a diferença', () => {
+      // sai 80, entra 50 + 55 (soma 105) -> diferença 25 -> faixa sem teto (50)
+      expect(
+        calculateTraditionalMarketTransferCost(
+          {
+            outgoingOverallSum: 80,
+            incomingOverallSum: 50 + 55,
+            useCoupon: false,
+            feeEnabled: true,
+          },
+          PRICING,
+        ),
+      ).toBe(25 * 10 + 50);
+    });
+  });
 });

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TournamentsRepository } from '../tournaments.repository';
 import { MatchupTeam, TournamentListItem } from '../types';
+import { readQualifiersPerGroup } from '../utils';
 import { GetChampionTeamIdUseCase } from './get-champion-team-id.use-case';
 
 @Injectable()
@@ -42,6 +43,7 @@ export class ListTournamentsUseCase {
         createdAt: tournament.createdAt,
         finishedAt: tournament.finishedAt,
         currentPhase: currentPhases[index],
+        qualifiersPerGroup: readQualifiersPerGroup(tournament),
         champion: championTeamId
           ? (champions.get(championTeamId) ?? null)
           : null,

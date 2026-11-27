@@ -2,7 +2,13 @@ import { TournamentFormat } from '../../../generated/prisma/client';
 
 export type ChampionMatch = {
   homeTeamId: string;
-  awayTeamId: string;
+  // null = bye (ver buildGroupStageQualifiersBracket) — nunca é a final de
+  // verdade: bye só ocorre na 1ª rodada de mata-mata, que tem sempre 2+
+  // confrontos (ver nextPowerOfTwo), então determineChampionTeamId/
+  // determineRunnerUpTeamId (que só olham pra knockoutMatches.length === 1)
+  // nunca chegam a ler um awayTeamId null na prática — o guard abaixo é só
+  // defensivo.
+  awayTeamId: string | null;
   goalScorerTeamIds: string[];
   // Vencedor nos pênaltis quando o placar empata — eliminatória não pode
   // terminar empatada (ver ReplaceMatchGoalsUseCase). Null

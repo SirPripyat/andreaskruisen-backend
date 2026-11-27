@@ -16,6 +16,11 @@ export type RosterPlayerPositionRating = {
   overall: number;
 };
 
+export type RosterPlayerPosition = {
+  position: PositionCode;
+  isPrimary: boolean;
+};
+
 export type RosterPlayer = {
   id: string;
   name: string;
@@ -26,6 +31,9 @@ export type RosterPlayer = {
   preferredFoot: PreferredFoot;
   nationality: { id: string; name: string; flagUrl: string };
   isStarter: boolean;
+  // Todas as posições que o jogador pode jogar (ver model PlayerPosition),
+  // não só a que está ocupando no momento (`position`, acima).
+  positions: RosterPlayerPosition[];
   // Overall na posição que ocupa no momento (slot do campo pra titular,
   // posição primária pro reserva) vem do front, calculado em cima disso —
   // ver findLineupOverview/findRoster. Grid completo (27 posições do
@@ -72,7 +80,10 @@ export type SquadCoinTransaction = {
   createdAt: Date;
   match: {
     id: string;
-    opponentTeam: Pick<Team, 'id' | 'name' | 'crestUrl'>;
+    // null = bye (ver buildGroupStageQualifiersBracket) — hoje nunca
+    // acontece de verdade, já que nenhum prêmio é dado a uma partida de
+    // bye, mas o tipo do Match permite null.
+    opponentTeam: Pick<Team, 'id' | 'name' | 'crestUrl'> | null;
   } | null;
   phase: Pick<Phase, 'id' | 'name'> | null;
   transferId: string | null;

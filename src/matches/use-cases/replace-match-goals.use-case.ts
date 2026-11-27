@@ -31,6 +31,9 @@ export class ReplaceMatchGoalsUseCase {
     const match = await this.matchesRepository.findMatchForGoals(matchId);
     if (!match) throw new NotFoundException('Partida não encontrada');
 
+    if (!match.awayTeamId)
+      throw new ConflictException('Partida de bye não tem placar para editar');
+
     if (match.tournamentFinishedAt)
       throw new ConflictException(
         'Partida travada: o torneio já foi encerrado',

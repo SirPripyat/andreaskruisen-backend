@@ -12,13 +12,14 @@ export const toMatchListItem = (
   locked: boolean,
   ownerByTeamId: Map<string, TeamOwner>,
 ): MatchListItem => {
-  const score = match.playedAt
-    ? computeMatchScore(
-        match.homeTeam.id,
-        match.awayTeam.id,
-        match.goalScorerTeamIds,
-      )
-    : null;
+  const score =
+    match.playedAt && match.awayTeam
+      ? computeMatchScore(
+          match.homeTeam.id,
+          match.awayTeam.id,
+          match.goalScorerTeamIds,
+        )
+      : null;
 
   return {
     id: match.id,
@@ -31,10 +32,12 @@ export const toMatchListItem = (
       ...match.homeTeam,
       owner: ownerByTeamId.get(match.homeTeam.id) ?? null,
     },
-    awayTeam: {
-      ...match.awayTeam,
-      owner: ownerByTeamId.get(match.awayTeam.id) ?? null,
-    },
+    awayTeam: match.awayTeam
+      ? {
+          ...match.awayTeam,
+          owner: ownerByTeamId.get(match.awayTeam.id) ?? null,
+        }
+      : null,
     locked,
   };
 };

@@ -62,7 +62,13 @@ export class GetTournamentSituationUseCase {
       await this.tournamentsRepository.findMatchesByPhase(phaseId);
 
     const ownerByTeamId = await this.tournamentsRepository.findOwnersByTeamIds(
-      [...new Set(matches.flatMap((m) => [m.homeTeam.id, m.awayTeam.id]))],
+      [
+        ...new Set(
+          matches.flatMap((m) =>
+            m.awayTeam ? [m.homeTeam.id, m.awayTeam.id] : [m.homeTeam.id],
+          ),
+        ),
+      ],
       seasonId,
     );
 
@@ -72,14 +78,16 @@ export class GetTournamentSituationUseCase {
         ...match.homeTeam,
         owner: ownerByTeamId.get(match.homeTeam.id) ?? null,
       },
-      awayTeam: {
-        ...match.awayTeam,
-        owner: ownerByTeamId.get(match.awayTeam.id) ?? null,
-      },
+      awayTeam: match.awayTeam
+        ? {
+            ...match.awayTeam,
+            owner: ownerByTeamId.get(match.awayTeam.id) ?? null,
+          }
+        : null,
     }));
 
     return onlyOwnedTeams
-      ? matchups.filter((m) => m.homeTeam.owner || m.awayTeam.owner)
+      ? matchups.filter((m) => m.homeTeam.owner || m.awayTeam?.owner)
       : matchups;
   }
 

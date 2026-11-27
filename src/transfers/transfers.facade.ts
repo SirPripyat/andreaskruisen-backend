@@ -36,13 +36,19 @@ export class TransfersFacade {
 
     // Notifica o solicitante (requestedBy), não quem clicou em "registrar" —
     // quando é o admin criando em nome de outra pessoa, é essa pessoa que
-    // precisa saber que a transferência aconteceu.
+    // precisa saber que a transferência aconteceu. Com troca multi-jogador
+    // (ver v1-transferencias.md), cada nome vira uma lista separada por
+    // vírgula.
     this.eventEmitter.emit(TRANSFER_COMPLETED_EVENT, {
       seasonId,
       userId: transfer.requestedBy.id,
       transferId: transfer.id,
-      outgoingPlayerName: transfer.outgoingPlayer.name,
-      incomingPlayerName: transfer.incomingPlayer.name,
+      outgoingPlayerName: transfer.outgoingPlayers
+        .map((player) => player.name)
+        .join(', '),
+      incomingPlayerName: transfer.incomingPlayers
+        .map((player) => player.name)
+        .join(', '),
       cost: transfer.cost,
     });
 

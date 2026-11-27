@@ -1,4 +1,7 @@
-import { knockoutRoundName } from '../generate-tournament-phase.utils';
+import {
+  buildFirstPhase,
+  knockoutRoundName,
+} from '../generate-tournament-phase.utils';
 
 describe('knockoutRoundName', () => {
   it.each([
@@ -21,4 +24,32 @@ describe('knockoutRoundName', () => {
       expect(knockoutRoundName(teamsCount, 2)).toBe('2ª rodada');
     },
   );
+});
+
+describe('buildFirstPhase', () => {
+  it('gera a fase de grupos usando groupSize/doubleRound/keepOwnedTeamsInSameGroup do groupStage', () => {
+    const teamIds = Array.from({ length: 8 }, (_, i) => `t${i}`);
+
+    const phase = buildFirstPhase('GROUP_STAGE_KNOCKOUT', teamIds, {
+      config: {
+        groupSize: 4,
+        qualifiersPerGroup: 2,
+        doubleRound: true,
+        keepOwnedTeamsInSameGroup: false,
+      },
+      ownedTeamIds: new Set(['t0', 't1']),
+    });
+
+    expect(phase.type).toBe('GROUP');
+    expect(phase.matches).toHaveLength(24); // 2 grupos * 6 jogos * 2 turnos
+    expect(new Set(phase.matches.map((match) => match.groupLabel))).toEqual(
+      new Set(['A', 'B']),
+    );
+  });
+
+  it('explode sem groupStage pra GROUP_STAGE_KNOCKOUT', () => {
+    expect(() =>
+      buildFirstPhase('GROUP_STAGE_KNOCKOUT', ['t1', 't2', 't3', 't4']),
+    ).toThrow();
+  });
 });

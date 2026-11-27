@@ -96,8 +96,7 @@ export class TournamentsController {
   }
 
   @Post(':id/phases/:phaseId/advance')
-  @Roles(UserRole.ADMIN)
-  @UseGuards(SessionAuthGuard, RolesGuard)
+  @UseGuards(SessionAuthGuard)
   advancePhase(@Param('id') id: string, @Param('phaseId') phaseId: string) {
     return this.facade.advancePhase(id, phaseId);
   }

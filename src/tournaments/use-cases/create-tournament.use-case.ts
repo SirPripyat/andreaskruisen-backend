@@ -32,10 +32,11 @@ export class CreateTournamentUseCase {
       name: dto.name,
       format: dto.format,
       maxTeams: dto.maxTeams,
+      groupStageConfig: dto.groupStageConfig,
     });
 
     await this.registerTeamsInTournament(tournament.id, dto.teamIds);
-    await this.generatePhase(tournament.id, dto);
+    await this.generatePhase(seasonId, tournament.id, dto);
 
     return tournament;
   }
@@ -54,10 +55,28 @@ export class CreateTournamentUseCase {
       });
   }
 
-  private async generatePhase(id: string, dto: CreateTournamentRequestDTO) {
+  private async generatePhase(
+    seasonId: string,
+    id: string,
+    dto: CreateTournamentRequestDTO,
+  ) {
     const shuffledTeamIds = shuffle(dto.teamIds);
 
-    const firstPhase = buildFirstPhase(dto.format, shuffledTeamIds);
+    const groupStage = dto.groupStageConfig
+      ? {
+          config: dto.groupStageConfig,
+          ownedTeamIds: new Set(
+            (
+              await this.tournamentsRepository.findSquadIdsByTeamIds(
+                dto.teamIds,
+                seasonId,
+              )
+            ).keys(),
+          ),
+        }
+      : undefined;
+
+    const firstPhase = buildFirstPhase(dto.format, shuffledTeamIds, groupStage);
 
     await this.tournamentsRepository.createPhaseWithMatches({
       tournamentId: id,

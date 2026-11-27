@@ -27,13 +27,15 @@ export type NegotiationClauseResponseDTO = Pick<
 export type NegotiationResponseDTO = DirectNegotiation & {
   proposingSquad: NegotiationSquadSummaryResponseDTO;
   targetSquad: NegotiationSquadSummaryResponseDTO;
-  outgoingPlayer: NegotiationPlayerSummaryResponseDTO | null;
-  incomingPlayer: NegotiationPlayerSummaryResponseDTO | null;
+  // Até 2 jogadores de cada lado (troca multi-jogador, ver
+  // v1-transferencias.md) — vazio numa compra/venda pura.
+  outgoingPlayers: NegotiationPlayerSummaryResponseDTO[];
+  incomingPlayers: NegotiationPlayerSummaryResponseDTO[];
   clauses: NegotiationClauseResponseDTO[];
-  // Snapshotados no Transfer gerado pelo aceite (ver
+  // Somados a partir do Transfer gerado pelo aceite (ver
   // NegotiationsRepository.toResponseDTO) — nulos enquanto
   // PENDING/REJECTED, já que nenhum Transfer foi gerado ainda.
-  outgoingPlayerOverall: number | null;
-  incomingPlayerOverall: number | null;
+  outgoingOverallSum: number | null;
+  incomingOverallSum: number | null;
   feeEnabled: boolean | null;
 };

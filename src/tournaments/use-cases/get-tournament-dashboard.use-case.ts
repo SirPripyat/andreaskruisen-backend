@@ -24,7 +24,13 @@ export class GetTournamentDashboardUseCase {
       : [];
 
     const ownerByTeamId = await this.tournamentsRepository.findOwnersByTeamIds(
-      [...new Set(matches.flatMap((m) => [m.homeTeam.id, m.awayTeam.id]))],
+      [
+        ...new Set(
+          matches.flatMap((m) =>
+            m.awayTeam ? [m.homeTeam.id, m.awayTeam.id] : [m.homeTeam.id],
+          ),
+        ),
+      ],
       tournament.seasonId,
     );
 
@@ -32,7 +38,7 @@ export class GetTournamentDashboardUseCase {
       (match) =>
         match.playedAt === null &&
         (ownerByTeamId.has(match.homeTeam.id) ||
-          ownerByTeamId.has(match.awayTeam.id)),
+          (match.awayTeam && ownerByTeamId.has(match.awayTeam.id))),
     );
 
     const [topScorer] = await this.tournamentsRepository.findTopScorers(

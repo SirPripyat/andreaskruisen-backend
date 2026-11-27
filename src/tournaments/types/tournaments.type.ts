@@ -37,7 +37,8 @@ export type MatchWithTeams = {
   goalScorerTeamIds: string[];
   penalties: MatchPenalties | null;
   homeTeam: TeamSummary;
-  awayTeam: TeamSummary;
+  // null = bye (ver buildGroupStageQualifiersBracket).
+  awayTeam: TeamSummary | null;
 };
 
 export type PlayerSummary = {

@@ -32,8 +32,12 @@ export const progressiveFee = (
 };
 
 export type TraditionalMarketTransferPricingInput = {
-  outgoingPlayerOverall: number;
-  incomingPlayerOverall: number;
+  // Soma dos overalls de cada lado — 1 jogador no caso comum, até 2 numa
+  // troca multi-jogador (ex.: 2 saem por 1 que entra, ou vice-versa; ver
+  // v1-transferencias.md). Com 1 jogador de cada lado é exatamente o
+  // overall individual, então a fórmula não muda pro caso simples.
+  outgoingOverallSum: number;
+  incomingOverallSum: number;
   useCoupon: boolean;
   // Snapshot de NegotiationWindow.feeEnabled vigente (ver
   // GetOpenNegotiationWindowUseCase) — com a janela sem taxa, só o custo
@@ -44,7 +48,7 @@ export type TraditionalMarketTransferPricingInput = {
 // Custo = (diferença de overall × coinsPerOverallPoint) + taxa
 // progressiva, essa última só cobrada se feeEnabled (decidido na abertura
 // da janela de negociação) e sem cupom. Diferença negativa ou nula
-// (jogador que entra não é melhor) ainda paga a taxa mínima quando
+// (lado que entra não é melhor, na soma) ainda paga a taxa mínima quando
 // feeEnabled — toda contratação está sujeita a ela.
 export const calculateTraditionalMarketTransferCost = (
   input: TraditionalMarketTransferPricingInput,
@@ -52,7 +56,7 @@ export const calculateTraditionalMarketTransferCost = (
 ): number => {
   const overallDiff = Math.max(
     0,
-    input.incomingPlayerOverall - input.outgoingPlayerOverall,
+    input.incomingOverallSum - input.outgoingOverallSum,
   );
   const fee =
     input.feeEnabled && !input.useCoupon

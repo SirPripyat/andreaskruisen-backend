@@ -40,6 +40,7 @@ export class TournamentsRepository {
     name: string;
     format: TournamentFormat;
     maxTeams: number;
+    groupStageConfig?: Prisma.InputJsonValue;
   }): Promise<Tournament> {
     return this.txHost.tx.tournament.create({ data });
   }
@@ -135,9 +136,12 @@ export class TournamentsRepository {
     name: string;
     matches: {
       homeTeamId: string;
-      awayTeamId: string;
+      // null = bye (ver buildGroupStageQualifiersBracket).
+      awayTeamId: string | null;
       groupLabel?: string;
       round?: number;
+      // Preenchido só pra bye: nasce já "jogado", vencedor automático.
+      playedAt?: Date;
     }[];
   }): Promise<void> {
     const phase = await this.txHost.tx.phase.create({
@@ -154,9 +158,10 @@ export class TournamentsRepository {
         phaseId: phase.id,
         homeTeamId: match.homeTeamId,
         awayTeamId: match.awayTeamId,
-        groupLabel: match.groupLabel,
-        round: match.round,
+        groupLabel: match.groupLabel ?? null,
+        round: match.round ?? null,
         bracketSlot: index,
+        playedAt: match.playedAt ?? null,
       })),
     });
   }
@@ -214,7 +219,9 @@ export class TournamentsRepository {
 
     return matches.map((match) => ({
       homeTeamId: match.homeTeamId,
-      awayTeamId: match.awayTeamId,
+      // Fase GROUP nunca tem bye (só a 1ª rodada de mata-mata tem, ver
+      // buildGroupStageQualifiersBracket) — sempre não-nulo aqui.
+      awayTeamId: match.awayTeamId as string,
       groupLabel: match.groupLabel as string,
       playedAt: match.playedAt,
       goalScorerTeamIds: match.goals.map((goal) => goal.teamId),
@@ -447,6 +454,9 @@ export class TournamentsRepository {
   // temporada — usado só pra contar quantos jogos cada time disputou (ver
   // countMatchesPerTeam), já que não existe registro de presença do
   // jogador em cada partida, só de quem marcou/assistiu.
+  // awayTeamId: { not: null } exclui partidas de bye — não contam como
+  // "partida jogada" pra nenhum dos dois times (ver
+  // buildGroupStageQualifiersBracket).
   findPlayedMatchTeamsByFormat(
     seasonId: string,
     format: TournamentFormat,
@@ -454,10 +464,11 @@ export class TournamentsRepository {
     return this.txHost.tx.match.findMany({
       where: {
         playedAt: { not: null },
+        awayTeamId: { not: null },
         phase: { tournament: { seasonId, format, finishedAt: { not: null } } },
       },
       select: { homeTeamId: true, awayTeamId: true },
-    });
+    }) as Promise<{ homeTeamId: string; awayTeamId: string }[]>;
   }
 
   // Torneios já encerrados daquele formato, na temporada — usado só pra
