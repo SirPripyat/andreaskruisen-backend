@@ -205,9 +205,12 @@ export class TournamentsRepository {
     });
   }
 
-  async findGroupMatches(phaseId: string): Promise<GroupPhaseMatch[]> {
+  async findGroupMatches(
+    phaseId: string,
+    groupLabel?: string,
+  ): Promise<GroupPhaseMatch[]> {
     const matches = await this.txHost.tx.match.findMany({
-      where: { phaseId },
+      where: { phaseId, ...(groupLabel ? { groupLabel } : {}) },
       select: {
         homeTeamId: true,
         awayTeamId: true,

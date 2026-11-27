@@ -17,6 +17,8 @@ import {
   GetTournamentDashboardResponseDTO,
   GetTournamentFixturesRequestDTO,
   GetTournamentFixturesResponseDTO,
+  GetTournamentGroupRequestDTO,
+  GetTournamentGroupResponseDTO,
   GetTournamentResponseDTO,
   GetTournamentSituationResponseDTO,
   ListMyTournamentsResponseDTO,
@@ -33,6 +35,7 @@ import {
   GetTopScorersUseCase,
   GetTournamentDashboardUseCase,
   GetTournamentFixturesUseCase,
+  GetTournamentGroupUseCase,
   GetTournamentSituationUseCase,
   GetTournamentUseCase,
   ListMyTournamentsUseCase,
@@ -48,6 +51,7 @@ export class TournamentsFacade {
     private readonly listTournamentsUseCase: ListTournamentsUseCase,
     private readonly getTournamentUseCase: GetTournamentUseCase,
     private readonly getTournamentSituationUseCase: GetTournamentSituationUseCase,
+    private readonly getTournamentGroupUseCase: GetTournamentGroupUseCase,
     private readonly getTournamentFixturesUseCase: GetTournamentFixturesUseCase,
     private readonly advancePhaseUseCase: AdvancePhaseUseCase,
     private readonly getTopScorersUseCase: GetTopScorersUseCase,
@@ -89,6 +93,14 @@ export class TournamentsFacade {
     query: GetSituationRequestDTO,
   ): Promise<GetTournamentSituationResponseDTO> {
     return this.getTournamentSituationUseCase.execute(id, query);
+  }
+
+  getGroup(
+    id: string,
+    groupLabel: string,
+    query: GetTournamentGroupRequestDTO,
+  ): Promise<GetTournamentGroupResponseDTO> {
+    return this.getTournamentGroupUseCase.execute(id, groupLabel, query);
   }
 
   getFixtures(

@@ -6,6 +6,7 @@ export * from './get-top-scorers.response-dto';
 export * from './get-tournament.response-dto';
 export * from './get-tournament-dashboard.response-dto';
 export * from './get-tournament-fixtures.response-dto';
+export * from './get-tournament-group.response-dto';
 export * from './get-tournament-situation.response-dto';
 export * from './list-my-tournaments.response-dto';
 export * from './list-tournaments.response-dto';

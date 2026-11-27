@@ -28,6 +28,8 @@ import {
   GetSituationSchema,
   GetTournamentFixturesRequestDTO,
   GetTournamentFixturesSchema,
+  GetTournamentGroupRequestDTO,
+  GetTournamentGroupSchema,
   UpdateTournamentRequestDTO,
   UpdateTournamentSchema,
 } from './dto';
@@ -84,6 +86,16 @@ export class TournamentsController {
     query: GetSituationRequestDTO,
   ) {
     return this.facade.getSituation(id, query);
+  }
+
+  @Get(':id/groups/:groupLabel')
+  getGroup(
+    @Param('id') id: string,
+    @Param('groupLabel') groupLabel: string,
+    @Query(new ZodValidationPipe(GetTournamentGroupSchema))
+    query: GetTournamentGroupRequestDTO,
+  ) {
+    return this.facade.getGroup(id, groupLabel, query);
   }
 
   @Get(':id/fixtures')

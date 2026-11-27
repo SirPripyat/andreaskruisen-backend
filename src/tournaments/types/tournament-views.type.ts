@@ -61,6 +61,12 @@ export type TournamentSituation = {
   | { matches: Matchup[]; groups?: never }
 );
 
+export type TournamentGroupSituation = {
+  phase: PhaseSummary;
+  groupLabel: string;
+  standings: StandingWithOwner[];
+};
+
 export type MatchListItem = {
   id: string;
   groupLabel: string | null;
